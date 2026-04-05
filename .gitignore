@@ -21,3 +21,8 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# AI tools files
+dev_notes_EN.md
+ccp_prototype.html
+.cursorrules

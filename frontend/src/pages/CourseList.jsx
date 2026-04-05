@@ -1,7 +1,10 @@
+// Sprint 2: mock data — swap the import block for real axios calls in Sprint 3.
+// TODO Sprint 3: replace mock import with → import { courseApi } from '../api';
+//                and restore:  courseApi.list().then(res => setCourses(res.data.courses))
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { courseApi } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { MOCK_COURSES } from '../mock/courses';
 
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
@@ -10,11 +13,12 @@ export default function CourseList() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    courseApi
-      .list()
-      .then((res) => setCourses(res.data.courses))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    // Sprint 2: simulate async load with mock data
+    const t = setTimeout(() => {
+      setCourses(MOCK_COURSES);
+      setLoading(false);
+    }, 200);
+    return () => clearTimeout(t);
   }, []);
 
   function handleLogout() {

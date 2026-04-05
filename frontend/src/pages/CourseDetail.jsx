@@ -1,6 +1,12 @@
+// Sprint 2: mock data — swap the import block for real axios calls in Sprint 3.
+// TODO Sprint 3: replace mock imports with → import { courseApi, materialApi, announcementApi, assignmentApi } from '../api';
+//                and restore Promise.all([courseApi.get(id), materialApi.list(id), ...])
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { courseApi, materialApi, announcementApi, assignmentApi } from '../api';
+import { getMockCourse } from '../mock/courses';
+import { getMockMaterials } from '../mock/materials';
+import { getMockAnnouncements } from '../mock/announcements';
+import { getMockAssignments } from '../mock/assignments';
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -11,21 +17,15 @@ export default function CourseDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const courseId = parseInt(id);
-    Promise.all([
-      courseApi.get(courseId),
-      materialApi.list(courseId),
-      announcementApi.list(courseId),
-      assignmentApi.list(courseId),
-    ])
-      .then(([courseRes, matRes, annRes, asgRes]) => {
-        setCourse(courseRes.data.course);
-        setMaterials(matRes.data.materials);
-        setAnnouncements(annRes.data.announcements);
-        setAssignments(asgRes.data.assignments);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    // Sprint 2: simulate async load with mock data
+    const t = setTimeout(() => {
+      setCourse(getMockCourse(id));
+      setMaterials(getMockMaterials(id));
+      setAnnouncements(getMockAnnouncements(id));
+      setAssignments(getMockAssignments(id));
+      setLoading(false);
+    }, 200);
+    return () => clearTimeout(t);
   }, [id]);
 
   if (loading) return <div>Loading course...</div>;
@@ -79,7 +79,7 @@ export default function CourseDetail() {
           <ul>
             {assignments.map((a) => (
               <li key={a.id}>
-                <Link to={`/courses/${id}/assignments/${a.id}`}>
+                <Link to={`/courses/${id}/assignments/${a.id}/submit`}>
                   {a.title}
                 </Link>
                 {a.dueDate && <span> — Due: {new Date(a.dueDate).toLocaleDateString()}</span>}
