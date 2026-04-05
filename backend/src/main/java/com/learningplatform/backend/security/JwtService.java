@@ -1,5 +1,6 @@
 package com.learningplatform.backend.security;
 
+import com.learningplatform.backend.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -19,9 +20,10 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateToken(String username) {
+    public String generateToken(User user) {
         return Jwts.builder()
-                .subject(username)
+                .subject(user.getEmail())
+                .claim("userId", user.getId())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())
@@ -32,9 +34,23 @@ public class JwtService {
         return extractAllClaims(token).getSubject();
     }
 
-    public boolean isTokenValid(String token, String username) {
-        final String extractedUsername = extractUsername(token);
-        return extractedUsername.equals(username) && !isTokenExpired(token);
+    public Long extractUserId(String token) {
+        Object userId = extractAllClaims(token).get("userId");
+
+        if (userId instanceof Integer) {
+            return ((Integer) userId).longValue();
+        }
+        if (userId instanceof Long) {
+            return (Long) userId;
+        }
+        return null;
+    }
+
+    public boolean isTokenValid(String token, User user) {
+        final Long extractedUserId = extractUserId(token);
+        return extractedUserId != null
+                && extractedUserId.equals(user.getId())
+                && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
