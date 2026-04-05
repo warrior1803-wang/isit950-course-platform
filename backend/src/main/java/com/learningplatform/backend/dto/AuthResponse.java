@@ -3,12 +3,14 @@ package com.learningplatform.backend.dto;
 public class AuthResponse {
 
     private String token;
+    private AuthUserResponse user;
 
     public AuthResponse() {
     }
 
-    public AuthResponse(String token) {
+    public AuthResponse(String token, AuthUserResponse user) {
         this.token = token;
+        this.user = user;
     }
 
     public String getToken() {
@@ -17,5 +19,13 @@ public class AuthResponse {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public AuthUserResponse getUser() {
+        return user;
+    }
+
+    public void setUser(AuthUserResponse user) {
+        this.user = user;
     }
 }

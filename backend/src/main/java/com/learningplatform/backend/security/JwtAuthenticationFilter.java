@@ -37,15 +37,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             try {
                 final String jwt = authHeader.substring(7);
-                final String userEmail = jwtService.extractUsername(jwt);
+                final Long userId = jwtService.extractUserId(jwt);
 
-                if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    User user = userRepository.findByEmail(userEmail).orElse(null);
+                if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    User user = userRepository.findById(userId).orElse(null);
 
-                    if (user != null && jwtService.isTokenValid(jwt, user.getEmail())) {
+                    if (user != null && jwtService.isTokenValid(jwt, user)) {
                         UsernamePasswordAuthenticationToken authToken =
                                 new UsernamePasswordAuthenticationToken(
-                                        userEmail,
+                                        user.getEmail(),
                                         null,
                                         List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
                                 );
