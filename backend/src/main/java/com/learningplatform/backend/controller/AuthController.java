@@ -1,12 +1,15 @@
 package com.learningplatform.backend.controller;
 
 import com.learningplatform.backend.dto.AuthResponse;
+import com.learningplatform.backend.dto.AuthUserResponse;
 import com.learningplatform.backend.dto.LoginRequest;
 import com.learningplatform.backend.dto.RegisterRequest;
 import com.learningplatform.backend.model.User;
 import com.learningplatform.backend.service.AuthService;
 import com.learningplatform.backend.common.response.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,9 +24,11 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
-        return ApiResponse.success("User registered successfully", response);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("User registered successfully", response));
     }
 
     @PostMapping("/login")
@@ -40,7 +45,12 @@ public class AuthController {
                 .getName();
 
         User user = authService.getCurrentUser(email);
-
-        return ApiResponse.success("User fetched successfully", user);
+        AuthUserResponse response = new AuthUserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole()
+        );
+        return ApiResponse.success("User fetched successfully", response);
     }
 }
