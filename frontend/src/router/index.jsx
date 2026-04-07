@@ -7,6 +7,7 @@ import LoginPage from '../pages/auth/LoginPage';
 import CourseList from '../pages/CourseList';
 import CourseDetail from '../pages/CourseDetail';
 import AssignmentSubmission from '../pages/AssignmentSubmission';
+import AssignmentList from '../pages/AssignmentList';
 
 // Temporary placeholder for pages not yet implemented
 function Soon({ page }) {
@@ -116,7 +117,7 @@ export default function AppRouter() {
             path="/courses/:id/assignments/:asgId/review"
             element={<Soon page="Assignment Review" />}
           />
-          <Route path="/assignments" element={<Soon page="Assignments" />} />
+          <Route path="/assignments" element={<AssignmentList/>} />
           <Route path="/discussions" element={<Soon page="Discussions" />} />
           <Route path="/announcements" element={<Soon page="Announcements" />} />
           <Route path="/profile" element={<Soon page="Profile" />} />
