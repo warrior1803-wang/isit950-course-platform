@@ -1,5 +1,5 @@
 // Sprint 2: mock data — swap the import block for real axios calls in Sprint 3.
-// TODO Sprint 3: replace mock imports with → import { courseApi, materialApi, announcementApi, assignmentApi } from '../api';
+// // TODO Sprint 3: replace mock imports with → import { courseApi, materialApi, announcementApi, assignmentApi } from '../api';
 //                and restore Promise.all([courseApi.get(id), materialApi.list(id), ...])
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
