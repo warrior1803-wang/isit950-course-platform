@@ -607,7 +607,7 @@ export default function CourseDetail() {
                       <div className="disc-reply-meta">
                         <div className="disc-reply-author">{r.author?.name}</div>
                         <div className="disc-reply-role">
-                          {r.authorRole === 'instructor' ? 'Instructor' : 'Student'}
+                          · {r.authorRole === 'instructor' ? 'Instructor' : 'Student'}
                         </div>
                         <div className="disc-reply-date">{formatDateShort(r.createdAt)}</div>
                       </div>
