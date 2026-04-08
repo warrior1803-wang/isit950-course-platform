@@ -158,6 +158,7 @@ function CourseGrid({ courses, activeTab, search }) {
             to={`/courses/${course.id}`}
             className="course-card"
             aria-label={`${course.code} ${course.name}`}
+            target="_blank"
           >
             <div
               className="course-card-bg"
