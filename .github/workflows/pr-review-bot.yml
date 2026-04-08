@@ -32,7 +32,6 @@ jobs:
             const prTitle = pr.title || '';
 
             // ── 1. PR Title Format Check ──────────────────────────────────
-            // Expected: [SprintN][Type] Description — #number
             const titleRegex = /^\[Sprint\d+\]\[(Frontend|Backend|Report|DevOps|Scrum|Full-?Stack)\].+—\s*#\d+$/i;
             const titleValid = titleRegex.test(prTitle.trim());
 
@@ -47,24 +46,37 @@ jobs:
 `;
             }
 
-            // ── 2. Find linked issue ──────────────────────────────────────
-            const issueMatch = prBody.match(/(?:closes?|fixes?|resolves?)\s+#(\d+)/i);
-            let issueContext = '⚠️ No linked issue found. Add `Closes #xx` to the PR description.';
+            // ── 2. Find ALL linked issues ─────────────────────────────────
+            // Matches: Closes #1, Fixes #2, Resolves #3 (anywhere in body)
+            const issueMatches = [...prBody.matchAll(/(?:closes?|fixes?|resolves?)\s+#(\d+)/gi)];
+            const issueNumbers = [...new Set(issueMatches.map(m => parseInt(m[1])))];
+
+            let issueContext = '';
             let issueLabel = 'No linked issue';
 
-            if (issueMatch) {
-              const issueNumber = parseInt(issueMatch[1]);
-              try {
-                const issue = await github.rest.issues.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber
-                });
-                issueContext = `**Issue #${issueNumber}: ${issue.data.title}**\n\n${issue.data.body || 'No description.'}`;
-                issueLabel = `#${issueNumber}`;
-              } catch (e) {
-                issueContext = `⚠️ Could not fetch issue #${issueNumber}. Make sure the issue exists.`;
+            if (issueNumbers.length === 0) {
+              issueContext = '⚠️ No linked issues found. Add `Closes #xx` to the PR description for each related issue.';
+              issueLabel = 'No linked issues';
+            } else {
+              issueLabel = issueNumbers.map(n => `#${n}`).join(', ');
+              const issueBlocks = [];
+
+              for (const num of issueNumbers) {
+                try {
+                  const issue = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: num
+                  });
+                  issueBlocks.push(
+                    `### Issue #${num}: ${issue.data.title}\n\n${issue.data.body || 'No description.'}`
+                  );
+                } catch (e) {
+                  issueBlocks.push(`### Issue #${num}\n\n⚠️ Could not fetch — make sure this issue exists.`);
+                }
               }
+
+              issueContext = issueBlocks.join('\n\n---\n\n');
             }
 
             // ── 3. Get PR diff ────────────────────────────────────────────
@@ -83,6 +95,47 @@ jobs:
             }
 
             // ── 4. Call GitHub Models API (GPT-4o) ────────────────────────
+            const multiIssueNote = issueNumbers.length > 1
+              ? `Note: This PR covers ${issueNumbers.length} issues (${issueLabel}). Review each issue's requirements separately.`
+              : '';
+
+            const reviewFormat = issueNumbers.length > 1
+              ? `Since this PR covers multiple issues, structure your review like this:
+
+For each issue, provide a section:
+**Issue #N — [issue title]**
+- ✅ Requirements Met: which acceptance criteria are satisfied
+- ❌ Missing / Incomplete: which are not addressed yet
+
+Then a combined section at the end:
+
+### ⚠️ Code Quality Issues
+Bugs, missing error handling, bad practices across the whole diff. Skip if none.
+
+### 💡 Suggestions
+Optional improvements. Skip if none.
+
+### 📋 Verdict
+One of: **Ready for human review** · **Needs minor fixes** · **Needs significant work**
+One sentence explaining why.`
+              : `Provide your review in this exact format:
+
+### ✅ Requirements Met
+Which acceptance criteria are satisfied.
+
+### ❌ Missing or Incomplete
+Which criteria are NOT addressed.
+
+### ⚠️ Code Quality Issues
+Bugs, missing error handling, bad practices. Skip if none.
+
+### 💡 Suggestions
+Optional improvements. Skip if none.
+
+### 📋 Verdict
+One of: **Ready for human review** · **Needs minor fixes** · **Needs significant work**
+One sentence explaining why.`;
+
             const response = await fetch(
               'https://models.github.ai/inference/chat/completions',
               {
@@ -96,13 +149,13 @@ jobs:
                   messages: [
                     {
                       role: 'system',
-                      content: 'You are a senior software engineer doing a pre-review of a pull request for a university group project (React + Java Spring Boot). Be concise, specific, and actionable. Use markdown formatting. Focus on what matters for the acceptance criteria.'
+                      content: 'You are a senior software engineer doing a pre-review of a pull request for a university group project (React + Java Spring Boot). Be concise, specific, and actionable. Use markdown formatting.'
                     },
                     {
                       role: 'user',
-                      content: `Please review this PR against the linked issue's acceptance criteria.
+                      content: `Please review this PR against the linked issue requirements. ${multiIssueNote}
 
-## Linked Issue / Acceptance Criteria
+## Linked Issues / Acceptance Criteria
 ${issueContext}
 
 ## PR Title
@@ -113,26 +166,10 @@ ${prTitle}
 ${diff}
 \`\`\`
 
-Respond using this exact structure:
-
-### ✅ Requirements Met
-List which acceptance criteria from the issue are clearly satisfied by the diff.
-
-### ❌ Missing or Incomplete
-List which acceptance criteria are NOT addressed yet. Be specific about what is missing.
-
-### ⚠️ Code Quality Issues
-List bugs, missing error handling, hardcoded values, or bad practices found in the diff. Skip this section if there are none.
-
-### 💡 Suggestions
-Optional improvements that are not blockers. Skip if none.
-
-### 📋 Verdict
-One of: **Ready for human review** · **Needs minor fixes** · **Needs significant work**
-One sentence explaining why.`
+${reviewFormat}`
                     }
                   ],
-                  max_tokens: 1500
+                  max_tokens: 2000
                 })
               }
             );
@@ -146,7 +183,7 @@ One sentence explaining why.`
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: pr.number,
-                body: `## 🤖 AI Pre-Review\n\n${titleWarning}❌ AI review failed: \`${data.error?.message || JSON.stringify(data)}\`\n\nPlease check the [Actions log](../actions) for details.`
+                body: `## 🤖 AI Pre-Review\n\n${titleWarning}❌ AI review failed: \`${data.error?.message || JSON.stringify(data)}\`\n\nCheck the [Actions log](../actions) for details.`
               });
               return;
             }
@@ -154,6 +191,10 @@ One sentence explaining why.`
             const reviewText = data.choices?.[0]?.message?.content || 'No response received from model.';
 
             // ── 6. Post PR comment ────────────────────────────────────────
+            const issueCountNote = issueNumbers.length > 1
+              ? ` · **${issueNumbers.length} issues reviewed:** ${issueLabel}`
+              : ` · Linked issue: **${issueLabel}**`;
+
             const timestamp = new Date().toUTCString();
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -161,7 +202,7 @@ One sentence explaining why.`
               issue_number: pr.number,
               body: `## 🤖 AI Pre-Review Report
 
-${titleWarning}> Linked issue: **${issueLabel}** · Model: GPT-4o · ${timestamp}
+${titleWarning}> Model: GPT-4o${issueCountNote} · ${timestamp}
 
 ---
 
@@ -169,5 +210,5 @@ ${reviewText}
 
 ---
 
-*This is an automated pre-review. Please address any ❌ and ⚠️ items above before requesting human review from the leads.*`
+*Automated pre-review. Please address ❌ and ⚠️ items before requesting human review from the leads.*`
             });
