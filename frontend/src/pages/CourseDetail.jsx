@@ -2,7 +2,7 @@
 // TODO Sprint 3: replace mock imports with → import { courseApi, materialApi, announcementApi, assignmentApi } from '../api';
 //                and restore Promise.all([courseApi.get(id), materialApi.list(id), ...])
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import { getMockCourse } from '../mock/courses';
@@ -88,16 +88,28 @@ export default function CourseDetail() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [course, setCourse] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('materials');
   const [discView, setDiscView] = useState('list'); // list | detail | new
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [replyDraft, setReplyDraft] = useState('');
+
+  // Get active tab from URL params, default to 'materials'
+  const activeTab = searchParams.get('tab') || 'materials';
+
+  // Function to change active tab and update URL
+  const changeTab = (tab) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.set('tab', tab);
+      return newParams;
+    });
+  };
   const [newTitle, setNewTitle] = useState('');
   const [newBody, setNewBody] = useState('');
   const { user } = useAuth();
@@ -122,7 +134,9 @@ export default function CourseDetail() {
     if (loading) return;
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    if (tab === 'discussion') setActiveTab('discussion');
+    if (tab === 'discussion') {
+      setSearchParams(prev => ({ ...Object.fromEntries(prev), tab: 'discussion' }));
+    }
 
     const view = params.get('view');
     const post = params.get('post');
@@ -244,28 +258,28 @@ export default function CourseDetail() {
         <button
           type="button"
           className={`detail-tab-btn${activeTab === 'materials' ? ' active' : ''}`}
-          onClick={() => setActiveTab('materials')}
+          onClick={() => changeTab('materials')}
         >
           <span className="material-symbols-rounded icon">folder_open</span> Materials
         </button>
         <button
           type="button"
           className={`detail-tab-btn${activeTab === 'announcements' ? ' active' : ''}`}
-          onClick={() => setActiveTab('announcements')}
+          onClick={() => changeTab('announcements')}
         >
           <span className="material-symbols-rounded icon">campaign</span> Announcements
         </button>
         <button
           type="button"
           className={`detail-tab-btn${activeTab === 'assignments' ? ' active' : ''}`}
-          onClick={() => setActiveTab('assignments')}
+          onClick={() => changeTab('assignments')}
         >
           <span className="material-symbols-rounded icon">assignment</span> Assignments
         </button>
         <button
           type="button"
           className={`detail-tab-btn${activeTab === 'discussion' ? ' active' : ''}`}
-          onClick={() => setActiveTab('discussion')}
+          onClick={() => changeTab('discussion')}
         >
           <span className="material-symbols-rounded icon">forum</span> Discussion
         </button>
