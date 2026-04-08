@@ -29,20 +29,27 @@ All pull requests **must** follow this format:
 - Copy the `[SprintN][Type]` prefix directly from the linked issue title
 - Keep the description **shorter** than the issue title — describe what was done, not "Build" or "Implement"
 - Always end with ` — #issue_number` (space, em dash, space, hash, number)
+- If the PR covers multiple issues, use the **primary** issue number in the title
 
 ---
 
 ## PR Description (Required)
 
-The **first line** of your PR description must link to the issue:
+The PR description must include a `Closes #xx` line for **every** issue this PR addresses:
 
 ```
 Closes #8
+Closes #9
+Closes #11
 ```
 
-This is required for the AI pre-review bot to fetch the issue's acceptance criteria and generate a review report automatically.
+This is required for the AI pre-review bot to fetch each issue's acceptance criteria. The bot supports multiple issues in a single PR and will review each one separately.
 
 Other accepted keywords: `Fixes #xx` · `Resolves #xx`
+
+> **Best practice: one issue per PR.**  
+> Smaller PRs are easier to review and less likely to cause merge conflicts.  
+> Only combine multiple issues in one PR if the changes are genuinely inseparable.
 
 ---
 
@@ -65,16 +72,16 @@ feature/assignment-submission
 ## Before You Submit a PR
 
 - [ ] PR title follows the `[SprintN][Type] Description — #xx` format
-- [ ] PR description starts with `Closes #xx`
+- [ ] PR description includes `Closes #xx` for every related issue
 - [ ] Code runs locally without errors
-- [ ] All acceptance criteria in the linked issue have been addressed (or noted as out of scope)
+- [ ] All acceptance criteria in the linked issue(s) have been addressed (or noted as out of scope)
 - [ ] No console errors or debug logs left in the code
 
 ---
 
 ## After the Bot Review
 
-When you open a PR, an AI pre-review bot will automatically post a comment checking your code against the linked issue's acceptance criteria.
+When you open a PR, the AI pre-review bot will automatically post a comment checking your code against every linked issue's acceptance criteria.
 
 **Please read the bot report before requesting human review.**  
 Address any `❌ Missing` or `⚠️ Code Quality` items first, then request review from the leads.
