@@ -30,22 +30,4 @@ export const MOCK_USERS = [
     studentNumber: null,
     department: 'School of Computing and IT',
   },
-  {
-    id: 4,
-    name: 'Dr. Jane Smith',
-    email: 'JaneSmith@uowmail.edu.au',
-    password: 'password1',
-    role: 'instructor',
-    studentNumber: null,
-    department: 'School of Computing and IT',
-  },
-  {
-    id: 5,
-    name: 'Dr. John Doe',
-    email: 'JohnDoe@uowmail.edu.au',
-    password: 'password1',
-    role: 'instructor',
-    studentNumber: null,
-    department: 'School of Computing and IT',
-  },
 ];

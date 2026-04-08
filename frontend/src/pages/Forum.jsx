@@ -1,87 +1,136 @@
 // Sprint 2: mock data — swap for real axios calls in Sprint 3.
 // TODO Sprint 3: restore → forumApi.listPosts / createPost / createReply
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
-import { MOCK_COURSES } from '../mock/courses';
-import { getMockPosts } from '../mock/forum';
+import { Link, useParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { useAuth } from '../context/AuthContext';
+import { getMockPosts, createMockPost, createMockReply } from '../mock/forum';
 
 export default function Forum() {
-  const [sections, setSections] = useState([]);
+  const { id: courseId } = useParams();
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   useEffect(() => {
     // Sprint 2: load from mock data
     const t = setTimeout(() => {
-      const next = MOCK_COURSES.map(course => {
-        const posts = getMockPosts(course.id)
-          .slice()
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        return { course, posts };
-      }).filter(s => s.posts.length > 0);
-
-      setSections(next);
+      setPosts(getMockPosts(courseId));
       setLoading(false);
     }, 200);
     return () => clearTimeout(t);
-  }, []);
+  }, [courseId]);
 
-  function formatDateShort(iso) {
-    const d = new Date(iso);
-    return new Intl.DateTimeFormat('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
+  function onSubmitPost(data) {
+    // Sprint 2: mock create — update local state without API call
+    // TODO Sprint 3: const res = await forumApi.createPost(courseId, data); setPosts([res.data.post, ...posts]);
+    const post = createMockPost(courseId, data, user);
+    setPosts(prev => [post, ...prev]);
+    reset();
   }
 
-  if (loading) return <LoadingSpinner />;
+  function handleReply(postId, body) {
+    // Sprint 2: mock reply — update local state without API call
+    // TODO Sprint 3: const res = await forumApi.createReply(postId, { body }); ...
+    const reply = createMockReply(postId, { body }, user);
+    setPosts(prev =>
+      prev.map(p =>
+        p.id === postId ? { ...p, replies: [...p.replies, reply] } : p,
+      ),
+    );
+  }
+
+  if (loading) return <div>Loading forum...</div>;
 
   return (
     <div>
-      <div className="global-title">Discussions</div>
-      <div className="global-sub">Recent activity across all your courses</div>
+      <Link to={`/courses/${courseId}`}>← Back to Course</Link>
+      <h1>Forum</h1>
 
-      {sections.length === 0 ? (
-        <p className="course-list-empty">No discussion activity yet.</p>
-      ) : (
-        sections.map(({ course, posts }) => (
-          <div key={course.id}>
-            <div></div>
-            <div className="list-section-label">
-              {course.code} · {course.name}
-            </div>
-            <div className="global-list">
-              {posts.map(post => {
-                const isInstructor = post.authorRole === 'instructor';
-                const iconCls = isInstructor ? 'gi-ann' : 'gi-disc';
-                const iconName = isInstructor ? 'record_voice_over' : 'chat';
-                const replies = post.replies?.length ?? 0;
-                const replyLabel = `${replies} ${replies === 1 ? 'reply' : 'replies'}`;
-
-                return (
-                  <Link
-                    key={post.id}
-                    to={`/courses/${course.id}?tab=discussion&post=${post.id}`}
-                    className="global-item"
-                  >
-                    <div className={`global-item-icon ${iconCls}`}>
-                      <span className="material-symbols-rounded icon">{iconName}</span>
-                    </div>
-                    <div className="global-item-body">
-                      <div className="global-item-title">{post.title}</div>
-                      <div className="global-item-meta">
-                        {post.author?.name} · {isInstructor ? 'Instructor' : 'Student'} ·{' '}
-                        {formatDateShort(post.createdAt)}
-                      </div>
-                      <div className="global-item-preview">{post.body}</div>
-                    </div>
-                    <div className="global-item-right">
-                      <span className="pill-new">{replyLabel}</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+      <section>
+        <h2>New Post</h2>
+        <form onSubmit={handleSubmit(onSubmitPost)}>
+          <div>
+            <label htmlFor="title">Title</label>
+            <input
+              id="title"
+              type="text"
+              {...register('title', { required: 'Title is required' })}
+            />
+            {errors.title && <span>{errors.title.message}</span>}
           </div>
-        ))
-      )}
+          <div>
+            <label htmlFor="body">Body</label>
+            <textarea
+              id="body"
+              {...register('body', { required: 'Body is required' })}
+            />
+            {errors.body && <span>{errors.body.message}</span>}
+          </div>
+          <button type="submit">Post</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Posts</h2>
+        {posts.length === 0 ? (
+          <p>No posts yet. Be the first to post!</p>
+        ) : (
+          posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUser={user}
+              onReply={handleReply}
+            />
+          ))
+        )}
+      </section>
     </div>
+  );
+}
+
+function PostCard({ post, currentUser, onReply }) {
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const { register, handleSubmit, reset } = useForm();
+
+  function onSubmitReply(data) {
+    onReply(post.id, data.body);
+    reset();
+    setShowReplyForm(false);
+  }
+
+  return (
+    <article>
+      <h3>{post.title}</h3>
+      <p>{post.body}</p>
+      <small>by {post.author?.name}</small>
+
+      {post.replies?.length > 0 && (
+        <div>
+          <strong>Replies:</strong>
+          {post.replies.map((r) => (
+            <div key={r.id}>
+              <p>{r.body}</p>
+              <small>by {r.author?.name}</small>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {currentUser && (
+        <button onClick={() => setShowReplyForm(!showReplyForm)}>
+          {showReplyForm ? 'Cancel' : 'Reply'}
+        </button>
+      )}
+
+      {showReplyForm && (
+        <form onSubmit={handleSubmit(onSubmitReply)}>
+          <textarea {...register('body', { required: true })} placeholder="Write a reply..." />
+          <button type="submit">Submit Reply</button>
+        </form>
+      )}
+    </article>
   );
 }
