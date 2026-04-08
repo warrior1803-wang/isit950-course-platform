@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { useAuth } from '../lib/auth';
 import { Navbar, StudentSidebar, InstructorSidebar, LoadingSpinner } from '../components/shared';
 
