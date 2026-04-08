@@ -40,6 +40,28 @@ export const MOCK_COURSES = [
     semester: { startDate: '2025-07-28', endDate: '2025-11-30' }, // completed
     enrolledCount: 52,
   },
+  {
+    id: 4,
+    code: 'CSIT998',
+    name: 'Professional Capstone Project',
+    description:
+      'In this subject, students will work in a group on a professional project. Project tasks include eliciting and justifying project requirements, researching, designing and evaluating a solution, and communicating results of the project. During this process, students will need to demonstrate an understanding of the professional practice and ethical considerations.',
+    instructor: { id: 4, name: 'Dr. Jane Smith' },
+    coverImageUrl: null,
+    semester: { startDate: '2026-02-24', endDate: '2026-06-20' },
+    enrolledCount: 52,
+  },
+  {
+    id: 5,
+    code: 'ISIT919',
+    name: 'Knowledge Engineering',
+    description:
+      'The subject describes issues in using IT to support knowledge sharing and reuse. Challenges in representing and sharing knowledge in the context of knowledge systems are studied. Additional challenges in heterogeneous health IT environments are also examined. The subject presents systemic approaches for knowledge engineering via a contemporary Web and modern information modelling approach, analyse and apply in healthcare environment.',
+    instructor: { id: 5, name: 'Dr. John Doe' },
+    coverImageUrl: null,
+    semester: { startDate: '2026-02-24', endDate: '2026-06-20' },
+    enrolledCount: 52,
+  }
 ];
 
 /** Simulates GET /api/courses/:id  →  { course } */
