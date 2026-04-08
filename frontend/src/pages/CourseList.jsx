@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import { MOCK_COURSES } from '../mock/courses';
+import PropTypes from "prop-types";
 
 /** Mirrors mock/courses.js: endDate > today → in progress. */
 function isInProgress(course) {
@@ -138,13 +139,20 @@ function CourseListToolbar({ search, onSearchChange }) {
   );
 }
 
+CourseListToolbar.propTypes = {
+  search: PropTypes.string,
+  onSearchChange: PropTypes.func
+};
+
 function CourseGrid({ courses, activeTab, search }) {
   if (courses.length === 0) {
     const emptyMsg = search.trim()
       ? 'No courses match your search.'
       : activeTab === 'all'
         ? 'No courses available.'
-        : 'No courses in this tab.';
+        : activeTab === 'in_progress'
+          ? 'No courses in progress.'
+          : 'No courses completed.';
     return <p className="course-list-empty">{emptyMsg}</p>;
   }
 
@@ -158,7 +166,6 @@ function CourseGrid({ courses, activeTab, search }) {
             to={`/courses/${course.id}`}
             className="course-card"
             aria-label={`${course.code} ${course.name}`}
-            target="_blank"
           >
             <div
               className="course-card-bg"

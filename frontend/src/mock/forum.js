@@ -108,7 +108,74 @@ const POSTS = {
     },
   ],
 
-  3: [],
+  3: [
+    {
+      id: 1001,
+      courseId: 3,
+      title: 'Question about the research proposal word count',
+      body: 'Hi everyone, does the 1500-word limit for the research proposal include the reference list, or is it just the body text? The rubric isn\'t entirely clear on this.',
+      author: { id: 1, name: 'Bingyan Wang' },
+      authorRole: 'student',
+      createdAt: '2025-07-28T11:22:00Z',
+      replies: [
+        {
+          id: 7001,
+          postId: 1001,
+          body: 'Great question, Bingyan. The 1500 words refers to the body text only — the reference list is excluded from the count.',
+          author: { id: 3, name: 'Dr. Mitchell' },
+          authorRole: 'instructor',
+          createdAt: '2025-07-28T13:45:00Z',
+        },
+        {
+          id: 7002,
+          postId: 1001,
+          body: 'Thanks Dr. Mitchell! That\'s a relief.',
+          author: { id: 1, name: 'Bingyan Wang' },
+          authorRole: 'student',
+          createdAt: '2025-07-28T14:02:00Z',
+        },
+      ],
+    },
+    {
+      id: 1002,
+      courseId: 3,
+      title: 'Recommended databases for literature search?',
+      body: 'I\'m struggling to find enough peer-reviewed articles on my topic (AI ethics in healthcare). Which databases would you recommend beyond Google Scholar?',
+      author: { id: 2, name: 'Chris Lee' },
+      authorRole: 'student',
+      createdAt: '2025-07-28T09:15:00Z',
+      replies: [
+        {
+          id: 7003,
+          postId: 1002,
+          body: 'Try IEEE Xplore, ACM Digital Library, and PubMed. The UOW Library also has great subject guides — search "IT research" on the library website.',
+          author: { id: 3, name: 'Dr. Mitchell' },
+          authorRole: 'instructor',
+          createdAt: '2025-07-28T10:30:00Z',
+        },
+        {
+          id: 7004,
+          postId: 1002,
+          body: 'Also Scopus is really good for checking citation counts — helps you identify the key papers in a field.',
+          author: { id: 1, name: 'Bingyan Wang' },
+          authorRole: 'student',
+          createdAt: '2025-07-28T11:05:00Z',
+        },
+      ],
+    },
+    {
+      id: 1003,
+      courseId: 3,
+      title: 'Study group for Week 7 content?',
+      body: 'Is anyone interested in forming a study group before the Week 7 quiz? I\'m thinking Saturday afternoon on campus or on Zoom.',
+      author: { id: 1, name: 'Bingyan Wang' },
+      authorRole: 'student',
+      createdAt: '2025-07-28T16:40:00Z',
+      replies: [],
+    },
+  ],
+
+  4: [],
 };
 
 /** Simulates GET /api/courses/:id/posts  →  { posts } */

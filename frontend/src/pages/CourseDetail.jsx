@@ -159,6 +159,39 @@ export default function CourseDetail() {
     return order.map(section => ({ section, items: map.get(section) }));
   }, [materials]);
 
+  function handleMaterialDownload(material) {
+    // Sprint 2: mock download behavior
+    // In a real app, this would download the actual file from the server
+    // For now, we'll simulate a download by creating a blob with sample content
+    const fileType = material.fileType;
+    let mimeType = 'application/octet-stream';
+    let sampleContent = `This is a mock ${fileType.toUpperCase()} file: ${material.filename}\n\nMock content for demonstration purposes.`;
+
+    if (fileType === 'pdf') {
+      mimeType = 'application/pdf';
+      sampleContent = '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(Mock PDF Content) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000200 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n284\n%%EOF';
+    } else if (fileType === 'doc' || fileType === 'docx') {
+      mimeType = fileType === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/msword';
+      sampleContent = 'Mock Word document content...';
+    } else if (fileType === 'ppt' || fileType === 'pptx') {
+      mimeType = fileType === 'pptx' ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation' : 'application/vnd.ms-powerpoint';
+      sampleContent = 'Mock PowerPoint content...';
+    } else if (fileType === 'zip') {
+      mimeType = 'application/zip';
+      sampleContent = 'Mock ZIP archive content...';
+    }
+
+    const blob = new Blob([sampleContent], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = material.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) return <LoadingSpinner />;
   if (!course) return <div>Course not found.</div>;
 
@@ -251,13 +284,11 @@ export default function CourseDetail() {
                   {sec.items.map(m => {
                     const meta = fileTypeMeta(m);
                     return (
-                      <a
+                      <div
                         key={m.id}
                         className="material-item"
-                        href={m.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ textDecoration: 'none' }}
+                        onClick={() => handleMaterialDownload(m)}
+                        style={{ cursor: 'pointer' }}
                       >
                         <div className={`material-icon ${meta.cls}`}>
                           <span className="material-symbols-rounded icon">{meta.icon}</span>
@@ -273,7 +304,7 @@ export default function CourseDetail() {
                         <span className="material-dl" aria-hidden>
                           <span className="material-symbols-rounded icon">download</span>
                         </span>
-                      </a>
+                      </div>
                     );
                   })}
                 </div>

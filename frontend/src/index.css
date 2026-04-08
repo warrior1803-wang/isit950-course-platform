@@ -534,7 +534,7 @@ a.course-card {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  /* gap: 16px; */
 }
 
 .detail-course-code {
@@ -587,7 +587,7 @@ a.course-card {
   align-items: center;
   gap: 6px;
   transition: background .15s;
-  white-space: nowrap;
+  /* white-space: nowrap; */
 }
 
 .detail-back-btn:hover {
