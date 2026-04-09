@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import { MOCK_COURSES } from '../mock/courses';
+import { getMockEnrolmentsByStudent } from '../mock/enrolment';
+import { useAuth } from '../context/AuthContext';
 import PropTypes from "prop-types";
 
 /** Mirrors mock/courses.js: endDate > today → in progress. */
@@ -48,6 +50,7 @@ export default function CourseList() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -69,6 +72,13 @@ export default function CourseList() {
     if (activeTab === 'completed') list = list.filter(c => !isInProgress(c));
     return list.filter(c => matchesSearch(c, search));
   }, [courses, activeTab, search]);
+
+  const enrolledCourseIds = useMemo(() => {
+    if (!user?.id) return new Set();
+    return new Set(
+      getMockEnrolmentsByStudent(user.id).map(enrolment => enrolment.course.id),
+    );
+  }, [user?.id]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -114,7 +124,12 @@ export default function CourseList() {
 
       <div className="tab-panel active" role="tabpanel">
         <CourseListToolbar search={search} onSearchChange={setSearch} />
-        <CourseGrid courses={filtered} activeTab={activeTab} search={search} />
+        <CourseGrid
+          courses={filtered}
+          activeTab={activeTab}
+          search={search}
+          enrolledCourseIds={enrolledCourseIds}
+        />
       </div>
     </div>
   );
@@ -144,7 +159,7 @@ CourseListToolbar.propTypes = {
   onSearchChange: PropTypes.func
 };
 
-function CourseGrid({ courses, activeTab, search }) {
+function CourseGrid({ courses, activeTab, search, enrolledCourseIds }) {
   if (courses.length === 0) {
     const emptyMsg = search.trim()
       ? 'No courses match your search.'
@@ -160,6 +175,7 @@ function CourseGrid({ courses, activeTab, search }) {
     <div className="course-grid">
       {courses.map(course => {
         const progress = isInProgress(course);
+        const isEnrolled = enrolledCourseIds.has(course.id);
         return (
           <Link
             key={course.id}
@@ -172,9 +188,22 @@ function CourseGrid({ courses, activeTab, search }) {
               style={{ backgroundImage: `url(${coverUrlFor(course)})` }}
             />
             <div className="course-card-overlay" />
-            <div className="course-badge">
-              <span className="material-symbols-rounded icon">verified</span>
-              Enrolled
+            <div
+              className="course-badge"
+              style={
+                isEnrolled
+                  ? undefined
+                  : {
+                      background: 'rgba(44, 28, 36, 0.2)',
+                      borderColor: 'rgba(255, 255, 255, 0.16)',
+                      color: 'rgba(255, 255, 255, 0.82)',
+                    }
+              }
+            >
+              <span className="material-symbols-rounded icon">
+                {isEnrolled ? 'verified' : 'person_off'}
+              </span>
+              {isEnrolled ? 'Enrolled' : 'Not enrolled'}
             </div>
             <div className="course-glass">
               <div className="course-code-g">{course.code}</div>
@@ -192,3 +221,10 @@ function CourseGrid({ courses, activeTab, search }) {
     </div>
   );
 }
+
+CourseGrid.propTypes = {
+  courses: PropTypes.array,
+  activeTab: PropTypes.string,
+  search: PropTypes.string,
+  enrolledCourseIds: PropTypes.instanceOf(Set),
+};

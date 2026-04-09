@@ -1596,7 +1596,186 @@ body {
   margin-top: 1px;
 }
 
+/* ══ ASSIGNMENT REVIEW ══ */
+.review-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.review-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.review-status-card {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+
+.review-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.review-status-banner.submitted {
+  background: rgba(29, 158, 117, 0.08);
+  border: 1px solid rgba(29, 158, 117, 0.2);
+}
+
+.review-status-banner.graded {
+  background: rgba(83, 74, 183, 0.07);
+  border: 1px solid rgba(83, 74, 183, 0.2);
+}
+
+.review-status-icon {
+  font-size: 28px;
+}
+
+.review-status-icon.submitted {
+  color: #1d9e75;
+}
+
+.review-status-icon.graded {
+  color: #534ab7;
+}
+
+.review-status-text {
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.review-status-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.review-file-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  margin-bottom: 16px;
+}
+
+.review-file-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(232, 90, 48, 0.1);
+  color: #d85a30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.review-file-info {
+  flex: 1;
+}
+
+.review-file-name {
+  font-size: 13px;
+  color: var(--text-dark);
+  margin-bottom: 2px;
+}
+
+.review-file-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.review-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 12px;
+  background: transparent;
+  font-family: 'Gowun Batang', serif;
+  transition: border-color .12s;
+}
+
+.review-download-btn:hover {
+  border-color: var(--accent);
+}
+
+.review-feedback-box {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.review-feedback-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.review-feedback-body {
+  font-size: 13px;
+  color: var(--text-dark);
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.review-score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.review-score-num {
+  font-size: 36px;
+  color: #534ab7;
+}
+
+.review-score-max {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.review-score-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(83, 74, 183, 0.1);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.review-score-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #534ab7, #8c7ad4);
+}
+
 @media (max-width: 980px) {
   .submit-layout { flex-direction: column; }
   .submit-sidebar { width: 100%; }
+  .review-layout { flex-direction: column; }
+  .review-sidebar { width: 100%; }
 }

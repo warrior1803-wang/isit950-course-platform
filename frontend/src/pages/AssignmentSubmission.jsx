@@ -138,7 +138,8 @@ export default function AssignmentSubmission() {
               </span>
               <span className="asgn-meta-chip">
                 <span className="material-symbols-rounded icon">group</span>
-                Group submission
+                {/* Group submission */}
+                {assignment.submissionMode}
               </span>
             </div>
             <div className="asgn-desc-heading">Description</div>
@@ -175,7 +176,7 @@ export default function AssignmentSubmission() {
                 <span className="material-symbols-rounded icon">upload_file</span>
                 <div className="upload-zone-title">Drag and drop your file here</div>
                 <div className="upload-zone-sub">
-                  or <span>browse to upload</span> · PDF, DOCX up to 50 MB
+                  or <span>browse to upload</span> · {assignment.allowedFileTypes} up to 50 MB
                 </div>
               </div>
               <input
@@ -292,11 +293,11 @@ export default function AssignmentSubmission() {
             </div>
             <div className="info-row">
               <span className="info-row-label">Attempts</span>
-              <span className="info-row-val">1 of 1</span>
+              <span className="info-row-val">{assignment.attempts}</span>
             </div>
             <div className="info-row">
               <span className="info-row-label">File type</span>
-              <span className="info-row-val">PDF, DOCX</span>
+              <span className="info-row-val">{assignment.allowedFileTypes}</span>
             </div>
           </div>
 

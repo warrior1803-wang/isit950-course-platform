@@ -238,11 +238,13 @@ export default function CourseDetail() {
               </span>
               <span className="detail-meta-item">
                 <span className="material-symbols-rounded icon">schedule</span>
-                Thu 10:00 – 12:00
+                {/* Thu 10:00 – 12:00 */}
+                {course.schedule}
               </span>
               <span className="detail-meta-item">
                 <span className="material-symbols-rounded icon">location_on</span>
-                Building 40, Room 205
+                {/* Building 40, Room 205 */}
+                {course.location}
               </span>
             </div>
           </div>
