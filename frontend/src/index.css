@@ -8,16 +8,6 @@
   padding: 0;
 }
 
-:root {
-  --text-dark: #2e2028;
-  --text-muted: #9c8a8e;
-  --border: #ddd0d4;
-  --accent: #b693a9;
-  --input-bg: #faf5f3;
-  --light: #f0e8e2;
-  --btn: #3d2e35;
-}
-
 body {
   font-family: 'Gowun Batang', serif;
   background: #e8dfd8;

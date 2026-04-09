@@ -1,118 +1,20 @@
 // Sprint 2: mock data — swap the import block for real axios calls in Sprint 3.
 // // TODO Sprint 3: replace mock imports with → import { courseApi, materialApi, announcementApi, assignmentApi } from '../api';
 //                and restore Promise.all([courseApi.get(id), materialApi.list(id), ...])
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { getMockCourse } from '../mock/courses';
 import { getMockMaterials } from '../mock/materials';
 import { getMockAnnouncements } from '../mock/announcements';
 import { getMockAssignments } from '../mock/assignments';
-import { createMockPost, createMockReply, getMockPosts } from '../mock/forum';
-
-const HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400&q=80',
-  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1400&q=80',
-  'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1400&q=80',
-  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1400&q=80',
-  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1400&q=80',
-];
-
-function heroUrlFor(course) {
-  if (course.coverImageUrl) return course.coverImageUrl;
-  return HERO_IMAGES[(course.id - 1) % HERO_IMAGES.length];
-}
-
-function formatDateShort(iso) {
-  const d = new Date(iso);
-  return new Intl.DateTimeFormat('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
-}
-
-function formatBytes(bytes) {
-  if (!Number.isFinite(bytes)) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function fileTypeMeta(m) {
-  const t = (m.fileType || '').toLowerCase();
-  if (t === 'pdf') return { label: 'PDF', icon: 'picture_as_pdf', cls: 'mi-pdf' };
-  if (t === 'doc') return { label: 'Word', icon: 'description', cls: 'mi-doc' };
-  if (t === 'ppt') return { label: 'PowerPoint', icon: 'slideshow', cls: 'mi-ppt' };
-  if (t === 'zip') return { label: 'ZIP', icon: 'folder_zip', cls: 'mi-zip' };
-  return { label: 'File', icon: 'draft', cls: '' };
-}
-
-function assignmentStatus(a) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const open = new Date(a.openDate);
-  const due = new Date(a.dueDate);
-  open.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-
-  const submitted = !!a.submissionStatus;
-  if (submitted) {
-    return a.submissionStatus.score == null ? 'submitted' : 'graded';
-  }
-
-  if (open > today) return 'upcoming';
-  if (due < today) return 'overdue';
-  return 'due_soon';
-}
-
-function initialsFor(name) {
-  return name
-    ? name
-        .split(' ')
-        .filter(Boolean)
-        .map(w => w[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
-    : '?';
-}
-
-function avatarStyleFor(name, role) {
-  const key = `${name || '?'}:${role || '?'}`;
-  let h = 0;
-  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) % 360;
-  const bg = `hsla(${h}, 45%, 55%, 0.18)`;
-  const fg = `hsl(${h}, 35%, 35%)`;
-  return { background: bg, color: fg };
-}
 
 export default function CourseDetail() {
   const { id } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [course, setCourse] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [discView, setDiscView] = useState('list'); // list | detail | new
-  const [selectedPostId, setSelectedPostId] = useState(null);
-  const [replyDraft, setReplyDraft] = useState('');
-
-  // Get active tab from URL params, default to 'materials'
-  const activeTab = searchParams.get('tab') || 'materials';
-
-  // Function to change active tab and update URL
-  const changeTab = (tab) => {
-    setSearchParams(prev => {
-      const newParams = new URLSearchParams(prev);
-      newParams.set('tab', tab);
-      return newParams;
-    });
-  };
-  const [newTitle, setNewTitle] = useState('');
-  const [newBody, setNewBody] = useState('');
-  const { user } = useAuth();
 
   useEffect(() => {
     // Sprint 2: simulate async load with mock data
@@ -121,92 +23,12 @@ export default function CourseDetail() {
       setMaterials(getMockMaterials(id));
       setAnnouncements(getMockAnnouncements(id));
       setAssignments(getMockAssignments(id));
-      setPosts(getMockPosts(id));
       setLoading(false);
     }, 200);
     return () => clearTimeout(t);
   }, [id]);
 
-  // Deep-link support from /discussions:
-  // /courses/:id?tab=discussion&view=new
-  // /courses/:id?tab=discussion&post=123
-  useEffect(() => {
-    if (loading) return;
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    if (tab === 'discussion') {
-      setSearchParams(prev => ({ ...Object.fromEntries(prev), tab: 'discussion' }));
-    }
-
-    const view = params.get('view');
-    const post = params.get('post');
-    if (tab === 'discussion' && view === 'new') {
-      setDiscView('new');
-      setSelectedPostId(null);
-      return;
-    }
-    if (tab === 'discussion' && post) {
-      const pid = Number(post);
-      if (!Number.isNaN(pid)) {
-        setSelectedPostId(pid);
-        setDiscView('detail');
-      }
-    }
-  }, [location.search, loading]);
-
-  const selectedPost = useMemo(
-    () => posts.find(p => p.id === selectedPostId) ?? null,
-    [posts, selectedPostId],
-  );
-
-  const materialSections = useMemo(() => {
-    const order = [];
-    const map = new Map();
-    materials.forEach(m => {
-      const key = m.section || 'Materials';
-      if (!map.has(key)) {
-        map.set(key, []);
-        order.push(key);
-      }
-      map.get(key).push(m);
-    });
-    return order.map(section => ({ section, items: map.get(section) }));
-  }, [materials]);
-
-  function handleMaterialDownload(material) {
-    // Sprint 2: mock download behavior
-    // In a real app, this would download the actual file from the server
-    // For now, we'll simulate a download by creating a blob with sample content
-    const fileType = material.fileType;
-    let mimeType = 'application/octet-stream';
-    let sampleContent = `This is a mock ${fileType.toUpperCase()} file: ${material.filename}\n\nMock content for demonstration purposes.`;
-
-    if (fileType === 'pdf') {
-      mimeType = 'application/pdf';
-      sampleContent = '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(Mock PDF Content) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000200 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n284\n%%EOF';
-    } else if (fileType === 'doc' || fileType === 'docx') {
-      mimeType = fileType === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/msword';
-      sampleContent = 'Mock Word document content...';
-    } else if (fileType === 'ppt' || fileType === 'pptx') {
-      mimeType = fileType === 'pptx' ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation' : 'application/vnd.ms-powerpoint';
-      sampleContent = 'Mock PowerPoint content...';
-    } else if (fileType === 'zip') {
-      mimeType = 'application/zip';
-      sampleContent = 'Mock ZIP archive content...';
-    }
-
-    const blob = new Blob([sampleContent], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = material.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <div>Loading course...</div>;
   if (!course) return <div>Course not found.</div>;
 
   return (
@@ -728,6 +550,67 @@ export default function CourseDetail() {
           )}
         </div>
       </div>
+    <div>
+      <Link to="/courses">← Back to Courses</Link>
+
+      <h1>{course.code} — {course.name}</h1>
+      <p>{course.description}</p>
+      <p>Instructor: {course.instructor?.name}</p>
+
+      <section>
+        <h2>Announcements</h2>
+        {announcements.length === 0 ? (
+          <p>No announcements yet.</p>
+        ) : (
+          <ul>
+            {announcements.map((a) => (
+              <li key={a.id}>
+                <strong>{a.title}</strong> — {a.body}
+                <small> by {a.author?.name}</small>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2>Materials</h2>
+        {materials.length === 0 ? (
+          <p>No materials uploaded yet.</p>
+        ) : (
+          <ul>
+            {materials.map((m) => (
+              <li key={m.id}>
+                <a href={m.url} target="_blank" rel="noreferrer">{m.filename}</a>
+                {m.section && <span> — Section: {m.section}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2>Assignments</h2>
+        {assignments.length === 0 ? (
+          <p>No assignments yet.</p>
+        ) : (
+          <ul>
+            {assignments.map((a) => (
+              <li key={a.id}>
+                <Link to={`/courses/${id}/assignments/${a.id}/submit`}>
+                  {a.title}
+                </Link>
+                {a.dueDate && <span> — Due: {new Date(a.dueDate).toLocaleDateString()}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2>Forum</h2>
+        <Link to={`/courses/${id}/forum`}>Go to Forum</Link>
+      </section>
     </div>
   );
 }

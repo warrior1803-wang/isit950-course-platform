@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import { useAuth } from '../lib/auth';
 import { Navbar, StudentSidebar, InstructorSidebar, LoadingSpinner } from '../components/shared';
 
@@ -121,7 +120,7 @@ export default function AppRouter() {
             element={<AssignmentReview />}
           />
           <Route path="/assignments" element={<Soon page="Assignments" />} />
-          <Route path="/discussions" element={<Forum />} />
+          <Route path="/discussions" element={<Soon page="Discussions" />} />
           <Route path="/announcements" element={<Soon page="Announcements" />} />
           <Route path="/profile" element={<Soon page="Profile" />} />
         </Route>

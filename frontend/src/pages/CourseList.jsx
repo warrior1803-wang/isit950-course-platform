@@ -1,9 +1,9 @@
 // Sprint 2: mock data — swap the import block for real axios calls in Sprint 3.
 // TODO Sprint 3: replace mock import with → import { courseApi } from '../api';
 //                and restore:  courseApi.list().then(res => setCourses(res.data.courses))
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { MOCK_COURSES } from '../mock/courses';
 import { getMockEnrolmentsByStudent } from '../mock/enrolment';
 import { useAuth } from '../context/AuthContext';
@@ -51,8 +51,11 @@ export default function CourseList() {
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
   const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Sprint 2: simulate async load with mock data
     const t = setTimeout(() => {
       setCourses(MOCK_COURSES);
       setLoading(false);
@@ -82,45 +85,12 @@ export default function CourseList() {
 
   if (loading) {
     return <LoadingSpinner />;
+  function handleLogout() {
+    logout();
+    navigate('/login');
   }
 
-  return (
-    <div>
-      <h1 className="page-title">My Courses</h1>
-      <p className="page-sub">University of Wollongong · Autumn Session 2026</p>
-
-      <div className="tabs" role="tablist" aria-label="Filter courses">
-        <button
-          type="button"
-          role="tab"
-          id="tab-all"
-          aria-selected={activeTab === 'all'}
-          className={`tab-btn${activeTab === 'all' ? ' active' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          All {counts.total}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="tab-progress"
-          aria-selected={activeTab === 'in_progress'}
-          className={`tab-btn${activeTab === 'in_progress' ? ' active' : ''}`}
-          onClick={() => setActiveTab('in_progress')}
-        >
-          In progress {counts.inProg}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="tab-done"
-          aria-selected={activeTab === 'completed'}
-          className={`tab-btn${activeTab === 'completed' ? ' active' : ''}`}
-          onClick={() => setActiveTab('completed')}
-        >
-          Completed {counts.done}
-        </button>
-      </div>
+  if (loading) return <div>Loading courses...</div>;
 
       <div className="tab-panel active" role="tabpanel">
         <CourseListToolbar search={search} onSearchChange={setSearch} />
@@ -218,6 +188,31 @@ function CourseGrid({ courses, activeTab, search, enrolledCourseIds }) {
           </Link>
         );
       })}
+  return (
+    <div>
+      <header>
+        <h1>Course Collaboration Platform</h1>
+        <span>Welcome, {user?.name} ({user?.role})</span>
+        <button onClick={handleLogout}>Logout</button>
+      </header>
+
+      <main>
+        <h2>All Courses</h2>
+        {courses.length === 0 ? (
+          <p>No courses available.</p>
+        ) : (
+          <ul>
+            {courses.map((course) => (
+              <li key={course.id}>
+                <Link to={`/courses/${course.id}`}>
+                  <strong>{course.code}</strong> — {course.name}
+                </Link>
+                <span> | Instructor: {course.instructor?.name}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
     </div>
   );
 }
