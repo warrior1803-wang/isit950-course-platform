@@ -12,6 +12,7 @@ import AssignmentReview from '../pages/AssignmentReview';
 import Forum from '../pages/Forum';
 // import Assignments from '../pages/Assignments';
 import AssignmentList from '../pages/AssignmentList';
+import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
 
 // Temporary placeholder for pages not yet implemented
 function Soon({ page }) {
@@ -132,7 +133,7 @@ export default function AppRouter() {
       <Route element={<InstructorRoute />}>
         <Route element={<InstructorLayout />}>
           <Route path="/dashboard" element={<Soon page="Instructor Dashboard" />} />
-          <Route path="/instructor/courses" element={<Soon page="Course Management" />} />
+          <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
           <Route path="/instructor/grading" element={<Soon page="Grading" />} />
           <Route path="/instructor/discussions" element={<Soon page="Discussions Inbox" />} />
           <Route path="/instructor/announcements" element={<Soon page="Announcements" />} />
