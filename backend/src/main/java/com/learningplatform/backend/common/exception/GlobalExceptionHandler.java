@@ -42,13 +42,36 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleEnumError() {
         return ResponseEntity
                 .badRequest()
-                .body(ApiResponse.error("Invalid role. Must be STUDENT or INSTRUCTOR"));
+                .body(ApiResponse.error("Request body is missing or invalid"));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<?>> handleUnauthorizedException(UnauthorizedException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<?>> handleValidationException(
+            org.springframework.web.bind.MethodArgumentNotValidException ex
+    ) {
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage())
+                .orElse("Validation failed");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(message));
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleNotFoundException(NotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 }

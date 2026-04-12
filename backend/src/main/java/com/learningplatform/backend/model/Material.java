@@ -1,10 +1,17 @@
 package com.learningplatform.backend.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "materials")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Material {
 
     @Id
@@ -12,67 +19,25 @@ public class Material {
     private Long id;
 
     @ManyToOne
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    @Column(nullable = false)
     private String filename;
+
+    @Column(nullable = false)
     private String url;
+
+    @Column(nullable = false)
     private Long size;
+
     private String section;
 
+    @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
-
-    public Material() {}
 
     @PrePersist
     public void prePersist() {
         this.uploadedAt = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Course getCourse() {
-        return course;
-    }
-
-    public void setCourse(Course course) {
-        this.course = course;
-    }
-
-    public String getFilename() {
-        return filename;
-    }
-
-    public void setFilename(String filename) {
-        this.filename = filename;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public Long getSize() {
-        return size;
-    }
-
-    public void setSize(Long size) {
-        this.size = size;
-    }
-
-    public String getSection() {
-        return section;
-    }
-
-    public void setSection(String section) {
-        this.section = section;
-    }
-
-    public LocalDateTime getUploadedAt() {
-        return uploadedAt;
     }
 }
