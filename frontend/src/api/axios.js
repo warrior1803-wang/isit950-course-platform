@@ -7,10 +7,19 @@ const api = axios.create({
   },
 });
 
-// Attach stored token to every request
-const token = localStorage.getItem('token');
-if (token) {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-}
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(null, error => {
+  if (error.response?.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('auth_user');
+    window.location.href = '/login';
+  }
+  return Promise.reject(error);
+});
 
 export default api;
