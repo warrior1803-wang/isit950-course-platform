@@ -70,8 +70,8 @@ function LoginForm({ onSwitch, onError }) {
 
     try {
       const res = await authApi.login({ email: data.email, password: data.password });
-      login(res.data.token, res.data.user);
-      navigate(res.data.user.role === 'instructor' ? '/dashboard' : '/courses', { replace: true });
+      login(res.data.data.token, res.data.data.user);
+      navigate(res.data.data.user.role === 'INSTRUCTOR' ? '/dashboard' : '/courses', { replace: true });
     } catch (err) {
       if (err.response?.status === 401) {
         onError('Incorrect email or password.');
@@ -184,10 +184,10 @@ function RegisterForm({ onSwitch, onError }) {
         name: `${data.firstName} ${data.lastName}`,
         email: data.email,
         password: data.password,
-        role: data.role,
+        role: data.role.toUpperCase(),
       });
-      login(res.data.token, res.data.user);
-      navigate(res.data.user.role === 'instructor' ? '/dashboard' : '/courses', { replace: true });
+      login(res.data.data.token, res.data.data.user);
+      navigate(res.data.data.user.role === 'INSTRUCTOR' ? '/dashboard' : '/courses', { replace: true });
     } catch (err) {
       if (err.response?.status === 409) {
         onError('An account with this email already exists.');
