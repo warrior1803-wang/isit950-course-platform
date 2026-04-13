@@ -43,7 +43,7 @@ export function StudentRoute() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingSpinner fullPage />;
   if (!user) return <Navigate to="/login" replace />;
-  return user.role === 'student' ? <Outlet /> : <Navigate to="/dashboard" replace />;
+  return user.role === 'STUDENT' ? <Outlet /> : <Navigate to="/dashboard" replace />;
 }
 
 /** Only accessible by instructors; students are redirected to /courses. */
@@ -51,7 +51,7 @@ export function InstructorRoute() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingSpinner fullPage />;
   if (!user) return <Navigate to="/login" replace />;
-  return user.role === 'instructor' ? <Outlet /> : <Navigate to="/courses" replace />;
+  return user.role === 'INSTRUCTOR' ? <Outlet /> : <Navigate to="/courses" replace />;
 }
 
 // ── Layout wrappers ─────────────────────────────────────────────────────────
