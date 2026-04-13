@@ -2,7 +2,7 @@ import { useRef, useState, forwardRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
-import { MOCK_USERS } from '../../mock/users';
+import { authApi } from '../../api';
 
 // ── constants ────────────────────────────────────────────────────────────────
 
@@ -68,21 +68,19 @@ function LoginForm({ onSwitch, onError }) {
     setSubmitting(true);
     onError('');
 
-    // Simulate network latency
-    await new Promise(r => setTimeout(r, 350));
-
-    const user = MOCK_USERS.find(
-      u => u.email === data.email && u.password === data.password,
-    );
-
-    if (!user) {
-      onError('Incorrect email or password.');
+    try {
+      const res = await authApi.login({ email: data.email, password: data.password });
+      login(res.data.data.token, res.data.data.user);
+      navigate(res.data.data.user.role === 'INSTRUCTOR' ? '/dashboard' : '/courses', { replace: true });
+    } catch (err) {
+      if (err.response?.status === 401) {
+        onError('Incorrect email or password.');
+      } else {
+        onError('Something went wrong. Please try again.');
+      }
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    login(`mock-token-${user.role}-${user.id}`, user);
-    navigate(user.role === 'instructor' ? '/dashboard' : '/courses', { replace: true });
   };
 
   return (
@@ -181,26 +179,24 @@ function RegisterForm({ onSwitch, onError }) {
     setSubmitting(true);
     onError('');
 
-    await new Promise(r => setTimeout(r, 350));
-
-    // Simulate 409 Conflict — email already registered
-    if (MOCK_USERS.some(u => u.email === data.email)) {
-      onError('An account with this email already exists.');
+    try {
+      const res = await authApi.register({
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        password: data.password,
+        role: data.role.toUpperCase(),
+      });
+      login(res.data.data.token, res.data.data.user);
+      navigate(res.data.data.user.role === 'INSTRUCTOR' ? '/dashboard' : '/courses', { replace: true });
+    } catch (err) {
+      if (err.response?.status === 409) {
+        onError('An account with this email already exists.');
+      } else {
+        onError('Something went wrong. Please try again.');
+      }
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    const newUser = {
-      id: Date.now(),
-      name: `${data.firstName} ${data.lastName}`,
-      email: data.email,
-      role: data.role,
-      studentNumber: data.role === 'student' ? `u${Math.floor(Math.random() * 9000000 + 1000000)}` : null,
-      department: data.role === 'instructor' ? 'School of Computing and IT' : null,
-    };
-
-    login(`mock-token-${data.role}-${newUser.id}`, newUser);
-    navigate(data.role === 'instructor' ? '/dashboard' : '/courses', { replace: true });
   };
 
   return (
@@ -353,103 +349,6 @@ function RoleCard({ icon, label, desc, selected, onClick }) {
       </div>
       <div style={{ fontSize: 12, color: '#2e2028' }}>{label}</div>
       <div style={{ fontSize: 11, color: '#9c8a8e', marginTop: 1 }}>{desc}</div>
-    </div>
-  );
-}
-
-// ── dev-only quick login bar ─────────────────────────────────────────────────
-
-function DevQuickLogin() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
-  const quickLogin = (role) => {
-    const user = MOCK_USERS.find(u => u.role === role);
-    if (!user) return;
-    login(`mock-token-${role}-${user.id}`, user);
-    navigate(role === 'instructor' ? '/dashboard' : '/courses', { replace: true });
-  };
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 20,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        background: 'rgba(28,24,40,0.82)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-        border: '1px solid rgba(182,147,169,0.18)',
-        borderRadius: 10,
-        padding: '6px 12px',
-        zIndex: 200,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <span
-        style={{
-          fontSize: 9,
-          color: 'rgba(206,173,176,0.45)',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          marginRight: 2,
-          userSelect: 'none',
-        }}
-      >
-        Dev
-      </span>
-
-      <button
-        onClick={() => quickLogin('student')}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 5,
-          height: 28,
-          padding: '0 10px',
-          borderRadius: 7,
-          border: '1px solid rgba(122,90,106,0.35)',
-          background: 'rgba(122,90,106,0.18)',
-          color: '#b693a9',
-          fontSize: 11,
-          fontFamily: "'Gowun Batang', serif",
-          cursor: 'pointer',
-          transition: 'background 0.12s',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(122,90,106,0.3)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(122,90,106,0.18)')}
-      >
-        <span className="material-symbols-rounded" style={{ fontSize: 14 }}>school</span>
-        Student
-      </button>
-
-      <button
-        onClick={() => quickLogin('instructor')}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 5,
-          height: 28,
-          padding: '0 10px',
-          borderRadius: 7,
-          border: '1px solid rgba(83,74,183,0.35)',
-          background: 'rgba(83,74,183,0.18)',
-          color: '#8c84d4',
-          fontSize: 11,
-          fontFamily: "'Gowun Batang', serif",
-          cursor: 'pointer',
-          transition: 'background 0.12s',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(83,74,183,0.3)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(83,74,183,0.18)')}
-      >
-        <span className="material-symbols-rounded" style={{ fontSize: 14 }}>assignment_ind</span>
-        Instructor
-      </button>
     </div>
   );
 }
@@ -793,7 +692,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {import.meta.env.DEV && <DevQuickLogin />}
     </div>
   );
 }
