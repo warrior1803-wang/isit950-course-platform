@@ -24,4 +24,6 @@ public class CourseDetailResponse {
 
     private long materialsCount;
     private long enrolmentCount;
+    private long assignmentCount;
+    private long pendingCount;
 }
