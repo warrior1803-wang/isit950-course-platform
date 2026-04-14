@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
+const API_BASE = 'http://localhost:8080';
+
 const VALID_EXTS = ['pdf', 'docx', 'zip', 'png', 'jpg', 'jpeg'];
 
 function getExt(filename) {
@@ -29,7 +31,7 @@ function formatSize(bytes) {
 const inputClass =
   'w-full h-[42px] px-[14px] rounded-[10px] border border-border bg-input-bg text-text-dark text-[13px] font-serif outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 focus:bg-white transition-colors duration-150';
 
-export default function UploadMaterialModal({ courseId: _courseId, onClose, onUploadSuccess }) {
+export default function UploadMaterialModal({ courseId, onClose, onUploadSuccess }) {
   const [section, setSection] = useState('');
   const [file, setFile] = useState(null);
   const [fileError, setFileError] = useState('');
@@ -71,39 +73,45 @@ export default function UploadMaterialModal({ courseId: _courseId, onClose, onUp
   }
 
   async function handleUpload() {
-    let hasError = false;
-    if (!section.trim()) {
-      setSectionError('This field is required');
-      hasError = true;
-    } else {
-      setSectionError('');
-    }
-    if (!file) {
-      setFileError('Please select a file to upload');
-      hasError = true;
-    }
-    if (hasError) return;
+    if (!section.trim()) { setSectionError('This field is required'); return; }
+    if (!file) { setFileError('Please select a file'); return; }
 
     setIsUploading(true);
     setProgress(0);
 
     const interval = setInterval(() => {
-      setProgress(prev => (prev >= 85 ? prev : Math.min(prev + 7, 85)));
+      setProgress(p => (p < 85 ? p + 7 : p));
     }, 120);
 
-    setTimeout(() => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('section', section);
+
+      const res = await fetch(`${API_BASE}/api/courses/${courseId}/materials`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: formData,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Upload failed');
+
       clearInterval(interval);
       setProgress(100);
       setTimeout(() => {
         onUploadSuccess({
-          id: Date.now(),
-          filename: file.name,
-          section,
-          uploadedAt: new Date().toLocaleDateString('en-AU'),
+          id: json.data.id,
+          filename: json.data.filename,
+          section: json.data.section,
+          uploadedAt: new Date(json.data.uploadedAt).toLocaleDateString('en-AU'),
         });
-        onClose();
       }, 300);
-    }, 1400);
+    } catch (err) {
+      clearInterval(interval);
+      setIsUploading(false);
+      setProgress(0);
+      setFileError(err.message);
+    }
   }
 
   const { icon: fileIcon, colorClass: fileColor } = file ? getFileIcon(file.name) : {};

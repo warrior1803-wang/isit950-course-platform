@@ -1,67 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CourseManageCard from '../../components/instructor/CourseManageCard';
 import CourseModal from '../../components/instructor/CourseModal';
 import UploadMaterialModal from '../../components/instructor/UploadMaterialModal';
 
-const mockCourses = [
-  {
-    id: '950',
-    title: 'Systems Development Methodologies',
-    code: 'ISIT950',
-    meta: 'Thu 10:00–12:00 · Building 40, Room 205',
-    studentCount: 48,
-    materialCount: 8,
-    assignmentCount: 2,
-    pendingCount: 12,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&q=70',
-    session: 'Autumn 2026',
-    description: 'This subject introduces students to modern software development methodologies including Scrum, Kanban, and hybrid approaches.',
-  },
-  {
-    id: '801',
-    title: 'Research Methods in Information Systems',
-    code: 'ISIT801',
-    meta: 'Mon 14:00–16:00 · Building 11, Room 103',
-    studentCount: 56,
-    materialCount: 12,
-    assignmentCount: 3,
-    pendingCount: 8,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&q=70',
-    session: 'Autumn 2026',
-    description: 'Covers qualitative and quantitative research methods used in information systems research.',
-  },
-  {
-    id: '421',
-    title: 'Enterprise Systems Architecture',
-    code: 'ISIT421',
-    meta: 'Wed 10:00–12:00 · Building 40, Room 108',
-    studentCount: 38,
-    materialCount: 9,
-    assignmentCount: 2,
-    pendingCount: 4,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400&q=70',
-    session: 'Autumn 2026',
-    description: 'Examines enterprise-scale software architecture patterns and system integration strategies.',
-  },
-];
+const API_BASE = 'http://localhost:8080';
+
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${localStorage.getItem('token')}`,
+});
 
 export default function InstructorCoursesPage() {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [modal, setModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', course: {...} }
   const [uploadModal, setUploadModal] = useState(null); // null | { courseId }
+  const [materials, setMaterials] = useState({});
 
-  const [materials, setMaterials] = useState({
-    '950': [
-      { id: 1, filename: 'Week 1 Lecture Slides — Intro to Scrum.pdf', section: 'Week 1 — Introduction to Scrum', uploadedAt: '27 Mar 2026' },
-      { id: 2, filename: 'Reading — Agile Manifesto.docx', section: 'Week 1 — Introduction to Scrum', uploadedAt: '27 Mar 2026' },
-    ],
-    '801': [],
-    '421': [],
-  });
+  async function fetchCourses() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/courses`, { headers: authHeaders() });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to load courses');
+      setCourses(json.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchCourses(); }, []);
 
   async function handleCourseSubmit(fields) {
-    await new Promise(r => setTimeout(r, 1200));
-    console.log('Course saved:', fields);
-    setModal(null); // TODO: replace with real POST /api/courses or PUT /api/courses/:id
+    const isEdit = modal.mode === 'edit';
+    const url = isEdit
+      ? `${API_BASE}/api/courses/${modal.course.id}`
+      : `${API_BASE}/api/courses`;
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: authHeaders(),
+      body: JSON.stringify({
+        name: fields.title,
+        code: fields.code,
+        description: fields.description,
+        schedule: fields.session,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to save course');
+    await fetchCourses();
+    setModal(null);
   }
 
   function handleUploadSuccess(courseId, newMaterial) {
@@ -71,14 +66,20 @@ export default function InstructorCoursesPage() {
     }));
   }
 
-  function handleDeleteMaterial(courseId, materialId) {
-    console.log('delete called', materialId);
+  async function handleDeleteMaterial(courseId, materialId) {
     if (!window.confirm('Delete this material? This cannot be undone.')) return;
+    const res = await fetch(`${API_BASE}/api/courses/${courseId}/materials/${materialId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      alert('Failed to delete material.');
+      return;
+    }
     setMaterials(prev => ({
       ...prev,
       [courseId]: prev[courseId].filter(m => m.id !== materialId),
     }));
-    // TODO: call DELETE /api/courses/:courseId/materials/:materialId
   }
 
   return (
@@ -100,15 +101,53 @@ export default function InstructorCoursesPage() {
         </button>
       </div>
 
+      {/* Error state */}
+      {error && (
+        <div className="text-sm text-[#d85a30] bg-[#d85a30]/8 border border-[#d85a30]/20 rounded-xl p-4 mb-4">
+          Failed to load courses: {error}.{' '}
+          <button onClick={fetchCourses} className="underline">Retry</button>
+        </div>
+      )}
+
+      {/* Loading skeletons */}
+      {loading && (
+        <>
+          <div className="bg-input-bg rounded-2xl border border-border p-5 mb-4 animate-pulse h-[100px]" />
+          <div className="bg-input-bg rounded-2xl border border-border p-5 mb-4 animate-pulse h-[100px]" />
+          <div className="bg-input-bg rounded-2xl border border-border p-5 mb-4 animate-pulse h-[100px]" />
+        </>
+      )}
+
       {/* Course cards */}
-      {mockCourses.map(course => (
+      {!loading && courses.map(course => (
         <CourseManageCard
           key={course.id}
-          course={course}
+          course={{
+            id: course.id,
+            title: course.name,
+            code: course.code,
+            meta: [course.schedule, course.location].filter(Boolean).join(' · '),
+            session: course.schedule,
+            description: course.description,
+            studentCount: course.enrolmentCount ?? 0,
+            materialCount: course.materialsCount ?? 0,
+            assignmentCount: course.assignmentCount ?? 0,
+            pendingCount: course.pendingCount ?? 0,
+            thumbnailUrl: course.thumbnailUrl || null,
+          }}
           materials={materials[course.id] || []}
-          onEdit={c => setModal({ mode: 'edit', course: c })}
           onUpload={() => setUploadModal({ courseId: course.id })}
           onDeleteMaterial={materialId => handleDeleteMaterial(course.id, materialId)}
+          onEdit={() => setModal({
+            mode: 'edit',
+            course: {
+              id: course.id,
+              title: course.name,
+              code: course.code,
+              session: course.schedule,
+              description: course.description,
+            },
+          })}
         />
       ))}
 
