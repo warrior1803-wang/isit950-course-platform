@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/assignments', icon: 'assignment', label: 'Assignments' },
   { to: '/discussions', icon: 'forum', label: 'Discussions' },
   { to: '/announcements', icon: 'campaign', label: 'Announcements' },
+  { to: '/browsecourses', icon: 'explore', label: 'Browse Courses' },
 ];
 
 const ACCOUNT_ITEMS = [
