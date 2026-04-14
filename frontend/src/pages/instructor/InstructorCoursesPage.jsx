@@ -131,8 +131,8 @@ export default function InstructorCoursesPage() {
             description: course.description,
             studentCount: course.enrolmentCount ?? 0,
             materialCount: course.materialsCount ?? 0,
-            assignmentCount: null,
-            pendingCount: null,
+            assignmentCount: course.assignmentCount ?? 0,
+            pendingCount: course.pendingCount ?? 0,
             thumbnailUrl: course.thumbnailUrl || null,
           }}
           materials={materials[course.id] || []}
