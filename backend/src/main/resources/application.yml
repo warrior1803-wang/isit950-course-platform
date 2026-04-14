@@ -6,17 +6,22 @@ spring:
     name: backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/backend_db?currentSchema=public
+    url: jdbc:postgresql://localhost:5432/backend_db_flyway_v2
     username: mac
     password:
 
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/backend_db
+#    username: backend_user
+#    password: Backend123!
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
 
   flyway:
-    enabled: false
+    enabled: true
 
   servlet:
     multipart:

@@ -1,6 +1,7 @@
 package com.learningplatform.backend.controller;
 
 import com.learningplatform.backend.common.response.ApiResponse;
+import com.learningplatform.backend.dto.CourseBrowseResponse;
 import com.learningplatform.backend.dto.CourseDetailResponse;
 import com.learningplatform.backend.dto.CourseRequest;
 import com.learningplatform.backend.dto.CourseResponse;
@@ -143,5 +144,13 @@ public class CourseController {
     ) {
         courseService.deleteMaterial(id, materialId, authentication.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/browse")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<List<CourseBrowseResponse>>> browseCourses(Authentication authentication) {
+        List<CourseBrowseResponse> courses = courseService.browseCourses(authentication.getName());
+
+        return ResponseEntity.ok(ApiResponse.success("Browse courses fetched successfully", courses));
     }
 }

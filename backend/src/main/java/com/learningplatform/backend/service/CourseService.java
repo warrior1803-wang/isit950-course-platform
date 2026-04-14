@@ -3,9 +3,11 @@ package com.learningplatform.backend.service;
 import com.learningplatform.backend.common.exception.BusinessException;
 import com.learningplatform.backend.common.exception.ConflictException;
 import com.learningplatform.backend.common.exception.NotFoundException;
+import com.learningplatform.backend.dto.CourseBrowseResponse;
 import com.learningplatform.backend.dto.CourseDetailResponse;
 import com.learningplatform.backend.dto.CourseRequest;
 import com.learningplatform.backend.dto.CourseResponse;
+import com.learningplatform.backend.dto.InstructorSummaryResponse;
 import com.learningplatform.backend.dto.MaterialResponse;
 import com.learningplatform.backend.dto.StudentSummaryResponse;
 import com.learningplatform.backend.model.Course;
@@ -13,9 +15,11 @@ import com.learningplatform.backend.model.Enrolment;
 import com.learningplatform.backend.model.Material;
 import com.learningplatform.backend.model.User;
 import com.learningplatform.backend.model.enums.UserRole;
+import com.learningplatform.backend.repository.AssignmentRepository;
 import com.learningplatform.backend.repository.CourseRepository;
 import com.learningplatform.backend.repository.EnrolmentRepository;
 import com.learningplatform.backend.repository.MaterialRepository;
+import com.learningplatform.backend.repository.SubmissionRepository;
 import com.learningplatform.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +45,8 @@ public class CourseService {
     private final UserRepository userRepository;
     private final EnrolmentRepository enrolmentRepository;
     private final MaterialRepository materialRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final SubmissionRepository submissionRepository;
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
@@ -101,7 +107,8 @@ public class CourseService {
 
         long materialsCount = materialRepository.countByCourse(course);
         long enrolmentCount = enrolmentRepository.countByCourse(course);
-
+        long assignmentCount = assignmentRepository.countByCourse(course);
+        long pendingCount = submissionRepository.countByAssignmentCourseAndScoreIsNull(course);
         return new CourseDetailResponse(
                 course.getId(),
                 course.getName(),
@@ -113,7 +120,9 @@ public class CourseService {
                 course.getInstructor().getId(),
                 course.getInstructor().getName(),
                 materialsCount,
-                enrolmentCount
+                enrolmentCount,
+                assignmentCount,
+                pendingCount
         );
     }
     @Transactional
@@ -328,7 +337,42 @@ public class CourseService {
         materialRepository.delete(material);
     }
 
+    public List<CourseBrowseResponse> browseCourses(String userEmail) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        if (currentUser.getRole() != UserRole.STUDENT) {
+            throw new BusinessException("Only students can browse courses");
+        }
+
+        List<Course> courses = courseRepository.findAll();
+        List<CourseBrowseResponse> result = new ArrayList<>();
+
+        for (Course course : courses) {
+            long enrolledCount = enrolmentRepository.countByCourse(course);
+            boolean isEnrolled = enrolmentRepository.existsByStudentAndCourse(currentUser, course);
+
+            result.add(new CourseBrowseResponse(
+                    course.getId(),
+                    course.getName(),
+                    course.getCode(),
+                    course.getDescription(),
+                    new InstructorSummaryResponse(
+                            course.getInstructor().getId(),
+                            course.getInstructor().getName()
+                    ),
+                    enrolledCount,
+                    isEnrolled
+            ));
+        }
+
+        return result;
+    }
+
     private CourseResponse toCourseResponse(Course course) {
+        long assignmentCount = assignmentRepository.countByCourse(course);
+        long pendingCount = submissionRepository.countByAssignmentCourseAndScoreIsNull(course);
+
         return new CourseResponse(
                 course.getId(),
                 course.getName(),
@@ -338,7 +382,9 @@ public class CourseService {
                 course.getLocation(),
                 course.getCreatedAt(),
                 course.getInstructor().getId(),
-                course.getInstructor().getName()
+                course.getInstructor().getName(),
+                assignmentCount,
+                pendingCount
         );
     }
 
