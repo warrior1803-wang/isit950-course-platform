@@ -13,6 +13,7 @@ import Forum from '../pages/Forum';
 // import Assignments from '../pages/Assignments';
 import AssignmentList from '../pages/AssignmentList';
 import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
+import BrowseCourses from '../pages/BrowseCourses';
 
 // Temporary placeholder for pages not yet implemented
 function Soon({ page }) {
@@ -125,6 +126,7 @@ export default function AppRouter() {
           <Route path="/discussions" element={<Forum />} />
           <Route path="/assignments" element={<AssignmentList/>} />
           <Route path="/announcements" element={<Soon page="Announcements" />} />
+          <Route path="/browsecourses" element={<BrowseCourses />} />
           <Route path="/profile" element={<Soon page="Profile" />} />
         </Route>
       </Route>

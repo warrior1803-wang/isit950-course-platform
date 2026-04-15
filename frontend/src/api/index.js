@@ -8,6 +8,7 @@ export const authApi = {
 
 export const courseApi = {
   list: () => api.get('/courses'),
+  browse: () => api.get('/courses/browse'),
   get: (id) => api.get(`/courses/${id}`),
   create: (data) => api.post('/courses', data),
   update: (id, data) => api.put(`/courses/${id}`, data),
@@ -16,8 +17,8 @@ export const courseApi = {
 
 export const enrolmentApi = {
   myEnrolments: () => api.get('/enrolments/me'),
-  enrol: (courseId) => api.post('/enrolments', { courseId }),
-  unenrol: (courseId) => api.delete(`/enrolments/${courseId}`),
+  enrol: (courseId) => api.post(`/courses/${courseId}/enrol`),
+  unenrol: (courseId) => api.delete(`/courses/${courseId}/enrol`),
 };
 
 export const materialApi = {
