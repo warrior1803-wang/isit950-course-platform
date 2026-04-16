@@ -102,6 +102,7 @@ export default function Forum() {
       ) : (
         sections.map(({ course, posts }) => (
           <div key={course.id}>
+            <div />
             <div className="list-section-label">
               {course.code} · {course.name}
             </div>

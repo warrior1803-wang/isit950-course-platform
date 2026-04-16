@@ -7,5 +7,4 @@ import lombok.Setter;
 @Setter
 public class ReplyRequest {
     private String body;
-    private String content;
 }

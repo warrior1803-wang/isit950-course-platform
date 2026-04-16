@@ -69,7 +69,7 @@ public class CourseContentService {
     public PostResponse createPost(Long courseId, PostRequest request, String userEmail) {
         AccessContext context = requireCourseAccess(courseId, userEmail);
         String title = safe(request.getTitle());
-        String body = safe(request.getBody(), request.getContent());
+        String body = safe(request.getBody());
 
         if (title.isBlank()) {
             throw new BusinessException("Post title is required");
@@ -95,7 +95,7 @@ public class CourseContentService {
 
         requireCourseAccess(post.getCourse().getId(), userEmail);
 
-        String body = safe(request.getBody(), request.getContent());
+        String body = safe(request.getBody());
         if (body.isBlank()) {
             throw new BusinessException("Reply body is required");
         }

@@ -385,7 +385,7 @@ export default function CourseDetail() {
     setPostingError('');
 
     try {
-      const res = await forumApi.createReply(selectedPost.id, { content: body, body });
+      const res = await forumApi.createReply(selectedPost.id, { body });
       const reply = normalizeReply(res.data?.data ?? res.data);
       setPosts(prev =>
         prev.map(post =>
@@ -408,7 +408,7 @@ export default function CourseDetail() {
     setPostingError('');
 
     try {
-      const res = await forumApi.createPost(id, { title, content: body, body });
+      const res = await forumApi.createPost(id, { title, body });
       const post = normalizePost(res.data?.data ?? res.data);
       setPosts(prev => [post, ...prev]);
       setNewTitle('');
