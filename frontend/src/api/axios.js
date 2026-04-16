@@ -14,7 +14,14 @@ api.interceptors.request.use(config => {
 });
 
 api.interceptors.response.use(null, error => {
-  if (error.response?.status === 401) {
+  const requestUrl = String(error.config?.url || '');
+  const isAuthRequest =
+    requestUrl.includes('/auth/login') ||
+    requestUrl.includes('/auth/register');
+
+  // Let login/register handle invalid credentials locally instead of forcing
+  // a hard redirect back to the same page, which looks like a refresh.
+  if (error.response?.status === 401 && !isAuthRequest) {
     localStorage.removeItem('token');
     localStorage.removeItem('auth_user');
     window.location.href = '/login';
