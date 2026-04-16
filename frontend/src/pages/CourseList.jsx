@@ -1,16 +1,12 @@
-// Sprint 2: mock data — swap the import block for real axios calls in Sprint 3.
-// TODO Sprint 3: replace mock import with → import { courseApi } from '../api';
-//                and restore:  courseApi.list().then(res => setCourses(res.data.courses))
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
-import { MOCK_COURSES } from '../mock/courses';
-import { getMockEnrolmentsByStudent } from '../mock/enrolment';
+import { courseApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import PropTypes from "prop-types";
 
-/** Mirrors mock/courses.js: endDate > today → in progress. */
 function isInProgress(course) {
+  if (!course?.semester?.endDate) return true;
   const end = new Date(`${course.semester.endDate}T12:00:00`);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -48,17 +44,40 @@ function matchesSearch(course, q) {
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setCourses(MOCK_COURSES);
-      setLoading(false);
-    }, 200);
-    return () => clearTimeout(t);
-  }, []);
+    if (authLoading) return;
+
+    setLoading(true);
+    setError('');
+    courseApi
+      .list()
+      .then(res => {
+        const apiCourses = res.data?.data ?? [];
+        setCourses(
+          apiCourses.map(course => ({
+            id: course.id,
+            code: course.code,
+            name: course.name,
+            description: course.description,
+            schedule: course.schedule,
+            location: course.location,
+            createdAt: course.createdAt,
+            coverImageUrl: course.coverImageUrl ?? null,
+            instructor: { name: course.instructorName ?? 'Instructor' },
+          })),
+        );
+      })
+      .catch(err => {
+        setError(err.response?.data?.message || 'Failed to load courses.');
+        setCourses([]);
+      })
+      .finally(() => setLoading(false));
+  }, [authLoading]);
 
   const counts = useMemo(() => {
     const total = courses.length;
@@ -73,12 +92,10 @@ export default function CourseList() {
     return list.filter(c => matchesSearch(c, search));
   }, [courses, activeTab, search]);
 
-  const enrolledCourseIds = useMemo(() => {
-    if (!user?.id) return new Set();
-    return new Set(
-      getMockEnrolmentsByStudent(user.id).map(enrolment => enrolment.course.id),
-    );
-  }, [user?.id]);
+  const enrolledCourseIds = useMemo(
+    () => new Set(courses.map(course => course.id)),
+    [courses],
+  );
 
   if (loading) {
     return <LoadingSpinner />;
@@ -88,6 +105,8 @@ export default function CourseList() {
     <div>
       <h1 className="page-title">My Courses</h1>
       <p className="page-sub">University of Wollongong · Autumn Session 2026</p>
+
+      {error && <p className="course-list-empty">{error}</p>}
 
       <div className="tabs" role="tablist" aria-label="Filter courses">
         <button
@@ -122,15 +141,17 @@ export default function CourseList() {
         </button>
       </div>
 
-      <div className="tab-panel active" role="tabpanel">
-        <CourseListToolbar search={search} onSearchChange={setSearch} />
-        <CourseGrid
-          courses={filtered}
-          activeTab={activeTab}
-          search={search}
-          enrolledCourseIds={enrolledCourseIds}
-        />
-      </div>
+      {!error && (
+        <div className="tab-panel active" role="tabpanel">
+          <CourseListToolbar search={search} onSearchChange={setSearch} />
+          <CourseGrid
+            courses={filtered}
+            activeTab={activeTab}
+            search={search}
+            enrolledCourseIds={enrolledCourseIds}
+          />
+        </div>
+      )}
     </div>
   );
 }
