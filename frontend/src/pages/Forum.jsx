@@ -1,35 +1,92 @@
-// Sprint 2: mock data — swap for real axios calls in Sprint 3.
-// TODO Sprint 3: restore → forumApi.listPosts / createPost / createReply
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
-import { MOCK_COURSES } from '../mock/courses';
-import { getMockPosts } from '../mock/forum';
+import { courseApi, forumApi } from '../api';
+
+function formatDateShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-AU', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(d);
+}
+
+function normalizePost(raw) {
+  return {
+    id: raw.id,
+    title: raw.title,
+    body: raw.body || raw.content || '',
+    createdAt: raw.createdAt || raw.postedAt || null,
+    authorRole: String(raw.author?.role || raw.authorRole || '').toLowerCase(),
+    author: {
+      name: raw.author?.name || raw.authorName || 'User',
+    },
+    replies: Array.isArray(raw.replies) ? raw.replies : [],
+  };
+}
 
 export default function Forum() {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Sprint 2: load from mock data
-    const t = setTimeout(() => {
-      const next = MOCK_COURSES.map(course => {
-        const posts = getMockPosts(course.id)
-          .slice()
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        return { course, posts };
-      }).filter(s => s.posts.length > 0);
+    let cancelled = false;
 
-      setSections(next);
-      setLoading(false);
-    }, 200);
-    return () => clearTimeout(t);
+    async function loadForum() {
+      setLoading(true);
+      setError('');
+
+      try {
+        const courseRes = await courseApi.list();
+        const courses = (courseRes.data?.data ?? []).map(course => ({
+          id: course.id,
+          code: course.code,
+          name: course.name,
+        }));
+
+        const results = await Promise.allSettled(
+          courses.map(course => forumApi.listPosts(course.id))
+        );
+
+        if (cancelled) return;
+
+        const nextSections = courses
+          .map((course, index) => {
+            const result = results[index];
+            const posts =
+              result.status === 'fulfilled'
+                ? (result.value.data?.data ?? [])
+                    .map(normalizePost)
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                : [];
+
+            return { course, posts };
+          })
+          .filter(section => section.posts.length > 0);
+
+        setSections(nextSections);
+
+        if (results.every(result => result.status === 'rejected')) {
+          setError('Failed to load discussion activity.');
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setSections([]);
+        setError(err.response?.data?.message || 'Failed to load discussion activity.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadForum();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  function formatDateShort(iso) {
-    const d = new Date(iso);
-    return new Intl.DateTimeFormat('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
-  }
 
   if (loading) return <LoadingSpinner />;
 
@@ -38,12 +95,13 @@ export default function Forum() {
       <div className="global-title">Discussions</div>
       <div className="global-sub">Recent activity across all your courses</div>
 
-      {sections.length === 0 ? (
+      {error ? (
+        <p className="course-list-empty">{error}</p>
+      ) : sections.length === 0 ? (
         <p className="course-list-empty">No discussion activity yet.</p>
       ) : (
         sections.map(({ course, posts }) => (
           <div key={course.id}>
-            <div></div>
             <div className="list-section-label">
               {course.code} · {course.name}
             </div>
