@@ -1,8 +1,6 @@
 import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
-const API_BASE = 'http://localhost:8080';
-
 const VALID_EXTS = ['pdf', 'docx', 'zip', 'png', 'jpg', 'jpeg'];
 
 function getExt(filename) {
@@ -88,7 +86,7 @@ export default function UploadMaterialModal({ courseId, onClose, onUploadSuccess
       formData.append('file', file);
       formData.append('section', section);
 
-      const res = await fetch(`${API_BASE}/api/courses/${courseId}/materials`, {
+      const res = await fetch(`/api/courses/${courseId}/materials`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: formData,
@@ -103,6 +101,8 @@ export default function UploadMaterialModal({ courseId, onClose, onUploadSuccess
           id: json.data.id,
           filename: json.data.filename,
           section: json.data.section,
+          url: json.data.url,
+          size: json.data.size,
           uploadedAt: new Date(json.data.uploadedAt).toLocaleDateString('en-AU'),
         });
       }, 300);
@@ -276,7 +276,7 @@ export default function UploadMaterialModal({ courseId, onClose, onUploadSuccess
 }
 
 UploadMaterialModal.propTypes = {
-  courseId: PropTypes.string.isRequired,
+  courseId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   onClose: PropTypes.func.isRequired,
   onUploadSuccess: PropTypes.func.isRequired,
 };
