@@ -2,13 +2,18 @@ import { useState, useEffect } from 'react';
 import CourseManageCard from '../../components/instructor/CourseManageCard';
 import CourseModal from '../../components/instructor/CourseModal';
 import UploadMaterialModal from '../../components/instructor/UploadMaterialModal';
+import api from '../../api/axios';
 
-const API_BASE = 'http://localhost:8080';
-
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
-});
+function formatMaterial(material) {
+  return {
+    id: material.id,
+    filename: material.filename,
+    section: material.section,
+    url: material.url,
+    size: material.size,
+    uploadedAt: new Date(material.uploadedAt).toLocaleDateString('en-AU'),
+  };
+}
 
 export default function InstructorCoursesPage() {
   const [courses, setCourses] = useState([]);
@@ -19,16 +24,36 @@ export default function InstructorCoursesPage() {
   const [uploadModal, setUploadModal] = useState(null); // null | { courseId }
   const [materials, setMaterials] = useState({});
 
+  async function fetchMaterialsForCourses(courseList) {
+    if (!courseList.length) {
+      setMaterials({});
+      return;
+    }
+
+    const results = await Promise.all(
+      courseList.map(async course => {
+        try {
+          const res = await api.get(`/courses/${course.id}/materials`);
+          return [course.id, (res.data?.data ?? []).map(formatMaterial)];
+        } catch {
+          return [course.id, []];
+        }
+      })
+    );
+
+    setMaterials(Object.fromEntries(results));
+  }
+
   async function fetchCourses() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/courses`, { headers: authHeaders() });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Failed to load courses');
-      setCourses(json.data);
+      const res = await api.get('/courses');
+      const nextCourses = res.data?.data ?? [];
+      setCourses(nextCourses);
+      await fetchMaterialsForCourses(nextCourses);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message || 'Failed to load courses');
     } finally {
       setLoading(false);
     }
@@ -39,22 +64,19 @@ export default function InstructorCoursesPage() {
   async function handleCourseSubmit(fields) {
     const isEdit = modal.mode === 'edit';
     const url = isEdit
-      ? `${API_BASE}/api/courses/${modal.course.id}`
-      : `${API_BASE}/api/courses`;
-    const method = isEdit ? 'PUT' : 'POST';
+      ? `/courses/${modal.course.id}`
+      : '/courses';
 
-    const res = await fetch(url, {
-      method,
-      headers: authHeaders(),
-      body: JSON.stringify({
+    await api.request({
+      url,
+      method: isEdit ? 'put' : 'post',
+      data: {
         name: fields.title,
         code: fields.code,
         description: fields.description,
         schedule: fields.session,
-      }),
+      },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to save course');
     await fetchCourses();
     setModal(null);
   }
@@ -62,23 +84,21 @@ export default function InstructorCoursesPage() {
   function handleUploadSuccess(courseId, newMaterial) {
     setMaterials(prev => ({
       ...prev,
-      [courseId]: [...(prev[courseId] || []), newMaterial],
+      [courseId]: [newMaterial, ...(prev[courseId] || [])],
     }));
   }
 
   async function handleDeleteMaterial(courseId, materialId) {
     if (!window.confirm('Delete this material? This cannot be undone.')) return;
-    const res = await fetch(`${API_BASE}/api/courses/${courseId}/materials/${materialId}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-    if (!res.ok) {
+    try {
+      await api.delete(`/courses/${courseId}/materials/${materialId}`);
+    } catch {
       alert('Failed to delete material.');
       return;
     }
     setMaterials(prev => ({
       ...prev,
-      [courseId]: prev[courseId].filter(m => m.id !== materialId),
+      [courseId]: (prev[courseId] || []).filter(m => m.id !== materialId),
     }));
   }
 
