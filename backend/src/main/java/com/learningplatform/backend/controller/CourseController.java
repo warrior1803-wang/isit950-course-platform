@@ -99,7 +99,7 @@ public class CourseController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{id}/enrolments")
+    @GetMapping("/{id}/students")
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<ApiResponse<List<StudentSummaryResponse>>> getCourseEnrolments(
             @PathVariable Long id,

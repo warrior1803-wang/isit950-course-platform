@@ -208,12 +208,14 @@ export default function CourseDetail() {
   const [announcements, setAnnouncements] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [selectedPost, setSelectedPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [courseError, setCourseError] = useState('');
   const [materialsError, setMaterialsError] = useState('');
   const [announcementsError, setAnnouncementsError] = useState('');
   const [assignmentsError, setAssignmentsError] = useState('');
   const [discussionError, setDiscussionError] = useState('');
+  const [selectedPostError, setSelectedPostError] = useState('');
   const [postingError, setPostingError] = useState('');
   const [discView, setDiscView] = useState('list');
   const [selectedPostId, setSelectedPostId] = useState(null);
@@ -332,11 +334,6 @@ export default function CourseDetail() {
     setSelectedPostId(null);
   }, [location.search, loading]);
 
-  const selectedPost = useMemo(
-    () => posts.find(post => post.id === selectedPostId) ?? null,
-    [posts, selectedPostId],
-  );
-
   const materialSections = useMemo(() => {
     const order = [];
     const map = new Map();
@@ -350,6 +347,40 @@ export default function CourseDetail() {
     });
     return order.map(key => map.get(key));
   }, [materials]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSelectedPost() {
+      if (activeTab !== 'discussion' || discView !== 'detail' || !selectedPostId) {
+        setSelectedPost(null);
+        setSelectedPostError('');
+        return;
+      }
+
+      const fallbackPost = posts.find(post => post.id === selectedPostId) ?? null;
+      setSelectedPost(fallbackPost);
+      setSelectedPostError('');
+
+      try {
+        const res = await forumApi.getPost(id, selectedPostId);
+        if (cancelled) return;
+        setSelectedPost(normalizePost(res.data?.data ?? res.data));
+      } catch (err) {
+        if (cancelled) return;
+        if (!fallbackPost) {
+          setSelectedPost(null);
+          setSelectedPostError(err.response?.data?.message || 'Failed to load post.');
+        }
+      }
+    }
+  }
+
+    loadSelectedPost();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, discView, id, posts, selectedPostId]);
 
   async function handleMaterialDownload(material) {
     const url = resolveMaterialUrl(material.url);
@@ -385,8 +416,13 @@ export default function CourseDetail() {
     setPostingError('');
 
     try {
-      const res = await forumApi.createReply(selectedPost.id, { body });
+      const res = await forumApi.createReply(id, selectedPost.id, { body });
       const reply = normalizeReply(res.data?.data ?? res.data);
+      setSelectedPost(prev =>
+        prev && prev.id === selectedPost.id
+          ? { ...prev, replies: [...(prev.replies ?? []), reply] }
+          : prev,
+      );
       setPosts(prev =>
         prev.map(post =>
           post.id === selectedPost.id
@@ -411,9 +447,11 @@ export default function CourseDetail() {
       const res = await forumApi.createPost(id, { title, body });
       const post = normalizePost(res.data?.data ?? res.data);
       setPosts(prev => [post, ...prev]);
+      setSelectedPost(post);
+      setSelectedPostId(post.id);
       setNewTitle('');
       setNewBody('');
-      setDiscView('list');
+      setDiscView('detail');
     } catch (err) {
       setPostingError(err.response?.data?.message || 'Failed to create post.');
     }
@@ -740,12 +778,14 @@ export default function CourseDetail() {
                       onClick={() => {
                         setSelectedPostId(post.id);
                         setDiscView('detail');
+                        setSelectedPostError('');
                       }}
                       onKeyDown={e => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           setSelectedPostId(post.id);
                           setDiscView('detail');
+                          setSelectedPostError('');
                         }
                       }}
                     >
@@ -850,6 +890,10 @@ export default function CourseDetail() {
                 <p className="course-list-empty">Log in to reply.</p>
               )}
             </div>
+          )}
+
+          {discView === 'detail' && !selectedPost && selectedPostError && (
+            <p className="course-list-empty">{selectedPostError}</p>
           )}
 
           {discView === 'new' && (
