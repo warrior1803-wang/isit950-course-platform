@@ -374,6 +374,7 @@ export default function CourseDetail() {
         }
       }
     }
+  }
 
     loadSelectedPost();
     return () => {
