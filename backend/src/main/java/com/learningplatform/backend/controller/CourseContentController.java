@@ -1,6 +1,7 @@
 package com.learningplatform.backend.controller;
 
 import com.learningplatform.backend.common.response.ApiResponse;
+import com.learningplatform.backend.dto.AnnouncementRequest;
 import com.learningplatform.backend.dto.AnnouncementResponse;
 import com.learningplatform.backend.dto.AssignmentListResponse;
 import com.learningplatform.backend.dto.PostRequest;
@@ -23,12 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/courses/{courseId}")
 @RequiredArgsConstructor
 public class CourseContentController {
 
     private final CourseContentService courseContentService;
 
-    @GetMapping("/api/announcements/{courseId}")
+    @GetMapping("/announcements")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<ApiResponse<List<AnnouncementResponse>>> getAnnouncements(
             @PathVariable Long courseId,
@@ -42,7 +44,22 @@ public class CourseContentController {
         );
     }
 
-    @GetMapping("/api/assignments/{courseId}")
+    @PostMapping("/announcements")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<ApiResponse<AnnouncementResponse>> createAnnouncement(
+            @PathVariable Long courseId,
+            @RequestBody AnnouncementRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.success(
+                        "Announcement created successfully",
+                        courseContentService.createAnnouncement(courseId, request, authentication.getName())
+                )
+        );
+    }
+
+    @GetMapping("/assignments")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<ApiResponse<List<AssignmentListResponse>>> getAssignments(
             @PathVariable Long courseId,
@@ -56,7 +73,7 @@ public class CourseContentController {
         );
     }
 
-    @GetMapping("/api/forum/{courseId}")
+    @GetMapping("/posts")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<ApiResponse<List<PostResponse>>> getPosts(
             @PathVariable Long courseId,
@@ -70,7 +87,22 @@ public class CourseContentController {
         );
     }
 
-    @PostMapping("/api/forum/{courseId}")
+    @GetMapping("/posts/{postId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    public ResponseEntity<ApiResponse<PostResponse>> getPost(
+            @PathVariable Long courseId,
+            @PathVariable Long postId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Post fetched successfully",
+                        courseContentService.getPost(courseId, postId, authentication.getName())
+                )
+        );
+    }
+
+    @PostMapping("/posts")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<ApiResponse<PostResponse>> createPost(
             @PathVariable Long courseId,
@@ -85,9 +117,10 @@ public class CourseContentController {
         );
     }
 
-    @PostMapping("/api/forum/posts/{postId}/replies")
+    @PostMapping("/posts/{postId}/replies")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<ApiResponse<ReplyResponse>> createReply(
+            @PathVariable Long courseId,
             @PathVariable Long postId,
             @RequestBody ReplyRequest request,
             Authentication authentication
@@ -95,7 +128,7 @@ public class CourseContentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success(
                         "Reply created successfully",
-                        courseContentService.createReply(postId, request, authentication.getName())
+                        courseContentService.createReply(courseId, postId, request, authentication.getName())
                 )
         );
     }
