@@ -1,0 +1,810 @@
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: var(--font-sans);
+  }
+  .wrap {
+    padding: 1rem 0;
+  }
+  .module {
+    margin-bottom: 2rem;
+  }
+  .module-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .module-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .module-count {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    background: var(--color-background-secondary);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .endpoint {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .endpoint.todo-endpoint {
+    border-color: #f59e0b;
+    opacity: 0.85;
+  }
+  .ep-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    background: var(--color-background-primary);
+  }
+  .ep-header:hover {
+    background: var(--color-background-secondary);
+  }
+  .method {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    min-width: 52px;
+    text-align: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .GET {
+    background: #e1f5ee;
+    color: #085041;
+  }
+  .POST {
+    background: #e6f1fb;
+    color: #0c447c;
+  }
+  .PUT {
+    background: #faeeda;
+    color: #633806;
+  }
+  .DELETE {
+    background: #fcebeb;
+    color: #791f1f;
+  }
+  .PATCH {
+    background: #eeedfe;
+    color: #3c3489;
+  }
+  .ep-path {
+    font-size: 13px;
+    font-family: var(--font-mono);
+    color: var(--color-text-primary);
+    flex: 1;
+  }
+  .ep-desc {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    flex: 2;
+    padding-top: 1px;
+  }
+  .auth-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .auth-yes {
+    background: #fcebeb;
+    color: #791f1f;
+  }
+  .auth-no {
+    background: #eaf3de;
+    color: #27500a;
+  }
+  .todo-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 0.5px solid #f59e0b;
+  }
+  .ep-body {
+    padding: 12px 14px;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-secondary);
+    display: none;
+  }
+  .ep-body.open {
+    display: block;
+  }
+  .detail-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .detail-label {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    padding-top: 2px;
+  }
+  .detail-val {
+    font-family: var(--font-mono);
+    color: var(--color-text-primary);
+    background: var(--color-background-primary);
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 0.5px solid var(--color-border-tertiary);
+    white-space: pre;
+    line-height: 1.6;
+  }
+  .role-pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-right: 4px;
+  }
+  .role-student {
+    background: #e1f5ee;
+    color: #085041;
+  }
+  .role-instructor {
+    background: #eeedfe;
+    color: #3c3489;
+  }
+  .role-both {
+    background: #e6f1fb;
+    color: #0c447c;
+  }
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .filter-btn.active {
+    background: var(--color-background-info);
+    color: var(--color-text-info);
+    border-color: var(--color-border-info);
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .stat {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 12px 14px;
+  }
+  .stat-n {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .stat-l {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+  }
+  .chevron {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .chevron.open {
+    transform: rotate(90deg);
+  }
+  .error-box {
+    background: #fef3c7;
+    border: 0.5px solid #f59e0b;
+    border-radius: var(--border-radius-md);
+    padding: 12px 14px;
+    margin-bottom: 1.5rem;
+    font-size: 12px;
+    color: #78350f;
+  }
+  .error-box strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .error-box pre {
+    font-family: var(--font-mono);
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+    line-height: 1.6;
+    white-space: pre;
+  }
+</style>
+<head>
+  <meta charset="UTF-8" />
+</head>
+<div class="wrap">
+  <div class="summary" id="summary"></div>
+  <div class="filter-bar" id="filters"></div>
+  <div class="error-box">
+    <strong
+      >⚠️ Global Response Envelope (Xiaoliang / Leon's implementation)</strong
+    >
+    All Auth, Courses, and Materials endpoints wrap their response in an
+    ApiResponse object. Frontend must read
+    <code>response.data.data</code> (axios adds one <code>.data</code> layer,
+    ApiResponse adds another).
+    <pre>
+{
+  "success": true,
+  "message": "...",
+  "data": { /* actual payload */ }
+}
+
+// Error shape (all 4xx / 5xx):
+{
+  "success": false,
+  "message": "Error description",
+  "data": null
+}
+
+// HTTP status codes: 400 validation | 401 wrong credentials |
+// 403 wrong role/owner | 404 not found | 409 conflict | 500 server error</pre
+    >
+    <strong style="margin-top: 8px; display: block"
+      >🟡 Endpoints marked "Not yet implemented" need to be built — check GitHub
+      Issues for ownership.</strong
+    >
+  </div>
+  <div id="content"></div>
+</div>
+<script>
+  const DATA = [
+    {
+      module: "Auth",
+      icon: "🔑",
+      endpoints: [
+        {
+          method: "POST",
+          path: "/api/auth/register",
+          desc: "Register a new user account",
+          auth: false,
+          roles: "both",
+          body: '{\n  "name": "string",\n  "email": "string",\n  "password": "string (min 6 characters)",\n  "role": "STUDENT | INSTRUCTOR"\n}',
+          response:
+            '{\n  "success": true,\n  "message": "User registered successfully",\n  "data": {\n    "token": "JWT string",\n    "user": { "id", "name", "email", "role" }\n  }\n}\n\n// HTTP 201 Created',
+        },
+        {
+          method: "POST",
+          path: "/api/auth/login",
+          desc: "Log in and receive JWT token",
+          auth: false,
+          roles: "both",
+          body: '{\n  "email": "string",\n  "password": "string"\n}',
+          response:
+            '{\n  "success": true,\n  "message": "Login successful",\n  "data": {\n    "token": "JWT string",\n    "user": { "id", "name", "email", "role" }\n  }\n}',
+        },
+        {
+          method: "GET",
+          path: "/api/auth/me",
+          desc: "Get current logged-in user profile",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '{\n  "success": true,\n  "message": "User fetched successfully",\n  "data": { "id", "name", "email", "role" }\n}\n\n// Note: createdAt is NOT returned by this endpoint',
+        },
+        {
+          method: "PUT",
+          path: "/api/auth/me",
+          desc: "Update current user profile — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "both",
+          todo: true,
+          body: '{\n  "name": "string" (optional),\n  "password": "string" (optional)\n}',
+          response:
+            '{\n  "success": true,\n  "data": { "id", "name", "email", "role" }\n}',
+        },
+      ],
+    },
+    {
+      module: "Courses",
+      icon: "📚",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/courses/browse",
+          desc: "Browse all courses with per-user enrolment status (student only)",
+          auth: true,
+          roles: "student",
+          body: "—",
+          response:
+            '{\n  "success": true,\n  "message": "Browse courses fetched successfully",\n  "data": [\n    {\n      "id", "name", "code", "description",\n      "instructor": { "id", "name" },\n      "enrolledCount": number,\n      "enrolled": boolean\n    }\n  ]\n}\n\n// Note: field is "enrolled" not "isEnrolled"',
+        },
+        {
+          method: "GET",
+          path: "/api/courses",
+          desc: "List courses scoped by role: student gets enrolled courses only; instructor gets own courses only",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '{\n  "success": true,\n  "message": "Courses fetched successfully",\n  "data": [\n    {\n      "id", "name", "code", "description",\n      "schedule", "location", "createdAt",\n      "instructorId", "instructorName",\n      "assignmentCount", "pendingCount"\n    }\n  ]\n}\n\n// Note: instructor is flat (instructorId + instructorName), NOT nested\n// enrolledCount is NOT returned here — use /browse for that',
+        },
+        {
+          method: "POST",
+          path: "/api/courses",
+          desc: "Create a new course",
+          auth: true,
+          roles: "instructor",
+          body: '{\n  "name": "string" (required),\n  "code": "string" (required, must be globally unique → 409 if duplicate),\n  "description": "string" (required),\n  "schedule": "string" (optional),\n  "location": "string" (optional)\n}',
+          response:
+            '{\n  "success": true,\n  "message": "Course created successfully",\n  "data": {\n    "id", "name", "code", "description",\n    "schedule", "location", "createdAt",\n    "instructorId", "instructorName",\n    "assignmentCount", "pendingCount"\n  }\n}\n\n// HTTP 201 Created',
+        },
+        {
+          method: "GET",
+          path: "/api/courses/:id",
+          desc: "Get course details",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '{\n  "success": true,\n  "message": "Course fetched successfully",\n  "data": {\n    "id", "name", "code", "description",\n    "schedule", "location", "createdAt",\n    "instructorId", "instructorName",\n    "materialsCount", "enrolmentCount",\n    "assignmentCount", "pendingCount"\n  }\n}\n\n// Note: "enrolled" boolean is NOT returned here\n// Frontend infers enrolment status from HTTP 403 (not enrolled)\n// or by checking if course appears in GET /api/courses',
+        },
+        {
+          method: "PUT",
+          path: "/api/courses/:id",
+          desc: "Update course info",
+          auth: true,
+          roles: "instructor",
+          body: '{\n  "name": "string" (required),\n  "code": "string" (required, must be unique → 409 if duplicate),\n  "description": "string" (required),\n  "schedule": "string" (optional),\n  "location": "string" (optional)\n}\n\n// Note: all three main fields are required (not optional)',
+          response:
+            '{\n  "success": true,\n  "message": "Course updated successfully",\n  "data": {\n    "id", "name", "code", "description",\n    "schedule", "location", "createdAt",\n    "instructorId", "instructorName",\n    "assignmentCount", "pendingCount"\n  }\n}',
+        },
+        {
+          method: "DELETE",
+          path: "/api/courses/:id",
+          desc: "Delete a course",
+          auth: true,
+          roles: "instructor",
+          body: "—",
+          response: "// HTTP 204 No Content (empty body)",
+        },
+        {
+          method: "POST",
+          path: "/api/courses/:id/enrol",
+          desc: "Student enrols in a course",
+          auth: true,
+          roles: "student",
+          body: "—",
+          response:
+            '{\n  "success": true,\n  "message": "Enrolled successfully",\n  "data": {\n    "id", "name", "code", "description",\n    "schedule", "location", "createdAt",\n    "instructorId", "instructorName",\n    "assignmentCount", "pendingCount"\n  }\n}\n\n// HTTP 201 Created\n// 409 if already enrolled',
+        },
+        {
+          method: "DELETE",
+          path: "/api/courses/:id/enrol",
+          desc: "Student un-enrols from a course",
+          auth: true,
+          roles: "student",
+          body: "—",
+          response: "// HTTP 204 No Content (empty body)",
+        },
+        {
+          method: "GET",
+          path: "/api/courses/:id/enrolments",
+          desc: "List all enrolled students — NOTE: path is /enrolments not /students",
+          auth: true,
+          roles: "instructor",
+          body: "—",
+          response:
+            '{\n  "success": true,\n  "message": "Enrolments fetched successfully",\n  "data": [\n    { "id", "name", "email" }\n  ]\n}\n\n// Note: enrolledAt is NOT returned',
+        },
+      ],
+    },
+    {
+      module: "Materials",
+      icon: "📄",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/courses/:id/materials",
+          desc: "List all course materials",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '{\n  "success": true,\n  "message": "Materials fetched successfully",\n  "data": [\n    { "id", "filename", "url", "size", "section", "uploadedAt" }\n  ]\n}',
+        },
+        {
+          method: "POST",
+          path: "/api/courses/:id/materials",
+          desc: "Upload a course material file",
+          auth: true,
+          roles: "instructor",
+          body: 'multipart/form-data:\n  file: <binary>\n  section: "string" (REQUIRED — omitting causes 400)',
+          response:
+            '{\n  "success": true,\n  "message": "Material uploaded successfully",\n  "data": { "id", "filename", "url", "size", "section", "uploadedAt" }\n}\n\n// HTTP 201 Created',
+        },
+        {
+          method: "DELETE",
+          path: "/api/courses/:id/materials/:materialId",
+          desc: "Delete a material",
+          auth: true,
+          roles: "instructor",
+          body: "—",
+          response: "// HTTP 204 No Content (empty body)",
+        },
+      ],
+    },
+    {
+      module: "Announcements",
+      icon: "📢",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/courses/:id/announcements",
+          desc: "List course announcements",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '[\n  { "id", "title", "body",\n    "createdAt", "author": { "id", "name" } }\n]',
+        },
+        {
+          method: "POST",
+          path: "/api/courses/:id/announcements",
+          desc: "Post a new announcement — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: '{\n  "title": "string",\n  "body": "string"\n}',
+          response: '{ "id", "title", "body", "createdAt" }',
+        },
+        {
+          method: "DELETE",
+          path: "/api/courses/:id/announcements/:annId",
+          desc: "Delete an announcement — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: "—",
+          response: '{ "message": "Deleted" }',
+        },
+      ],
+    },
+    {
+      module: "Discussions",
+      icon: "💬",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/courses/:id/posts",
+          desc: "List all discussion posts for a course",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '[\n  { "id", "title", "body", "createdAt",\n    "author": { "id", "name", "role" },\n    "replyCount" }\n]',
+        },
+        {
+          method: "POST",
+          path: "/api/courses/:id/posts",
+          desc: "Create a new discussion post",
+          auth: true,
+          roles: "both",
+          body: '{\n  "title": "string",\n  "body": "string"\n}',
+          response: '{ "id", "title", "body", "createdAt", "author" }',
+        },
+        {
+          method: "GET",
+          path: "/api/courses/:id/posts/:postId",
+          desc: "Get a post and all its replies",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '{\n  post object,\n  "replies": [\n    { "id", "body", "createdAt",\n      "author": { "id", "name", "role" } }\n  ]\n}',
+        },
+        {
+          method: "POST",
+          path: "/api/courses/:id/posts/:postId/replies",
+          desc: "Reply to a discussion post",
+          auth: true,
+          roles: "both",
+          body: '{\n  "body": "string"\n}',
+          response: '{ "id", "body", "createdAt", "author" }',
+        },
+        {
+          method: "DELETE",
+          path: "/api/courses/:id/posts/:postId",
+          desc: "Delete a post (author or instructor) — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "both",
+          todo: true,
+          body: "—",
+          response: '{ "message": "Post deleted" }',
+        },
+        {
+          method: "DELETE",
+          path: "/api/courses/:id/posts/:postId/replies/:replyId",
+          desc: "Delete a reply — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "both",
+          todo: true,
+          body: "—",
+          response: '{ "message": "Reply deleted" }',
+        },
+      ],
+    },
+    {
+      module: "Assignments",
+      icon: "📝",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/courses/:id/assignments",
+          desc: "List all assignments in a course",
+          auth: true,
+          roles: "both",
+          body: "—",
+          response:
+            '[\n  { "id", "title", "description",\n    "dueDate", "maxScore",\n    "submissionStatus" (student only) }\n]',
+        },
+        {
+          method: "POST",
+          path: "/api/courses/:id/assignments",
+          desc: "Create a new assignment — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: '{\n  "title": "string",\n  "description": "string",\n  "dueDate": "ISO 8601 datetime",\n  "maxScore": number\n}',
+          response: '{ "id", "title", "dueDate", "maxScore", "createdAt" }',
+        },
+        {
+          method: "GET",
+          path: "/api/courses/:id/assignments/:asgId",
+          desc: "Get assignment details — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "both",
+          todo: true,
+          body: "—",
+          response: "{ full assignment object }",
+        },
+        {
+          method: "PUT",
+          path: "/api/courses/:id/assignments/:asgId",
+          desc: "Update an assignment — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: "{ any fields to update }",
+          response: "{ updated assignment object }",
+        },
+        {
+          method: "DELETE",
+          path: "/api/courses/:id/assignments/:asgId",
+          desc: "Delete an assignment — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: "—",
+          response: '{ "message": "Deleted" }',
+        },
+        {
+          method: "POST",
+          path: "/api/courses/:id/assignments/:asgId/submit",
+          desc: "Student submits assignment file — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "student",
+          todo: true,
+          body: "multipart/form-data:\n  file: <binary>",
+          response:
+            '{ "id", "filename", "submittedAt", "status": "submitted" }',
+        },
+        {
+          method: "GET",
+          path: "/api/courses/:id/assignments/:asgId/submissions",
+          desc: "List all student submissions — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: "—",
+          response:
+            '[\n  { "id", "student": { "id", "name" },\n    "filename", "submittedAt",\n    "score", "feedback" }\n]',
+        },
+        {
+          method: "GET",
+          path: "/api/courses/:id/assignments/:asgId/submissions/me",
+          desc: "Get own submission status — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "student",
+          todo: true,
+          body: "—",
+          response:
+            '{ "id", "filename", "submittedAt",\n  "score", "feedback", "status" }',
+        },
+        {
+          method: "PUT",
+          path: "/api/courses/:id/assignments/:asgId/submissions/:subId/grade",
+          desc: "Grade a submission — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: '{\n  "score": number,\n  "feedback": "string"\n}',
+          response: '{ "score", "feedback", "gradedAt" }',
+        },
+      ],
+    },
+    {
+      module: "Progress & Analytics",
+      icon: "📊",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/courses/:id/progress",
+          desc: "Instructor view of student engagement — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "instructor",
+          todo: true,
+          body: "—",
+          response:
+            '[\n  { "student": { "id", "name" },\n    "postsCount", "repliesCount",\n    "assignmentsSubmitted",\n    "assignmentsPending",\n    "lastActive" }\n]',
+        },
+        {
+          method: "GET",
+          path: "/api/courses/:id/progress/me",
+          desc: "Student views own progress summary — ⚠️ NOT YET IMPLEMENTED",
+          auth: true,
+          roles: "student",
+          todo: true,
+          body: "—",
+          response:
+            '{\n  "postsCount", "repliesCount",\n  "assignmentsSubmitted",\n  "assignmentsPending",\n  "averageScore"\n}',
+        },
+      ],
+    },
+  ];
+
+  const methodColors = {
+    GET: "GET",
+    POST: "POST",
+    PUT: "PUT",
+    DELETE: "DELETE",
+    PATCH: "PATCH",
+  };
+  const roleLabel = (r) =>
+    r === "both" ? "Both" : "student" === r ? "Student" : "Instructor";
+  const roleClass = (r) =>
+    r === "both"
+      ? "role-both"
+      : "student" === r
+        ? "role-student"
+        : "role-instructor";
+
+  let activeFilter = "All";
+
+  function countByMethod() {
+    const c = { GET: 0, POST: 0, PUT: 0, DELETE: 0, total: 0, todo: 0 };
+    DATA.forEach((m) =>
+      m.endpoints.forEach((e) => {
+        c[e.method] = (c[e.method] || 0) + 1;
+        c.total++;
+        if (e.todo) c.todo++;
+      }),
+    );
+    return c;
+  }
+
+  function renderSummary() {
+    const c = countByMethod();
+    const el = document.getElementById("summary");
+    const items = [
+      { n: c.total, l: "Total endpoints" },
+      { n: c.GET, l: "GET" },
+      { n: c.POST, l: "POST" },
+      { n: c.PUT + c.DELETE + (c.PATCH || 0), l: "PUT / DELETE" },
+    ];
+    el.innerHTML = items
+      .map(
+        (i) =>
+          `<div class="stat"><div class="stat-n">${i.n}</div><div class="stat-l">${i.l}</div></div>`,
+      )
+      .join("");
+  }
+
+  function renderFilters() {
+    const modules = ["All", ...DATA.map((m) => m.module)];
+    const el = document.getElementById("filters");
+    el.innerHTML = modules
+      .map(
+        (m) =>
+          `<button class="filter-btn${m === activeFilter ? " active" : ""}" onclick="setFilter('${m}')">${m}</button>`,
+      )
+      .join("");
+  }
+
+  function setFilter(f) {
+    activeFilter = f;
+    renderFilters();
+    renderContent();
+  }
+
+  function renderContent() {
+    const el = document.getElementById("content");
+    const modules =
+      activeFilter === "All"
+        ? DATA
+        : DATA.filter((m) => m.module === activeFilter);
+    el.innerHTML = modules
+      .map(
+        (m, mi) => `
+    <div class="module">
+      <div class="module-header">
+        <span style="font-size:16px">${m.icon}</span>
+        <span class="module-title">${m.module}</span>
+        <span class="module-count">${m.endpoints.length} endpoints</span>
+      </div>
+      ${m.endpoints
+        .map((e, ei) => {
+          const id = `ep-${mi}-${ei}`;
+          return `<div class="endpoint${e.todo ? " todo-endpoint" : ""}">
+          <div class="ep-header" onclick="toggle('${id}')">
+            <span class="method ${e.method}">${e.method}</span>
+            <span class="ep-path">${e.path}</span>
+            <span class="ep-desc">${e.desc}</span>
+            <span class="role-pill ${roleClass(e.roles)}">${roleLabel(e.roles)}</span>
+            <span class="auth-badge ${e.auth ? "auth-yes" : "auth-no"}">${e.auth ? "Auth required" : "Public"}</span>
+            ${e.todo ? '<span class="todo-badge">Not implemented</span>' : ""}
+            <span class="chevron" id="chev-${id}">›</span>
+          </div>
+          <div class="ep-body" id="${id}">
+            <div class="detail-row"><span class="detail-label">Request body</span><span class="detail-val">${e.body}</span></div>
+            <div class="detail-row"><span class="detail-label">Response</span><span class="detail-val">${e.response}</span></div>
+          </div>
+        </div>`;
+        })
+        .join("")}
+    </div>
+  `,
+      )
+      .join("");
+  }
+
+  function toggle(id) {
+    const el = document.getElementById(id);
+    const ch = document.getElementById("chev-" + id);
+    el.classList.toggle("open");
+    ch.classList.toggle("open");
+  }
+
+  renderSummary();
+  renderFilters();
+  renderContent();
+</script>

@@ -1,38 +1,33 @@
-import { getMockAssignments } from '../../mock/assignments';
-
-const TODAY = new Date();
 const SOON_THRESHOLD_DAYS = 14;
 
-export function classifyAssignments(courses) {
+export function classifyAssignments(assignments) {
+  const today = new Date();
   const dueSoon = [];
   const inProgress = [];
   const submitted = [];
   const graded = [];
 
-  courses.forEach(course => {
-    getMockAssignments(course.id).forEach(a => {
-      const due = new Date(a.dueDate);
-      const open = new Date(a.openDate);
-      const item = { ...a, course };
+  assignments.forEach(item => {
+    const due = new Date(item.dueDate);
+    const open = new Date(item.openDate || item.dueDate);
 
-      if (a.submissionStatus) {
-        if (a.submissionStatus.score !== null) {
-          graded.push(item);
-        } else {
-          submitted.push(item);
-        }
-        return;
-      }
-
-      if (due < TODAY) return; // overdue — omit for now
-
-      const daysUntilDue = (due.getTime() - TODAY.getTime()) / 86_400_000;
-      if (open.getTime() <= TODAY.getTime() && daysUntilDue <= SOON_THRESHOLD_DAYS) {
-        dueSoon.push(item);
+    if (item.submissionStatus) {
+      if (item.submissionStatus.score !== null && item.submissionStatus.score !== undefined) {
+        graded.push(item);
       } else {
-        inProgress.push(item);
+        submitted.push(item);
       }
-    });
+      return;
+    }
+
+    if (due < today) return;
+
+    const daysUntilDue = (due.getTime() - today.getTime()) / 86_400_000;
+    if (open.getTime() <= today.getTime() && daysUntilDue <= SOON_THRESHOLD_DAYS) {
+      dueSoon.push(item);
+    } else {
+      inProgress.push(item);
+    }
   });
 
   dueSoon.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
