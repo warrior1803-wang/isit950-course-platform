@@ -682,6 +682,130 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
 .review-score-max { font-size:14px; color:var(--text-muted); }
 .review-score-bar { height:8px; border-radius:4px; background:rgba(83,74,183,0.1); overflow:hidden; margin-bottom:16px; }
 .review-score-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#534ab7,#8c7ad4); }
+
+/* ── MEMBERSHIP ── */
+.mem-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 10px; border-radius:20px; font-family:'Gowun Batang',serif; }
+.mem-badge.member { background:linear-gradient(135deg,#FFF8E1,#FFF3CD); color:#8B6914; border:1px solid #FFD700; }
+.mem-badge.free { background:var(--input-bg); color:var(--text-muted); border:1px solid var(--border); }
+.mem-page-card { background:var(--input-bg); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:16px; }
+.mem-status-hero { display:flex; align-items:center; gap:18px; padding:20px 24px; border-radius:12px; margin-bottom:20px; }
+.mem-status-hero.member { background:linear-gradient(135deg,#FFFBEA,#FFF8D6); border:1.5px solid #FFD700; }
+.mem-status-hero.free { background:var(--input-bg); border:1.5px solid var(--border); }
+.mem-icon { font-size:40px; line-height:1; }
+.mem-hero-title { font-size:17px; color:var(--text-dark); }
+.mem-hero-sub { font-size:12px; color:var(--text-muted); margin-top:3px; }
+.mem-usage-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid rgba(221,208,212,0.5); }
+.mem-usage-row:last-child { border-bottom:none; }
+.mem-usage-label { font-size:12px; color:var(--text-muted); width:160px; flex-shrink:0; }
+.mem-usage-bar-wrap { flex:1; height:7px; border-radius:4px; background:rgba(182,147,169,0.15); overflow:hidden; }
+.mem-usage-bar { height:100%; border-radius:4px; transition:width .3s; }
+.mem-usage-bar.warn { background:linear-gradient(90deg,#f59e0b,#ef4444); }
+.mem-usage-bar.ok { background:linear-gradient(90deg,var(--accent),#c8a8bc); }
+.mem-usage-count { font-size:12px; color:var(--text-dark); width:54px; text-align:right; flex-shrink:0; }
+.mem-plans { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+.mem-plan-card { border:1.5px solid var(--border); border-radius:12px; padding:20px; cursor:pointer; transition:border-color .15s,box-shadow .15s; }
+.mem-plan-card:hover,.mem-plan-card.selected { border-color:#FFD700; box-shadow:0 0 0 3px rgba(255,215,0,0.15); }
+.mem-plan-name { font-size:14px; color:var(--text-dark); margin-bottom:4px; }
+.mem-plan-price { font-size:22px; color:#8B6914; margin-bottom:8px; }
+.mem-plan-price span { font-size:12px; color:var(--text-muted); }
+.mem-plan-savings { font-size:11px; color:#16a34a; background:#F0FDF4; border:1px solid #BBF7D0; padding:2px 8px; border-radius:10px; display:inline-block; margin-bottom:10px; }
+.mem-benefit-list { list-style:none; }
+.mem-benefit-list li { font-size:12px; color:var(--text-muted); padding:3px 0; display:flex; align-items:center; gap:6px; }
+.mem-benefit-list li.on { color:var(--text-dark); }
+.mem-upgrade-btn { width:100%; padding:12px; border-radius:10px; background:linear-gradient(135deg,#C9A227,#FFD700); color:#5a3e00; border:none; font-size:14px; font-family:'Gowun Batang',serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity .15s; }
+.mem-upgrade-btn:hover { opacity:0.88; }
+.mem-success-banner { display:none; align-items:center; gap:10px; padding:14px 18px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; color:#16a34a; font-size:13px; margin-top:14px; }
+/* post limit banner */
+.limit-banner { display:flex; align-items:center; justify-content:space-between; padding:9px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; }
+.limit-banner.warn { background:#FEF9C3; border:1px solid #FDE047; color:#854d0e; }
+.limit-banner.full { background:#FEF2F2; border:1px solid #FECACA; color:#b91c1c; }
+.limit-banner.ok { background:#F0FDF4; border:1px solid #BBF7D0; color:#166534; }
+.limit-upgrade-link { font-size:11px; color:#8B6914; text-decoration:underline; cursor:pointer; flex-shrink:0; margin-left:10px; }
+
+/* ── COLLABORATION PROFILE ── */
+.collab-tag { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:3px 10px; border-radius:20px; background:rgba(83,74,183,0.1); color:#534ab7; border:1px solid rgba(83,74,183,0.2); margin:2px 3px 2px 0; }
+.collab-mode-pill { font-size:11px; padding:3px 10px; border-radius:20px; }
+.collab-mode-pill.online { background:#E1F5EE; color:#085041; border:1px solid #A7F3D0; }
+.collab-mode-pill.offline { background:#E6F1FB; color:#0C447C; border:1px solid #BAE6FD; }
+.collab-mode-pill.both { background:#EEEDFE; color:#3C3489; border:1px solid #C4B5FD; }
+/* profile edit inline */
+.profile-edit-inline { display:none; flex-direction:column; gap:10px; padding-top:12px; border-top:1px solid var(--border); margin-top:4px; }
+.profile-edit-inline.open { display:flex; }
+.pei-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px; }
+.pei-input { width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); font-size:13px; font-family:'Gowun Batang',serif; color:var(--text-dark); outline:none; }
+.pei-input:focus { border-color:var(--accent); }
+.pei-mode-row { display:flex; gap:8px; }
+.pei-mode-btn { flex:1; padding:7px; border-radius:8px; border:1px solid var(--border); background:var(--bg); font-size:12px; font-family:'Gowun Batang',serif; cursor:pointer; text-align:center; transition:all .12s; }
+.pei-mode-btn.sel { border-color:var(--accent); background:rgba(182,147,169,0.12); color:var(--text-dark); }
+.pei-save-btn { align-self:flex-end; padding:7px 18px; border-radius:8px; background:var(--btn); color:var(--light); border:none; font-size:12px; font-family:'Gowun Batang',serif; cursor:pointer; }
+.pei-tag-wrap { display:flex; flex-wrap:wrap; gap:4px; align-items:center; padding:6px 0; }
+.pei-tag-item { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:3px 10px; border-radius:20px; background:rgba(83,74,183,0.1); color:#534ab7; border:1px solid rgba(83,74,183,0.2); }
+.pei-tag-remove { cursor:pointer; font-size:14px; line-height:1; color:#534ab7; opacity:0.7; }
+.pei-tag-add { display:inline-flex; align-items:center; gap:3px; font-size:11px; padding:3px 9px; border-radius:20px; border:1px dashed rgba(83,74,183,0.3); color:var(--text-muted); cursor:pointer; background:transparent; font-family:'Gowun Batang',serif; }
+
+/* ── AUTO-MARK ASSIGNMENT ── */
+.asgn-type-toggle { display:flex; gap:8px; margin-bottom:16px; }
+.asgn-type-btn { flex:1; padding:9px; border-radius:9px; border:1.5px solid var(--border); background:var(--bg); font-size:13px; font-family:'Gowun Batang',serif; cursor:pointer; text-align:center; transition:all .12s; }
+.asgn-type-btn.sel { border-color:var(--accent); background:rgba(182,147,169,0.12); color:var(--text-dark); }
+.auto-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:2px 7px; border-radius:10px; background:#E1F5EE; color:#085041; border:1px solid #A7F3D0; }
+.question-editor { border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:10px; }
+.qe-header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(182,147,169,0.07); border-bottom:1px solid var(--border); }
+.qe-num { font-size:12px; color:var(--text-muted); }
+.qe-type-select { font-size:12px; padding:3px 8px; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); font-family:'Gowun Batang',serif; color:var(--text-dark); cursor:pointer; }
+.qe-remove { font-size:11px; color:var(--text-muted); cursor:pointer; background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif; }
+.qe-remove:hover { color:#b91c1c; }
+.qe-body { padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
+.qe-field-label { font-size:11px; color:var(--text-muted); margin-bottom:3px; }
+.qe-text-input { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:7px; background:var(--bg); font-size:13px; font-family:'Gowun Batang',serif; color:var(--text-dark); outline:none; resize:vertical; min-height:36px; }
+.qe-text-input:focus { border-color:var(--accent); }
+.qe-options { display:flex; flex-direction:column; gap:6px; }
+.qe-option-row { display:flex; align-items:center; gap:8px; }
+.qe-option-radio { width:16px; height:16px; accent-color:var(--accent); flex-shrink:0; cursor:pointer; }
+.qe-option-input { flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:7px; background:var(--bg); font-size:12px; font-family:'Gowun Batang',serif; color:var(--text-dark); outline:none; }
+.qe-option-input:focus { border-color:var(--accent); }
+.qe-add-option { font-size:11px; color:var(--accent); background:none; border:none; cursor:pointer; font-family:'Gowun Batang',serif; padding:2px 0; align-self:flex-start; }
+.qe-pts-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); }
+.qe-pts-input { width:52px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg); font-size:12px; font-family:'Gowun Batang',serif; text-align:center; outline:none; }
+.add-question-btn { width:100%; padding:10px; border:1.5px dashed var(--border); border-radius:10px; background:transparent; font-size:13px; font-family:'Gowun Batang',serif; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:border-color .12s,color .12s; }
+.add-question-btn:hover { border-color:var(--accent); color:var(--accent); }
+/* auto-graded review */
+.autograded-banner { display:flex; align-items:center; gap:10px; padding:12px 16px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; margin-bottom:16px; }
+.autograded-banner .icon { color:#16a34a; }
+.breakdown-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(221,208,212,0.4); font-size:13px; }
+.breakdown-row:last-child { border-bottom:none; }
+.breakdown-q { flex:1; color:var(--text-dark); }
+.breakdown-pts { font-size:12px; padding:2px 8px; border-radius:8px; flex-shrink:0; }
+.breakdown-pts.correct { background:#E1F5EE; color:#085041; }
+.breakdown-pts.wrong { background:#FEF2F2; color:#b91c1c; }
+/* ── QUIZ (AUTO-MARK SUBMISSION) ── */
+.quiz-q-card { background:var(--input-bg); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin-bottom:14px; }
+.quiz-q-num { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.quiz-q-pts { font-size:11px; padding:2px 8px; border-radius:10px; background:rgba(83,74,183,0.08); color:#534ab7; border:1px solid rgba(83,74,183,0.15); }
+.quiz-q-text { font-size:14px; color:var(--text-dark); margin-bottom:14px; line-height:1.55; }
+.quiz-options { display:flex; flex-direction:column; gap:8px; }
+.quiz-option { display:flex; align-items:center; gap:10px; padding:10px 14px; border:1.5px solid var(--border); border-radius:9px; cursor:pointer; transition:all .12s; background:var(--bg); }
+.quiz-option:hover { border-color:var(--accent); background:rgba(182,147,169,0.06); }
+.quiz-option.selected { border-color:#534ab7; background:rgba(83,74,183,0.06); }
+.quiz-option.correct { border-color:#16a34a; background:#F0FDF4; }
+.quiz-option.wrong { border-color:#dc2626; background:#FEF2F2; }
+.quiz-radio { width:17px; height:17px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .12s; }
+.quiz-option.selected .quiz-radio { border-color:#534ab7; background:#534ab7; }
+.quiz-option.selected .quiz-radio::after { content:''; width:7px; height:7px; border-radius:50%; background:#fff; display:block; }
+.quiz-option.correct .quiz-radio { border-color:#16a34a; background:#16a34a; }
+.quiz-option.correct .quiz-radio::after { content:''; width:7px; height:7px; border-radius:50%; background:#fff; display:block; }
+.quiz-option.wrong .quiz-radio { border-color:#dc2626; background:#dc2626; }
+.quiz-option-label { font-size:13px; color:var(--text-dark); flex:1; }
+.quiz-option-result { font-size:12px; margin-left:auto; flex-shrink:0; }
+.quiz-text-input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:9px; background:var(--bg); font-size:13px; font-family:'Gowun Batang',serif; color:var(--text-dark); outline:none; transition:border-color .12s; }
+.quiz-text-input:focus { border-color:#534ab7; }
+.quiz-text-input.correct { border-color:#16a34a; background:#F0FDF4; }
+.quiz-text-input.wrong { border-color:#dc2626; background:#FEF2F2; }
+.quiz-result-banner { display:flex; align-items:center; gap:14px; padding:20px 24px; border-radius:12px; margin-bottom:20px; }
+.quiz-result-banner.pass { background:linear-gradient(135deg,#F0FDF4,#DCFCE7); border:1.5px solid #86EFAC; }
+.quiz-result-banner.fail { background:linear-gradient(135deg,#FEF2F2,#FEE2E2); border:1.5px solid #FCA5A5; }
+.quiz-score-big { font-size:38px; color:#15803d; font-weight:500; }
+.quiz-score-big.fail { color:#dc2626; }
+.quiz-score-label { font-size:13px; color:var(--text-muted); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -692,9 +816,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   <div class="sweep-r" id="sweep-r"></div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 1: AUTH
-══════════════════════════════════════ -->
+<!-- PAGE 1: AUTH -->
 <div class="page active" id="page-auth">
   <div class="card">
     <div class="card-wipe">
@@ -752,9 +874,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 2: COURSE LIST
-══════════════════════════════════════ -->
+<!-- PAGE 2: COURSE LIST -->
 <div class="page app-page" id="page-courses">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -769,6 +889,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -813,9 +934,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 2B: BROWSE COURSES
-══════════════════════════════════════ -->
+<!-- PAGE 2B: BROWSE COURSES -->
 <div class="page app-page" id="page-browse">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -830,6 +949,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item active" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -925,9 +1045,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 3: COURSE DETAIL
-══════════════════════════════════════ -->
+<!-- PAGE 3: COURSE DETAIL -->
 <div class="page app-page" id="page-detail">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -942,6 +1060,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -1016,6 +1135,14 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
               <div class="material-info"><div class="material-name">SQL Query Assignment</div><div class="material-meta">Submitted 28 Mar 2026 · Graded: 18 / 20</div></div>
               <span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(83,74,183,0.1);color:#534ab7;border:1px solid rgba(83,74,183,0.2);flex-shrink:0">Graded</span>
             </div>
+            <div class="material-item" onclick="goTo('page-quiz')">
+              <div class="material-icon" style="background:rgba(83,74,183,0.1);color:#534ab7"><span class="icon">auto_fix_high</span></div>
+              <div class="material-info">
+                <div class="material-name">Week 5 Scrum Quiz <span class="auto-badge" style="margin-left:6px">Auto-Mark</span></div>
+                <div class="material-meta">Due 8 May 2026, 11:59pm · 10 marks · Not submitted</div>
+              </div>
+              <span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(232,90,48,0.1);color:#d85a30;border:1px solid rgba(232,90,48,0.2);flex-shrink:0">Due soon</span>
+            </div>
             <div class="material-item" style="cursor:default;opacity:0.7">
               <div class="material-icon" style="background:rgba(182,147,169,0.1);color:#9c8a8e"><span class="icon">lock_clock</span></div>
               <div class="material-info"><div class="material-name">Final Report + Source Code</div><div class="material-meta">Due 5 Jun 2026, 5:00pm · 30 marks · Not yet open</div></div>
@@ -1028,7 +1155,12 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
           <div id="disc-list">
             <div class="disc-toolbar">
               <div class="disc-count">3 posts</div>
-              <button class="disc-new-btn" onclick="openNewPost()"><span class="icon">add</span> New post</button>
+              <button class="disc-new-btn" onclick="openNewPost()" id="disc-new-btn"><span class="icon">add</span> New post</button>
+            </div>
+            <!-- Post limit banner -->
+            <div class="limit-banner warn" id="detail-disc-limit" style="margin-bottom:10px">
+              <span>⚠ 7 of 10 posts used this week — 3 remaining</span>
+              <span class="limit-upgrade-link" onclick="goTo('page-membership')">Upgrade ›</span>
             </div>
             <div class="disc-list-wrap">
               <div class="disc-item" onclick="openPost(0)"><div class="disc-avatar" style="background:rgba(83,74,183,0.15);color:#534ab7">MY</div><div class="disc-info"><div class="disc-title">Question about Sprint 4 scope</div><div class="disc-meta">Mingcan Yang · Student · 13 Apr 2026</div><div class="disc-preview">Hi everyone, our team is unsure whether bug fixes count as Sprint 4 deliverables...</div></div><div class="disc-reply-count"><span class="icon">chat_bubble</span> 3</div></div>
@@ -1066,9 +1198,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 4: ASSIGNMENT SUBMISSION
-══════════════════════════════════════ -->
+<!-- PAGE 4: ASSIGNMENT SUBMISSION -->
 <div class="page app-page" id="page-submission">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -1083,6 +1213,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -1129,8 +1260,13 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
             <div class="info-row"><span class="info-row-label">Status</span><span class="info-row-val" id="sub-status" style="color:#d85a30">Not submitted</span></div>
             <div class="info-row"><span class="info-row-label">Due date</span><span class="info-row-val urgent">17 Apr 2026, 5pm</span></div>
             <div class="info-row"><span class="info-row-label">Marks</span><span class="info-row-val">10 points</span></div>
-            <div class="info-row"><span class="info-row-label">Attempts</span><span class="info-row-val">1 of 1</span></div>
+            <div class="info-row"><span class="info-row-label">Resubmissions</span><span class="info-row-val">1 of 2 used <span style="font-size:10px;color:var(--text-muted)">(Free plan)</span></span></div>
             <div class="info-row"><span class="info-row-label">File type</span><span class="info-row-val">PDF, DOCX</span></div>
+            <!-- Resubmission limit warning -->
+            <div class="limit-banner warn" style="margin-top:10px">
+              <span>1 resubmission remaining</span>
+              <span class="limit-upgrade-link" onclick="goTo('page-membership')">Upgrade ›</span>
+            </div>
           </div>
           <div class="info-card">
             <div class="info-card-title">Submission checklist</div>
@@ -1147,9 +1283,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 5: GLOBAL ASSIGNMENTS
-══════════════════════════════════════ -->
+<!-- PAGE 5: GLOBAL ASSIGNMENTS -->
 <div class="page app-page" id="page-assignments">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -1164,6 +1298,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -1174,6 +1309,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <div class="list-section-label">Due soon</div>
       <div class="global-list">
         <div class="global-item" onclick="goTo('page-submission')"><div class="global-item-icon gi-asgn"><span class="icon">assignment_late</span></div><div class="global-item-body"><div class="global-item-title">Week 7 Progress Report</div><div class="global-item-meta">ISIT950 · Systems Development Methodologies · Dr. Sarah Mitchell</div><div class="global-item-preview">Submit your team's Week 7 Progress Report as a single PDF document...</div></div><div class="global-item-right"><span class="pill-due">Due 17 Apr, 5pm</span><span style="font-size:11px;color:var(--text-muted)">10 marks</span></div></div>
+        <div class="global-item" onclick="goTo('page-quiz')"><div class="global-item-icon" style="background:rgba(83,74,183,0.1);color:#534ab7"><span class="icon">auto_fix_high</span></div><div class="global-item-body"><div class="global-item-title">Week 5 Scrum Quiz <span class="auto-badge" style="margin-left:6px">Auto-Mark</span></div><div class="global-item-meta">ISIT950 · Systems Development Methodologies · Dr. Sarah Mitchell</div><div class="global-item-preview">5 questions · MCQ and fill-in-blank · Instant result on submission</div></div><div class="global-item-right"><span class="pill-due">Due 8 May</span><span style="font-size:11px;color:var(--text-muted)">10 marks</span></div></div>
         <div class="global-item"><div class="global-item-icon gi-asgn"><span class="icon">assignment_late</span></div><div class="global-item-body"><div class="global-item-title">Project Charter Submission</div><div class="global-item-meta">CSIT214 · IT Project Management · Prof. James Liu</div><div class="global-item-preview">Submit your team's project charter including scope, objectives, and stakeholder analysis...</div></div><div class="global-item-right"><span class="pill-due">Due 18 Apr, 11pm</span><span style="font-size:11px;color:var(--text-muted)">15 marks</span></div></div>
       </div>
       <div class="list-section-label">In progress</div>
@@ -1190,9 +1326,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 6: GLOBAL DISCUSSIONS
-══════════════════════════════════════ -->
+<!-- PAGE 6: GLOBAL DISCUSSIONS -->
 <div class="page app-page" id="page-discussions">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -1207,6 +1341,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -1214,6 +1349,13 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
     <main class="main">
       <div class="global-title">Discussions</div>
       <div class="global-sub">Recent activity across all your courses</div>
+
+      <!-- Post limit banner (non-member, 7/10 used) -->
+      <div class="limit-banner warn" id="disc-limit-banner">
+        <span>⚠ 7 of 10 posts used this week — 3 remaining</span>
+        <span class="limit-upgrade-link" onclick="goTo('page-membership')">Upgrade for unlimited ›</span>
+      </div>
+
       <div class="list-section-label">ISIT950 · Systems Development Methodologies</div>
       <div class="global-list">
         <div class="global-item" onclick="goTo('page-detail')"><div class="global-item-icon gi-disc"><span class="icon">chat</span></div><div class="global-item-body"><div class="global-item-title">Question about Sprint 4 scope</div><div class="global-item-meta">Mingcan Yang · Student · 13 Apr 2026</div><div class="global-item-preview">Hi everyone, our team is unsure whether bug fixes count as Sprint 4 deliverables...</div></div><div class="global-item-right"><span class="pill-new">3 replies</span></div></div>
@@ -1233,9 +1375,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 7: GLOBAL ANNOUNCEMENTS
-══════════════════════════════════════ -->
+<!-- PAGE 7: GLOBAL ANNOUNCEMENTS -->
 <div class="page app-page" id="page-announcements">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -1250,6 +1390,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item active"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -1273,9 +1414,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     INSTRUCTOR: COURSE MANAGEMENT
-══════════════════════════════════════ -->
+<!-- INSTRUCTOR: COURSE MANAGEMENT -->
 <div class="page app-page" id="page-inst-courses">
   <nav class="navbar"><div class="nav-brand">Course Collaboration Platform</div><div class="nav-right"><div class="nav-name">Sarah Mitchell</div><div class="nav-avatar">SM</div></div></nav>
   <div class="app-body">
@@ -1372,10 +1511,28 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
             <div style="margin-top:8px">
               <button class="btn-outline" onclick="openUploadModal('ISIT950','New section')"><span class="icon">add</span> Add new section</button>
             </div>
+            <div class="section-divider"></div>
+            <!-- Assignments sub-section -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:13px;font-weight:500;color:var(--text-dark)">Assignments</div>
+              <button class="btn-outline" style="height:30px;font-size:11px;padding:0 12px" onclick="openModal('modal-create-assignment')"><span class="icon" style="font-size:15px">add</span> New assignment</button>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)">
+                <span class="icon" style="color:var(--accent);font-size:20px">assignment</span>
+                <div style="flex:1"><div style="font-size:13px;color:var(--text-dark)">Week 7 Progress Report</div><div style="font-size:11px;color:var(--text-muted)">File Upload · Due 17 Apr 2026 · 10 marks · 12 pending</div></div>
+                <button class="inst-mgmt-btn" style="width:28px;height:28px" onclick="openEditAssignment('file')"><span class="icon" style="font-size:16px">edit</span></button>
+                <button class="inst-mgmt-btn" style="width:28px;height:28px"><span class="icon" style="font-size:16px">delete_outline</span></button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+                <span class="icon" style="color:#534ab7;font-size:20px">auto_fix_high</span>
+                <div style="flex:1"><div style="font-size:13px;color:var(--text-dark)">Week 5 Scrum Quiz <span class="auto-badge" style="margin-left:4px">Auto-Mark</span></div><div style="font-size:11px;color:var(--text-muted)">5 questions · Due 8 May 2026 · 10 marks · Auto-graded</div></div>
+                <button class="inst-mgmt-btn" style="width:28px;height:28px" onclick="openEditAssignment('auto')"><span class="icon" style="font-size:16px">edit</span></button>
+                <button class="inst-mgmt-btn" style="width:28px;height:28px"><span class="icon" style="font-size:16px">delete_outline</span></button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <!-- ISIT801 -->
         <div class="inst-mgmt-card">
           <div class="inst-mgmt-card-header">
             <div class="inst-mgmt-thumb" style="background-image:url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=200&q=70')"></div>
@@ -1502,9 +1659,128 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     INSTRUCTOR: GRADING DASHBOARD
-══════════════════════════════════════ -->
+<!-- Edit assignment modal -->
+<div class="modal-overlay" id="modal-edit-assignment" onclick="closeModal('modal-edit-assignment')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:580px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title" id="edit-asgn-modal-title">Edit assignment</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-assignment')"><span class="icon">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:14px"><label>Title</label><input type="text" id="edit-asgn-title" value="Week 7 Progress Report"></div>
+      <div class="field" style="margin-bottom:14px"><label>Description</label><textarea class="qe-text-input" id="edit-asgn-desc" rows="2">Submit your team's Week 7 Progress Report as a single PDF document.</textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="field" style="margin-bottom:0"><label>Due date</label><input type="text" id="edit-asgn-due" value="17 Apr 2026, 5:00pm"></div>
+        <div class="field" style="margin-bottom:0"><label>Max score</label><input type="number" id="edit-asgn-score" value="10" min="1"></div>
+      </div>
+
+      <!-- Type display (read-only in edit mode) -->
+      <div style="margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:9px;border:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <span id="edit-asgn-type-icon" class="icon" style="color:var(--accent)">assignment</span>
+        <div>
+          <div style="font-size:12px;color:var(--text-muted)">Assignment type</div>
+          <div id="edit-asgn-type-label" style="font-size:13px;color:var(--text-dark)">File Upload</div>
+        </div>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">Type cannot be changed after creation</span>
+      </div>
+
+      <!-- AUTO: question editor pre-filled -->
+      <div id="edit-question-editor-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <label style="margin:0">Questions <span id="edit-q-count-badge" class="auto-badge">5 questions</span></label>
+          <div style="font-size:11px;color:var(--text-muted)">Edit questions and correct answers</div>
+        </div>
+        <!-- Pre-filled Q1 -->
+        <div class="question-editor">
+          <div class="qe-header">
+            <span class="qe-num">Q1</span>
+            <select class="qe-type-select"><option selected>Multiple choice</option><option>Fill in blank</option><option>Unique answer</option></select>
+            <div style="display:flex;align-items:center;gap:6px"><span class="qe-pts-row"><input class="qe-pts-input" type="number" value="2"> pts</span><button class="qe-remove">Remove</button></div>
+          </div>
+          <div class="qe-body">
+            <div><div class="qe-field-label">Question text</div><textarea class="qe-text-input" rows="2">In Scrum, who is responsible for managing and prioritising the Product Backlog?</textarea></div>
+            <div class="qe-field-label">Options <span style="font-size:10px;color:var(--text-muted)">(● = correct answer)</span></div>
+            <div class="qe-options">
+              <div class="qe-option-row"><input type="radio" class="qe-option-radio" name="eq1"><input class="qe-option-input" value="Scrum Master"></div>
+              <div class="qe-option-row"><input type="radio" class="qe-option-radio" name="eq1" checked><input class="qe-option-input" value="Product Owner"></div>
+              <div class="qe-option-row"><input type="radio" class="qe-option-radio" name="eq1"><input class="qe-option-input" value="Development Team"></div>
+              <div class="qe-option-row"><input type="radio" class="qe-option-radio" name="eq1"><input class="qe-option-input" value="Stakeholder"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Pre-filled Q3 (fill-in) -->
+        <div class="question-editor">
+          <div class="qe-header">
+            <span class="qe-num">Q3</span>
+            <select class="qe-type-select"><option>Multiple choice</option><option selected>Fill in blank</option><option>Unique answer</option></select>
+            <div style="display:flex;align-items:center;gap:6px"><span class="qe-pts-row"><input class="qe-pts-input" type="number" value="2"> pts</span><button class="qe-remove">Remove</button></div>
+          </div>
+          <div class="qe-body">
+            <div><div class="qe-field-label">Question text</div><textarea class="qe-text-input" rows="2">Fill in the blank: A ________ is a time-boxed iteration in Scrum during which a "Done" increment is created.</textarea></div>
+            <div><div class="qe-field-label">Correct answer</div><input class="qe-text-input" value="Sprint"></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin:6px 0 10px">+ 3 more questions (Q2, Q4, Q5) — scroll to view all</div>
+        <button class="add-question-btn"><span class="icon" style="font-size:18px">add_circle</span> Add question</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-edit-assignment')">Cancel</button>
+      <button class="btn-primary" onclick="closeModal('modal-edit-assignment')"><span class="icon">check</span> Save changes</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="modal-create-assignment" onclick="closeModal('modal-create-assignment')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:580px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title">Create new assignment</div>
+      <button class="modal-close" onclick="closeModal('modal-create-assignment')"><span class="icon">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:14px"><label>Title</label><input type="text" placeholder="e.g. Week 9 Quiz — Scrum & Agile"></div>
+      <div class="field" style="margin-bottom:14px"><label>Description</label><textarea class="qe-text-input" rows="2" placeholder="Instructions for students…"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="field" style="margin-bottom:0"><label>Due date</label><input type="text" placeholder="e.g. 30 May 2026, 11:59pm"></div>
+        <div class="field" style="margin-bottom:0"><label>Max score</label><input type="number" placeholder="e.g. 20" min="1"></div>
+      </div>
+
+      <!-- Assignment type -->
+      <div style="margin-bottom:14px">
+        <label style="display:block;margin-bottom:8px">Assignment type</label>
+        <div class="asgn-type-toggle">
+          <button class="asgn-type-btn sel" id="type-file" onclick="setAssignType('file')">
+            <span class="icon" style="font-size:16px;display:block;margin:0 auto 4px">upload_file</span>
+            File Upload
+          </button>
+          <button class="asgn-type-btn" id="type-auto" onclick="setAssignType('auto')">
+            <span class="icon" style="font-size:16px;display:block;margin:0 auto 4px">auto_fix_high</span>
+            Auto-Mark
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto-mark question editor -->
+      <div id="question-editor-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <label style="margin:0">Questions <span id="q-count-badge" class="auto-badge">0 questions</span></label>
+          <div style="font-size:11px;color:var(--text-muted)">Select correct answer for each question</div>
+        </div>
+        <div id="question-list"></div>
+        <button class="add-question-btn" onclick="addQuestion()">
+          <span class="icon" style="font-size:18px">add_circle</span> Add question
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-create-assignment')">Cancel</button>
+      <button class="btn-primary" onclick="closeModal('modal-create-assignment')"><span class="icon">check</span> Create assignment</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="page app-page" id="page-inst-grading">
   <nav class="navbar"><div class="nav-brand">Course Collaboration Platform</div><div class="nav-right"><div class="nav-name">Sarah Mitchell</div><div class="nav-avatar">SM</div></div></nav>
   <div class="app-body">
@@ -1602,6 +1878,26 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
               </div>
               <span class="sub-badge graded">Graded</span>
             </div>
+            <!-- Auto-graded entries -->
+            <div style="padding:8px 14px;font-size:11px;color:var(--text-muted);background:rgba(83,74,183,0.04);border-top:1px solid var(--border);display:flex;align-items:center;gap:6px">
+              <span class="icon" style="font-size:14px;color:#534ab7">auto_fix_high</span> Week 5 Scrum Quiz — Auto-graded
+            </div>
+            <div class="submission-item" onclick="openAutoGradedSubmission(this,0)">
+              <div class="sub-avatar" style="background:rgba(182,147,169,0.2);color:#7a5a6a">BW</div>
+              <div class="sub-info">
+                <div class="sub-name">Bingyan Wang</div>
+                <div class="sub-meta">Week 5 Scrum Quiz · Auto-graded · 24 Apr</div>
+              </div>
+              <span class="sub-badge graded">8 / 10</span>
+            </div>
+            <div class="submission-item" onclick="openAutoGradedSubmission(this,1)">
+              <div class="sub-avatar" style="background:rgba(83,74,183,0.15);color:#534ab7">MY</div>
+              <div class="sub-info">
+                <div class="sub-name">Mingcan Yang</div>
+                <div class="sub-meta">Week 5 Scrum Quiz · Auto-graded · 24 Apr</div>
+              </div>
+              <span class="sub-badge graded">10 / 10</span>
+            </div>
           </div>
         </div>
 
@@ -1611,6 +1907,90 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
             <div class="grade-panel-title" id="grade-student-name">Week 7 Progress Report — Bingyan Wang</div>
             <div class="grade-panel-meta" id="grade-submit-time">Submitted 15 Apr 2026, 11:42am · ISIT950 · Group submission</div>
 
+            <!-- Auto-graded panel (hidden by default) -->
+            <div id="auto-grade-panel" style="display:none">
+              <div class="autograded-banner">
+                <span class="icon">auto_fix_high</span>
+                <div>
+                  <div style="font-size:13px;color:#15803d;font-weight:500">Auto-graded — no action needed</div>
+                  <div style="font-size:11px;color:#166534;margin-top:2px">Score calculated from 5 questions · Submitted 24 Apr 2026</div>
+                </div>
+                <span style="margin-left:auto;font-size:22px;color:#15803d;font-weight:500">8 / 10</span>
+              </div>
+              <div style="font-size:13px;color:var(--text-dark);margin-bottom:10px">Question breakdown</div>
+              <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+                <!-- header row -->
+                <div style="display:grid;grid-template-columns:1fr 130px 130px 52px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">
+                  <span>Question</span><span>Student's answer</span><span>Correct answer</span><span style="text-align:center">Pts</span>
+                </div>
+                <!-- Q1 correct -->
+                <div style="display:grid;grid-template-columns:1fr 130px 130px 52px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(221,208,212,0.4);font-size:12px">
+                  <span style="color:var(--text-dark)">1. Who manages the Product Backlog?</span>
+                  <span style="color:#15803d">Product Owner</span>
+                  <span style="color:#15803d;font-weight:500">Product Owner</span>
+                  <span class="breakdown-pts correct" style="margin:0 auto">2 / 2</span>
+                </div>
+                <!-- Q2 correct -->
+                <div style="display:grid;grid-template-columns:1fr 130px 130px 52px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(221,208,212,0.4);font-size:12px">
+                  <span style="color:var(--text-dark)">2. Max Sprint length?</span>
+                  <span style="color:#15803d">4 weeks</span>
+                  <span style="color:#15803d;font-weight:500">4 weeks</span>
+                  <span class="breakdown-pts correct" style="margin:0 auto">2 / 2</span>
+                </div>
+                <!-- Q3 wrong -->
+                <div style="display:grid;grid-template-columns:1fr 130px 130px 52px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(221,208,212,0.4);font-size:12px;background:rgba(254,242,242,0.5)">
+                  <span style="color:var(--text-dark)">3. Max Sprint length? (fill-in)</span>
+                  <span style="color:#dc2626;text-decoration:line-through">3 months</span>
+                  <span style="color:#15803d;font-weight:500">Sprint</span>
+                  <span class="breakdown-pts wrong" style="margin:0 auto">0 / 2</span>
+                </div>
+                <!-- Q4 correct -->
+                <div style="display:grid;grid-template-columns:1fr 130px 130px 52px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(221,208,212,0.4);font-size:12px">
+                  <span style="color:var(--text-dark)">4. Fill in: A ______ is a time-boxed iteration.</span>
+                  <span style="color:#15803d">Sprint</span>
+                  <span style="color:#15803d;font-weight:500">Sprint</span>
+                  <span class="breakdown-pts correct" style="margin:0 auto">2 / 2</span>
+                </div>
+                <!-- Q5 correct -->
+                <div style="display:grid;grid-template-columns:1fr 130px 130px 52px;align-items:center;padding:10px 14px;font-size:12px">
+                  <span style="color:var(--text-dark)">5. What does WIP stand for?</span>
+                  <span style="color:#15803d">Work in Progress</span>
+                  <span style="color:#15803d;font-weight:500">Work in Progress</span>
+                  <span class="breakdown-pts correct" style="margin:0 auto">2 / 2</span>
+                </div>
+              </div>
+
+              <!-- Override section -->
+              <div style="margin-top:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+                <div style="padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleOverride()">
+                  <div style="font-size:12px;color:var(--text-muted)">⚙ Override auto-grade <span style="font-size:10px">(optional)</span></div>
+                  <span class="icon" style="font-size:16px;color:var(--text-muted)" id="override-chevron">expand_more</span>
+                </div>
+                <div id="override-form" style="display:none;padding:14px">
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Use this if the auto-grade needs manual correction. This will replace the auto-calculated score.</div>
+                  <div class="grade-score-row" style="margin-bottom:12px">
+                    <div class="field" style="margin-bottom:0">
+                      <label>Override score</label>
+                      <input type="number" placeholder="0–10" min="0" max="10" value="8" style="width:100%;height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-dark);font-size:13px;font-family:'Gowun Batang',serif;outline:none;">
+                    </div>
+                    <div class="field" style="margin-bottom:0">
+                      <label>Max score</label>
+                      <input type="text" value="10" readonly style="width:100%;height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:#f0e8e2;color:var(--text-muted);font-size:13px;font-family:'Gowun Batang',serif;outline:none;">
+                    </div>
+                  </div>
+                  <div class="field" style="margin-bottom:14px">
+                    <label>Override reason <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+                    <textarea class="grade-textarea" rows="3" placeholder="e.g. Student used an acceptable alternative answer for Q3…"></textarea>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:10px">
+                    <button class="btn-outline" onclick="toggleOverride()">Cancel</button>
+                    <button class="btn-primary" onclick="submitOverride()"><span class="icon">check_circle</span> Submit override</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="manual-grade-area">
             <div class="grade-file-box">
               <div class="grade-file-icon"><span class="icon">picture_as_pdf</span></div>
               <div class="grade-file-info">
@@ -1639,6 +2019,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
               <button class="btn-outline" onclick="clearGrade()">Clear</button>
               <button class="btn-primary" id="grade-submit-btn" onclick="submitGrade()" disabled><span class="icon">check_circle</span> Submit grade</button>
             </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1646,9 +2027,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     INSTRUCTOR: STUDENT ANALYTICS
-══════════════════════════════════════ -->
+<!-- INSTRUCTOR: STUDENT ANALYTICS -->
 <div class="page app-page" id="page-inst-analytics">
   <nav class="navbar"><div class="nav-brand">Course Collaboration Platform</div><div class="nav-right"><div class="nav-name">Sarah Mitchell</div><div class="nav-avatar">SM</div></div></nav>
   <div class="app-body">
@@ -1661,6 +2040,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-inst-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item active"><span class="icon">bar_chart</span> Analytics</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -1838,9 +2218,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE 8: INSTRUCTOR DASHBOARD
-══════════════════════════════════════ -->
+<!-- PAGE 8: INSTRUCTOR DASHBOARD -->
 <div class="page app-page" id="page-inst-dashboard">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -2001,9 +2379,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
 </div>
 
 
-<!-- ══════════════════════════════════════
-     INSTRUCTOR: DISCUSSIONS
-══════════════════════════════════════ -->
+<!-- INSTRUCTOR: DISCUSSIONS -->
 <div class="page app-page" id="page-inst-discussions">
   <nav class="navbar"><div class="nav-brand">Course Collaboration Platform</div><div class="nav-right"><div class="nav-name">Sarah Mitchell</div><div class="nav-avatar">SM</div></div></nav>
   <div class="app-body">
@@ -2113,9 +2489,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     INSTRUCTOR: ANNOUNCEMENTS
-══════════════════════════════════════ -->
+<!-- INSTRUCTOR: ANNOUNCEMENTS -->
 <div class="page app-page" id="page-inst-announcements">
   <nav class="navbar"><div class="nav-brand">Course Collaboration Platform</div><div class="nav-right"><div class="nav-name">Sarah Mitchell</div><div class="nav-avatar">SM</div></div></nav>
   <div class="app-body">
@@ -2250,9 +2624,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     STUDENT: PROFILE
-══════════════════════════════════════ -->
+<!-- STUDENT: PROFILE -->
 <div class="page app-page" id="page-profile">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -2267,6 +2639,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item active"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -2278,6 +2651,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
           <div class="profile-avatar-lg">BW</div>
           <div class="profile-name">Bingyan Wang</div>
           <div class="profile-role-badge">Student</div>
+          <div style="margin:6px 0 10px"><span class="mem-badge free" id="profile-mem-badge">✦ Free Plan</span></div>
           <div class="profile-email">bw349@uowmail.edu.au</div>
           <div class="profile-stat-row">
             <div class="profile-stat"><div class="profile-stat-num">4</div><div class="profile-stat-label">Courses</div></div>
@@ -2295,6 +2669,73 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
             <div class="profile-row"><div class="profile-row-label">Session</div><div class="profile-row-val">Autumn 2026</div></div>
             <div class="profile-row"><div class="profile-row-label">Joined</div><div class="profile-row-val">24 Feb 2026</div></div>
           </div>
+
+          <!-- Collaboration Card -->
+          <div class="profile-info-card" id="collab-card">
+            <div class="profile-section-title">Collaboration <button class="profile-edit-btn" onclick="toggleCollabEdit()"><span class="icon" style="font-size:15px">edit</span> Edit</button></div>
+            <!-- view mode -->
+            <div id="collab-view">
+              <div class="profile-row">
+                <div class="profile-row-label">Skills</div>
+                <div class="profile-row-val" id="collab-skills-display">
+                  <span class="collab-tag">Spring Boot</span><span class="collab-tag">React</span><span class="collab-tag">UX Design</span>
+                </div>
+              </div>
+              <div class="profile-row">
+                <div class="profile-row-label">Collab mode</div>
+                <div class="profile-row-val"><span class="collab-mode-pill online" id="collab-mode-display">Online</span></div>
+              </div>
+              <div class="profile-row">
+                <div class="profile-row-label">Availability</div>
+                <div class="profile-row-val" id="collab-avail-display" style="font-size:13px;color:var(--text-dark)">Weekday evenings (after 6pm AEST), flexible weekends</div>
+              </div>
+            </div>
+            <!-- edit mode -->
+            <div class="profile-edit-inline" id="collab-edit">
+              <div>
+                <div class="pei-label">Skills / Expertise <span style="color:var(--text-muted);font-size:10px">(press Enter to add)</span></div>
+                <div class="pei-tag-wrap" id="skill-tag-wrap">
+                  <span class="pei-tag-item">Spring Boot <span class="pei-tag-remove" onclick="removeSkillTag(this)">×</span></span>
+                  <span class="pei-tag-item">React <span class="pei-tag-remove" onclick="removeSkillTag(this)">×</span></span>
+                  <span class="pei-tag-item">UX Design <span class="pei-tag-remove" onclick="removeSkillTag(this)">×</span></span>
+                  <input class="pei-tag-add" id="skill-input" placeholder="+ Add skill" onkeydown="handleSkillInput(event)" style="width:100px;border:none;outline:none;background:transparent;font-family:'Gowun Batang',serif;font-size:11px;color:var(--text-muted);">
+                </div>
+              </div>
+              <div>
+                <div class="pei-label">Preferred collaboration mode</div>
+                <div class="pei-mode-row">
+                  <button class="pei-mode-btn sel" id="mode-online" onclick="selectCollabMode('online')">🌐 Online</button>
+                  <button class="pei-mode-btn" id="mode-offline" onclick="selectCollabMode('offline')">🏢 Offline</button>
+                  <button class="pei-mode-btn" id="mode-both" onclick="selectCollabMode('both')">✦ Both</button>
+                </div>
+              </div>
+              <div>
+                <div class="pei-label">Availability</div>
+                <textarea class="pei-input" id="collab-avail-input" rows="2" placeholder="e.g. Weekday evenings after 6pm, flexible weekends">Weekday evenings (after 6pm AEST), flexible weekends</textarea>
+              </div>
+              <div style="display:flex;gap:8px;align-self:flex-end">
+                <button class="pei-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border)" onclick="toggleCollabEdit()">Cancel</button>
+                <button class="pei-save-btn" onclick="saveCollabProfile()">Save changes</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Membership Card -->
+          <div class="profile-info-card">
+            <div class="profile-section-title">Membership</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(221,208,212,0.5)">
+              <div>
+                <div style="font-size:13px;color:var(--text-dark);margin-bottom:3px">Current plan</div>
+                <div style="font-size:11px;color:var(--text-muted)">7 / 10 posts used this week · 1 / 2 resubmissions used</div>
+              </div>
+              <span class="mem-badge free">✦ Free Plan</span>
+            </div>
+            <div style="padding-top:12px;display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:12px;color:var(--text-muted)">Unlock unlimited posts, resubmissions and more</div>
+              <button class="profile-edit-btn" onclick="goTo('page-membership')" style="border-color:#FFD700;color:#8B6914">⭐ Upgrade</button>
+            </div>
+          </div>
+
           <div class="profile-info-card">
             <div class="profile-section-title">Security <button class="profile-edit-btn"><span class="icon" style="font-size:15px">lock</span> Change password</button></div>
             <div class="profile-row"><div class="profile-row-label">Password</div><div class="profile-row-val" style="color:var(--text-muted)">Last changed 24 Feb 2026</div></div>
@@ -2305,9 +2746,125 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     INSTRUCTOR: PROFILE
-══════════════════════════════════════ -->
+<!-- PAGE: MEMBERSHIP -->
+<div class="page app-page" id="page-membership">
+  <nav class="navbar">
+    <div class="nav-brand">Course Collaboration Platform</div>
+    <div class="nav-right"><div class="nav-name">Bingyan Wang</div><div class="nav-avatar">BW</div></div>
+  </nav>
+  <div class="app-body">
+    <aside class="sidebar">
+      <div class="nav-section">Student</div>
+      <a class="nav-item" onclick="goTo('page-courses')"><span class="icon">menu_book</span> My Courses</a>
+      <a class="nav-item" onclick="goTo('page-assignments')"><span class="icon">assignment</span> Assignments</a>
+      <a class="nav-item" onclick="goTo('page-discussions')"><span class="icon">forum</span> Discussions</a>
+      <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
+      <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
+      <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item active"><span class="icon">star</span> Membership</a>
+      <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
+      <div class="nav-spacer"></div>
+      <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
+    </aside>
+    <main class="main" style="max-width:760px">
+      <div class="page-title" style="margin-bottom:4px">Membership</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">Manage your plan and track your usage</div>
+
+      <!-- Current status hero -->
+      <div class="mem-status-hero free" id="mem-hero">
+        <div class="mem-icon">✦</div>
+        <div>
+          <div class="mem-hero-title">Free Plan</div>
+          <div class="mem-hero-sub">Limited posts &amp; resubmissions each week</div>
+        </div>
+      </div>
+
+      <!-- Usage tracker -->
+      <div class="mem-page-card">
+        <div style="font-size:13px;color:var(--text-dark);margin-bottom:14px;font-weight:500">This week's usage</div>
+        <div class="mem-usage-row">
+          <div class="mem-usage-label">Discussion posts</div>
+          <div class="mem-usage-bar-wrap"><div class="mem-usage-bar warn" style="width:70%"></div></div>
+          <div class="mem-usage-count">7 / 10</div>
+        </div>
+        <div class="mem-usage-row">
+          <div class="mem-usage-label">Assignment resubmissions</div>
+          <div class="mem-usage-bar-wrap"><div class="mem-usage-bar warn" style="width:50%"></div></div>
+          <div class="mem-usage-count">1 / 2</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:12px">⏱ Limits reset Monday 27 Apr at 12:00am AEST</div>
+      </div>
+
+      <!-- Upgrade section -->
+      <div class="mem-page-card" id="upgrade-section">
+        <div style="font-size:14px;color:var(--text-dark);margin-bottom:16px;font-weight:500">⭐ Upgrade to Member</div>
+        <div class="mem-plans">
+          <div class="mem-plan-card selected" id="plan-monthly" onclick="selectPlan('monthly')">
+            <div class="mem-plan-name">Monthly</div>
+            <div class="mem-plan-price">$9.99 <span>/ month</span></div>
+            <ul class="mem-benefit-list">
+              <li class="on">✓ Unlimited discussion posts</li>
+              <li class="on">✓ Unlimited resubmissions</li>
+              <li class="on">✓ Priority course materials</li>
+              <li>Cancel anytime</li>
+            </ul>
+          </div>
+          <div class="mem-plan-card" id="plan-annual" onclick="selectPlan('annual')">
+            <div class="mem-plan-name">Annual</div>
+            <div class="mem-plan-price">$79.99 <span>/ year</span></div>
+            <div class="mem-plan-savings">Save 33% vs monthly</div>
+            <ul class="mem-benefit-list">
+              <li class="on">✓ Unlimited discussion posts</li>
+              <li class="on">✓ Unlimited resubmissions</li>
+              <li class="on">✓ Priority course materials</li>
+              <li class="on">✓ Best value</li>
+            </ul>
+          </div>
+        </div>
+        <button class="mem-upgrade-btn" onclick="activateMembership()">
+          <span>⭐</span> Upgrade Now
+        </button>
+        <div class="mem-success-banner" id="mem-success-banner">
+          <span class="icon">check_circle</span>
+          <span>You're now a Member! Unlimited posts and resubmissions are now active.</span>
+        </div>
+      </div>
+
+      <!-- Benefits comparison -->
+      <div class="mem-page-card">
+        <div style="font-size:13px;color:var(--text-dark);margin-bottom:12px;font-weight:500">Plan comparison</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:8px 0;color:var(--text-muted);font-weight:400">Feature</th>
+              <th style="padding:8px 12px;color:var(--text-muted);font-weight:400;text-align:center">Free</th>
+              <th style="padding:8px 12px;color:#8B6914;font-weight:500;text-align:center">⭐ Member</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(221,208,212,0.4)">
+              <td style="padding:10px 0;color:var(--text-dark)">Discussion posts</td>
+              <td style="text-align:center;color:var(--text-muted)">10 / week</td>
+              <td style="text-align:center;color:#16a34a">Unlimited</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(221,208,212,0.4)">
+              <td style="padding:10px 0;color:var(--text-dark)">Assignment resubmissions</td>
+              <td style="text-align:center;color:var(--text-muted)">2 per assignment</td>
+              <td style="text-align:center;color:#16a34a">Unlimited</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:var(--text-dark)">Priority course materials</td>
+              <td style="text-align:center;color:var(--text-muted)">—</td>
+              <td style="text-align:center;color:#16a34a">✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- INSTRUCTOR: PROFILE -->
 <div class="page app-page" id="page-inst-profile">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -2323,6 +2880,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-inst-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-inst-analytics')"><span class="icon">bar_chart</span> Analytics</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item active"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -2361,9 +2919,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE: ASSIGNMENT REVIEW — SUBMITTED (awaiting grade)
-══════════════════════════════════════ -->
+<!-- PAGE: ASSIGNMENT REVIEW — SUBMITTED (awaiting grade) -->
 <div class="page app-page" id="page-review-submitted">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -2378,6 +2934,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -2462,9 +3019,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PAGE: ASSIGNMENT REVIEW — GRADED
-══════════════════════════════════════ -->
+<!-- PAGE: ASSIGNMENT REVIEW — GRADED -->
 <div class="page app-page" id="page-review-graded">
   <nav class="navbar">
     <div class="nav-brand">Course Collaboration Platform</div>
@@ -2479,6 +3034,7 @@ body { font-family: 'Gowun Batang', serif; background: var(--bg); min-height: 10
       <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
       <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
       <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
       <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
       <div class="nav-spacer"></div>
       <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
@@ -2779,6 +3335,9 @@ const SUBMISSIONS = [
 function openSubmission(el, idx) {
   document.querySelectorAll('.submission-item').forEach(i => i.classList.remove('sel'));
   el.classList.add('sel');
+  // Show manual grading, hide auto panel
+  document.getElementById('auto-grade-panel').style.display = 'none';
+  document.getElementById('manual-grade-area').style.display = 'block';
   const s = SUBMISSIONS[idx];
   document.getElementById('grade-student-name').textContent = 'Week 7 Progress Report — ' + s.name;
   document.getElementById('grade-submit-time').textContent = 'Submitted ' + s.time + ' · ISIT950 · Group submission';
@@ -2950,6 +3509,603 @@ function enrolCourse(btnId, badgeId) {
   badge.style.background = 'rgba(29,158,117,0.35)';
   badge.style.borderColor = 'rgba(29,158,117,0.5)';
 }
+
+/* ═══════════════════════════════════════
+   COLLABORATION PROFILE EDIT
+═══════════════════════════════════════ */
+function toggleCollabEdit() {
+  const edit = document.getElementById('collab-edit');
+  const view = document.getElementById('collab-view');
+  if (edit.classList.contains('open')) {
+    edit.classList.remove('open');
+    view.style.display = 'block';
+  } else {
+    edit.classList.add('open');
+    view.style.display = 'none';
+  }
+}
+
+function saveCollabProfile() {
+  // Collect skills from tags
+  const tagItems = document.querySelectorAll('#skill-tag-wrap .pei-tag-item');
+  const skills = Array.from(tagItems).map(t => t.childNodes[0].textContent.trim());
+  // Collect mode
+  const modeMap = {
+    'mode-online': { cls: 'online', label: 'Online' },
+    'mode-offline': { cls: 'offline', label: 'Offline' },
+    'mode-both': { cls: 'both', label: 'Both' }
+  };
+  let activeMode = { cls: 'online', label: 'Online' };
+  Object.keys(modeMap).forEach(id => {
+    if (document.getElementById(id).classList.contains('sel')) activeMode = modeMap[id];
+  });
+  // Collect availability
+  const avail = document.getElementById('collab-avail-input').value.trim();
+  // Update view
+  const skillsDisplay = document.getElementById('collab-skills-display');
+  skillsDisplay.innerHTML = skills.map(s => `<span class="collab-tag">${s}</span>`).join('') || '<span style="color:var(--text-muted);font-size:12px">No skills added</span>';
+  const modeDisplay = document.getElementById('collab-mode-display');
+  modeDisplay.className = `collab-mode-pill ${activeMode.cls}`;
+  modeDisplay.textContent = activeMode.label;
+  document.getElementById('collab-avail-display').textContent = avail || 'Not specified';
+  toggleCollabEdit();
+}
+
+let selectedCollabMode = 'online';
+function selectCollabMode(mode) {
+  selectedCollabMode = mode;
+  ['online','offline','both'].forEach(m => {
+    document.getElementById('mode-' + m).classList.toggle('sel', m === mode);
+  });
+}
+
+function removeSkillTag(el) {
+  el.parentElement.remove();
+}
+
+function handleSkillInput(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const input = document.getElementById('skill-input');
+    const val = input.value.trim();
+    if (!val) return;
+    const wrap = document.getElementById('skill-tag-wrap');
+    const tag = document.createElement('span');
+    tag.className = 'pei-tag-item';
+    tag.innerHTML = `${val} <span class="pei-tag-remove" onclick="removeSkillTag(this)">×</span>`;
+    wrap.insertBefore(tag, input);
+    input.value = '';
+  }
+}
+
+/* ═══════════════════════════════════════
+   MEMBERSHIP
+═══════════════════════════════════════ */
+let selectedPlan = 'monthly';
+let isMember = false;
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  ['monthly','annual'].forEach(p => {
+    document.getElementById('plan-' + p).classList.toggle('selected', p === plan);
+  });
+}
+
+function activateMembership() {
+  if (isMember) return;
+  isMember = true;
+  // Update hero
+  const hero = document.getElementById('mem-hero');
+  hero.className = 'mem-status-hero member';
+  hero.querySelector('.mem-icon').textContent = '⭐';
+  hero.querySelector('.mem-hero-title').textContent = '⭐ Member';
+  hero.querySelector('.mem-hero-sub').textContent = 'Unlimited posts · Unlimited resubmissions · Priority materials';
+  // Update usage bars to 0 / unlimited
+  document.querySelectorAll('.mem-usage-bar').forEach(b => { b.style.width = '0%'; b.className = 'mem-usage-bar ok'; });
+  document.querySelectorAll('.mem-usage-count').forEach((c, i) => {
+    c.textContent = i === 0 ? '∞ / ∞' : '∞ / ∞';
+  });
+  // Show success banner
+  const banner = document.getElementById('mem-success-banner');
+  banner.style.display = 'flex';
+  // Update profile badges
+  document.querySelectorAll('.mem-badge.free').forEach(b => {
+    b.className = 'mem-badge member';
+    b.textContent = '⭐ Member';
+  });
+  // Update limit banners to green
+  document.querySelectorAll('.limit-banner.warn').forEach(b => {
+    b.className = 'limit-banner ok';
+    b.querySelector('span:first-child').textContent = '⭐ Unlimited — Member plan active';
+  });
+}
+
+/* ═══════════════════════════════════════
+   AUTO-MARK QUESTION EDITOR
+═══════════════════════════════════════ */
+let questions = [];
+let qCounter = 0;
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function setAssignType(type) {
+  ['file','auto'].forEach(t => document.getElementById('type-' + t).classList.toggle('sel', t === type));
+  document.getElementById('question-editor-wrap').style.display = type === 'auto' ? 'block' : 'none';
+  if (type === 'auto' && questions.length === 0) addQuestion();
+}
+
+function addQuestion() {
+  qCounter++;
+  questions.push({ id: qCounter, type: 'mcq', options: ['','','',''], correct: 0 });
+  renderQuestions();
+}
+
+function removeQuestion(id) {
+  questions = questions.filter(q => q.id !== id);
+  renderQuestions();
+}
+
+function setQType(id, type) {
+  const q = questions.find(q => q.id === id);
+  if (q) { q.type = type; renderQuestions(); }
+}
+
+function renderQuestions() {
+  const list = document.getElementById('question-list');
+  const badge = document.getElementById('q-count-badge');
+  badge.textContent = questions.length + ' question' + (questions.length !== 1 ? 's' : '');
+  list.innerHTML = questions.map((q, qi) => {
+    const typeOpts = [['mcq','Multiple choice'],['fillin','Fill in blank'],['unique','Unique answer']];
+    const typeSelect = typeOpts.map(([v, l]) => `<option value="${v}" ${q.type===v?'selected':''}>${l}</option>`).join('');
+    let bodyHtml = '';
+    if (q.type === 'mcq') {
+      const opts = (q.options.length < 2 ? ['','','',''] : q.options);
+      bodyHtml = `<div class="qe-field-label">Options <span style="font-size:10px;color:var(--text-muted)">(● = correct answer)</span></div>
+        <div class="qe-options" id="opts-${q.id}">
+          ${opts.map((o, oi) => `
+            <div class="qe-option-row">
+              <input type="radio" class="qe-option-radio" name="correct-${q.id}" ${q.correct===oi?'checked':''} onchange="setCorrect(${q.id},${oi})">
+              <input class="qe-option-input" placeholder="Option ${oi+1}" value="${o}" oninput="updateOption(${q.id},${oi},this.value)">
+              ${opts.length > 2 ? `<span class="icon" style="font-size:16px;color:var(--text-muted);cursor:pointer" onclick="removeOption(${q.id},${oi})">remove_circle</span>` : ''}
+            </div>`).join('')}
+          ${opts.length < 6 ? `<button class="qe-add-option" onclick="addOption(${q.id})">+ Add option</button>` : ''}
+        </div>`;
+    } else {
+      bodyHtml = `<div class="qe-field-label">Correct answer</div>
+        <input class="qe-text-input" placeholder="${q.type==='fillin'?'Exact text students must enter':'Unique correct answer'}" value="${q.correctAnswer||''}" oninput="setCorrectAnswer(${q.id},this.value)">`;
+    }
+    return `<div class="question-editor">
+      <div class="qe-header">
+        <span class="qe-num">Q${qi+1}</span>
+        <select class="qe-type-select" onchange="setQType(${q.id},this.value)">${typeSelect}</select>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="qe-pts-row"><input class="qe-pts-input" type="number" min="1" value="${q.points||2}" oninput="setPoints(${q.id},this.value)"> pts</span>
+          <button class="qe-remove" onclick="removeQuestion(${q.id})">Remove</button>
+        </div>
+      </div>
+      <div class="qe-body">
+        <div>
+          <div class="qe-field-label">Question text</div>
+          <textarea class="qe-text-input" rows="2" placeholder="Enter question…" oninput="setQText(${q.id},this.value)">${q.text||''}</textarea>
+        </div>
+        ${bodyHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setQText(id, v) { const q = questions.find(q=>q.id===id); if(q) q.text = v; }
+function setPoints(id, v) { const q = questions.find(q=>q.id===id); if(q) q.points = parseInt(v)||1; }
+function setCorrect(id, idx) { const q = questions.find(q=>q.id===id); if(q) q.correct = idx; }
+function setCorrectAnswer(id, v) { const q = questions.find(q=>q.id===id); if(q) q.correctAnswer = v; }
+function updateOption(id, idx, v) { const q = questions.find(q=>q.id===id); if(q) q.options[idx] = v; }
+function addOption(id) { const q = questions.find(q=>q.id===id); if(q && q.options.length < 6) { q.options.push(''); renderQuestions(); } }
+function removeOption(id, idx) { const q = questions.find(q=>q.id===id); if(q && q.options.length > 2) { q.options.splice(idx,1); if(q.correct>=idx && q.correct>0) q.correct--; renderQuestions(); } }
+
+/* ═══════════════════════════════════════
+   AUTO-GRADED SUBMISSION PANEL
+═══════════════════════════════════════ */
+function openAutoGradedSubmission(el, idx) {
+  document.querySelectorAll('.submission-item').forEach(i => i.classList.remove('sel'));
+  el.classList.add('sel');
+  const names = ['Bingyan Wang', 'Mingcan Yang'];
+  const scores = ['8 / 10', '10 / 10'];
+  document.getElementById('grade-student-name').textContent = 'Week 5 Scrum Quiz — ' + names[idx];
+  document.getElementById('grade-submit-time').textContent = 'Auto-graded · 24 Apr 2026 · ISIT950';
+  document.getElementById('auto-grade-panel').style.display = 'block';
+  document.getElementById('manual-grade-area').style.display = 'none';
+  const banner = document.getElementById('auto-grade-panel').querySelector('.autograded-banner');
+  banner.querySelector('div div:first-child').textContent = 'Auto-graded — no action needed';
+  banner.querySelector('span:last-child').textContent = scores[idx];
+}
+
 </script>
+<!-- PAGE: STUDENT — AUTO-MARK QUIZ -->
+<div class="page app-page" id="page-quiz">
+  <nav class="navbar">
+    <div class="nav-brand">Course Collaboration Platform</div>
+    <div class="nav-right"><div class="nav-name">Bingyan Wang</div><div class="nav-avatar">BW</div></div>
+  </nav>
+  <div class="app-body">
+    <aside class="sidebar">
+      <div class="nav-section">Student</div>
+      <a class="nav-item active"><span class="icon">menu_book</span> My Courses</a>
+      <a class="nav-item" onclick="goTo('page-assignments')"><span class="icon">assignment</span> Assignments</a>
+      <a class="nav-item" onclick="goTo('page-discussions')"><span class="icon">forum</span> Discussions</a>
+      <a class="nav-item" onclick="goTo('page-announcements')"><span class="icon">campaign</span> Announcements</a>
+      <a class="nav-item" onclick="goTo('page-browse')"><span class="icon">explore</span> Browse Courses</a>
+      <div class="nav-section" style="margin-top:8px">Account</div>
+      <a class="nav-item" onclick="goTo('page-membership')"><span class="icon">star</span> Membership</a>
+      <a class="nav-item" onclick="goTo('page-profile')"><span class="icon">manage_accounts</span> Profile</a>
+      <div class="nav-spacer"></div>
+      <a class="nav-item" onclick="goTo('page-auth')"><span class="icon">logout</span> Sign out</a>
+    </aside>
+    <main class="main">
+      <!-- breadcrumb -->
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);margin-bottom:20px">
+        <span style="cursor:pointer;color:var(--accent)" onclick="goTo('page-detail')">ISIT950</span>
+        <span class="icon" style="font-size:14px">chevron_right</span>
+        <span style="cursor:pointer;color:var(--accent)" onclick="goTo('page-detail')">Assignments</span>
+        <span class="icon" style="font-size:14px">chevron_right</span>
+        <span>Week 5 Scrum Quiz</span>
+      </div>
+
+      <div class="submit-layout">
+        <div class="submit-main">
+          <!-- Assignment info -->
+          <div class="asgn-card" style="margin-bottom:20px">
+            <div class="asgn-title" style="display:flex;align-items:center;gap:10px">
+              Week 5 Scrum Quiz
+              <span class="auto-badge">Auto-Mark</span>
+            </div>
+            <div class="asgn-meta-row">
+              <span class="asgn-meta-chip urgent"><span class="icon">schedule</span> Due 8 May 2026, 11:59pm</span>
+              <span class="asgn-meta-chip"><span class="icon">star</span> 10 marks</span>
+              <span class="asgn-meta-chip"><span class="icon">school</span> ISIT950 · Dr. Sarah Mitchell</span>
+              <span class="asgn-meta-chip"><span class="icon">auto_fix_high</span> Instant result</span>
+            </div>
+            <div class="asgn-desc-heading">Instructions</div>
+            <div class="asgn-desc">Answer all 5 questions below. Your submission will be automatically marked and your score displayed immediately. You may resubmit before the deadline (subject to your plan limits).</div>
+          </div>
+
+          <!-- Result banner (hidden until submitted) -->
+          <div id="quiz-result-banner" style="display:none"></div>
+
+          <!-- Questions -->
+          <div id="quiz-questions">
+
+            <!-- Q1 MCQ -->
+            <div class="quiz-q-card" id="qcard-1">
+              <div class="quiz-q-num">Question 1 <span class="quiz-q-pts">2 pts</span></div>
+              <div class="quiz-q-text">In Scrum, who is responsible for managing and prioritising the Product Backlog?</div>
+              <div class="quiz-options" id="qopts-1">
+                <div class="quiz-option" id="q1-a" onclick="selectOption(1,'a')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">A. Scrum Master</span><span class="quiz-option-result" id="q1-a-res"></span>
+                </div>
+                <div class="quiz-option" id="q1-b" onclick="selectOption(1,'b')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">B. Product Owner</span><span class="quiz-option-result" id="q1-b-res"></span>
+                </div>
+                <div class="quiz-option" id="q1-c" onclick="selectOption(1,'c')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">C. Development Team</span><span class="quiz-option-result" id="q1-c-res"></span>
+                </div>
+                <div class="quiz-option" id="q1-d" onclick="selectOption(1,'d')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">D. Stakeholder</span><span class="quiz-option-result" id="q1-d-res"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Q2 MCQ -->
+            <div class="quiz-q-card" id="qcard-2">
+              <div class="quiz-q-num">Question 2 <span class="quiz-q-pts">2 pts</span></div>
+              <div class="quiz-q-text">What is the maximum recommended length of a Sprint in Scrum?</div>
+              <div class="quiz-options" id="qopts-2">
+                <div class="quiz-option" id="q2-a" onclick="selectOption(2,'a')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">A. 1 week</span><span class="quiz-option-result" id="q2-a-res"></span>
+                </div>
+                <div class="quiz-option" id="q2-b" onclick="selectOption(2,'b')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">B. 4 weeks</span><span class="quiz-option-result" id="q2-b-res"></span>
+                </div>
+                <div class="quiz-option" id="q2-c" onclick="selectOption(2,'c')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">C. 6 weeks</span><span class="quiz-option-result" id="q2-c-res"></span>
+                </div>
+                <div class="quiz-option" id="q2-d" onclick="selectOption(2,'d')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">D. 3 months</span><span class="quiz-option-result" id="q2-d-res"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Q3 Fill-in -->
+            <div class="quiz-q-card" id="qcard-3">
+              <div class="quiz-q-num">Question 3 <span class="quiz-q-pts">2 pts</span></div>
+              <div class="quiz-q-text">Fill in the blank: A ________ is a time-boxed iteration in Scrum during which a "Done" product increment is created.</div>
+              <input class="quiz-text-input" id="q3-input" placeholder="Type your answer here…" oninput="quizAnswers[3]=this.value.trim();updateSubmitBtn()">
+            </div>
+
+            <!-- Q4 MCQ -->
+            <div class="quiz-q-card" id="qcard-4">
+              <div class="quiz-q-num">Question 4 <span class="quiz-q-pts">2 pts</span></div>
+              <div class="quiz-q-text">Which Scrum event is specifically designed to inspect the increment and adapt the Product Backlog if needed?</div>
+              <div class="quiz-options" id="qopts-4">
+                <div class="quiz-option" id="q4-a" onclick="selectOption(4,'a')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">A. Sprint Planning</span><span class="quiz-option-result" id="q4-a-res"></span>
+                </div>
+                <div class="quiz-option" id="q4-b" onclick="selectOption(4,'b')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">B. Daily Scrum</span><span class="quiz-option-result" id="q4-b-res"></span>
+                </div>
+                <div class="quiz-option" id="q4-c" onclick="selectOption(4,'c')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">C. Sprint Review</span><span class="quiz-option-result" id="q4-c-res"></span>
+                </div>
+                <div class="quiz-option" id="q4-d" onclick="selectOption(4,'d')">
+                  <div class="quiz-radio"></div><span class="quiz-option-label">D. Sprint Retrospective</span><span class="quiz-option-result" id="q4-d-res"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Q5 Unique answer -->
+            <div class="quiz-q-card" id="qcard-5">
+              <div class="quiz-q-num">Question 5 <span class="quiz-q-pts">2 pts</span></div>
+              <div class="quiz-q-text">What does the abbreviation "WIP" stand for in the context of Scrum and Kanban boards?</div>
+              <input class="quiz-text-input" id="q5-input" placeholder="Type your answer here…" oninput="quizAnswers[5]=this.value.trim();updateSubmitBtn()">
+            </div>
+
+          </div><!-- end quiz-questions -->
+
+          <div id="quiz-submit-area">
+            <button class="submit-btn" id="quiz-submit-btn" onclick="submitQuiz()" disabled style="margin-top:8px">
+              <span class="icon">send</span> Submit quiz
+            </button>
+          </div>
+
+          <div id="quiz-resubmit-area" style="display:none;margin-top:12px">
+            <button class="submit-btn" onclick="resetQuiz()" style="background:var(--accent)">
+              <span class="icon">refresh</span> Resubmit
+            </button>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center">1 resubmission remaining (Free plan) · <span style="color:#8B6914;cursor:pointer" onclick="goTo('page-membership')">Upgrade for unlimited ›</span></div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="submit-sidebar">
+          <div class="info-card">
+            <div class="info-card-title">Quiz info</div>
+            <div class="info-row"><span class="info-row-label">Type</span><span class="info-row-val" style="display:flex;align-items:center;gap:6px"><span class="auto-badge">Auto-Mark</span></span></div>
+            <div class="info-row"><span class="info-row-label">Status</span><span class="info-row-val" id="quiz-status" style="color:#d85a30">Not submitted</span></div>
+            <div class="info-row"><span class="info-row-label">Due date</span><span class="info-row-val urgent">8 May 2026, 11:59pm</span></div>
+            <div class="info-row"><span class="info-row-label">Marks</span><span class="info-row-val">10 points</span></div>
+            <div class="info-row"><span class="info-row-label">Questions</span><span class="info-row-val">5 questions</span></div>
+            <div class="info-row"><span class="info-row-label">Result</span><span class="info-row-val">Instant on submit</span></div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-title">Progress</div>
+            <div class="info-row"><span class="info-row-label">Answered</span><span class="info-row-val" id="quiz-progress">0 / 5</span></div>
+            <div style="height:6px;border-radius:4px;background:rgba(182,147,169,0.15);overflow:hidden;margin-top:8px">
+              <div id="quiz-progress-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#c8a8bc);width:0%;transition:width .3s"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   EDIT ASSIGNMENT MODAL
+═══════════════════════════════════════ */
+function openEditAssignment(type) {
+  const modal = document.getElementById('modal-edit-assignment');
+  const titleEl = document.getElementById('edit-asgn-modal-title');
+  const typeIcon = document.getElementById('edit-asgn-type-icon');
+  const typeLabel = document.getElementById('edit-asgn-type-label');
+  const qWrap = document.getElementById('edit-question-editor-wrap');
+
+  if (type === 'file') {
+    titleEl.textContent = 'Edit assignment — Week 7 Progress Report';
+    typeIcon.textContent = 'assignment';
+    typeIcon.style.color = 'var(--accent)';
+    typeLabel.textContent = 'File Upload';
+    document.getElementById('edit-asgn-title').value = 'Week 7 Progress Report';
+    document.getElementById('edit-asgn-desc').value = "Submit your team's Week 7 Progress Report as a single PDF document.";
+    document.getElementById('edit-asgn-due').value = '17 Apr 2026, 5:00pm';
+    document.getElementById('edit-asgn-score').value = '10';
+    qWrap.style.display = 'none';
+  } else {
+    titleEl.textContent = 'Edit assignment — Week 5 Scrum Quiz';
+    typeIcon.textContent = 'auto_fix_high';
+    typeIcon.style.color = '#534ab7';
+    typeLabel.textContent = 'Auto-Mark';
+    document.getElementById('edit-asgn-title').value = 'Week 5 Scrum Quiz';
+    document.getElementById('edit-asgn-desc').value = 'Answer all 5 questions. Instant result on submission.';
+    document.getElementById('edit-asgn-due').value = '8 May 2026, 11:59pm';
+    document.getElementById('edit-asgn-score').value = '10';
+    qWrap.style.display = 'block';
+  }
+  modal.classList.add('open');
+}
+
+/* ═══════════════════════════════════════
+   OVERRIDE AUTO-GRADE
+═══════════════════════════════════════ */
+function toggleOverride() {
+  const form = document.getElementById('override-form');
+  const chevron = document.getElementById('override-chevron');
+  const open = form.style.display === 'block';
+  form.style.display = open ? 'none' : 'block';
+  chevron.textContent = open ? 'expand_more' : 'expand_less';
+}
+
+function submitOverride() {
+  const banner = document.querySelector('#auto-grade-panel .autograded-banner');
+  banner.style.background = '#FFF3CD';
+  banner.style.borderColor = '#FFD700';
+  banner.querySelector('div div:first-child').textContent = 'Grade overridden by instructor';
+  banner.querySelector('div div:first-child').style.color = '#8B6914';
+  banner.querySelector('span:last-child').textContent = '9 / 10';
+  banner.querySelector('span:last-child').style.color = '#8B6914';
+  document.getElementById('override-form').style.display = 'none';
+  document.getElementById('override-chevron').textContent = 'expand_more';
+}
+
+
+const QUIZ_CORRECT = {
+  1: 'b',      // Product Owner
+  2: 'b',      // 4 weeks
+  3: 'sprint', // fill-in (case-insensitive)
+  4: 'c',      // Sprint Review
+  5: 'work in progress'  // unique answer (case-insensitive)
+};
+const QUIZ_POINTS = { 1:2, 2:2, 3:2, 4:2, 5:2 };
+
+let quizAnswers = {};
+let quizSubmitted = false;
+let quizAnsweredCount = 0;
+
+function selectOption(qNum, opt) {
+  if (quizSubmitted) return;
+  const wasAnswered = quizAnswers[qNum] !== undefined;
+  quizAnswers[qNum] = opt;
+  // Update visual selection
+  ['a','b','c','d'].forEach(o => {
+    const el = document.getElementById(`q${qNum}-${o}`);
+    if (el) el.classList.toggle('selected', o === opt);
+  });
+  if (!wasAnswered) {
+    quizAnsweredCount++;
+    updateProgress();
+  }
+  updateSubmitBtn();
+}
+
+function updateProgress() {
+  const total = 5;
+  const answered = Object.keys(quizAnswers).length;
+  document.getElementById('quiz-progress').textContent = answered + ' / ' + total;
+  document.getElementById('quiz-progress-bar').style.width = (answered / total * 100) + '%';
+}
+
+function updateSubmitBtn() {
+  const answered = Object.keys(quizAnswers).length;
+  document.getElementById('quiz-submit-btn').disabled = answered < 5;
+}
+
+function submitQuiz() {
+  if (quizSubmitted) return;
+  quizSubmitted = true;
+
+  // Grade
+  let score = 0;
+  const breakdown = [];
+
+  // Q1, Q2, Q4 — MCQ
+  [1, 2, 4].forEach(q => {
+    const ans = (quizAnswers[q] || '').toLowerCase();
+    const correct = ans === QUIZ_CORRECT[q];
+    if (correct) score += QUIZ_POINTS[q];
+    breakdown.push({ q, correct, pts: correct ? QUIZ_POINTS[q] : 0, maxPts: QUIZ_POINTS[q] });
+    // Show result on options
+    ['a','b','c','d'].forEach(o => {
+      const el = document.getElementById(`q${q}-${o}`);
+      if (!el) return;
+      el.onclick = null;
+      if (o === QUIZ_CORRECT[q]) {
+        el.classList.remove('selected');
+        el.classList.add('correct');
+        document.getElementById(`q${q}-${o}-res`).textContent = '✓';
+      } else if (o === quizAnswers[q] && !correct) {
+        el.classList.add('wrong');
+        el.classList.remove('selected');
+        document.getElementById(`q${q}-${o}-res`).textContent = '✗';
+      } else {
+        el.classList.remove('selected');
+      }
+    });
+  });
+
+  // Q3 fill-in
+  const q3ans = (quizAnswers[3] || '').toLowerCase().trim();
+  const q3correct = q3ans === QUIZ_CORRECT[3];
+  if (q3correct) score += QUIZ_POINTS[3];
+  breakdown.push({ q: 3, correct: q3correct, pts: q3correct ? QUIZ_POINTS[3] : 0, maxPts: QUIZ_POINTS[3] });
+  const q3input = document.getElementById('q3-input');
+  q3input.readOnly = true;
+  q3input.classList.add(q3correct ? 'correct' : 'wrong');
+
+  // Q5 unique answer
+  const q5ans = (quizAnswers[5] || '').toLowerCase().trim();
+  const q5correct = q5ans === QUIZ_CORRECT[5];
+  if (q5correct) score += QUIZ_POINTS[5];
+  breakdown.push({ q: 5, correct: q5correct, pts: q5correct ? QUIZ_POINTS[5] : 0, maxPts: QUIZ_POINTS[5] });
+  const q5input = document.getElementById('q5-input');
+  q5input.readOnly = true;
+  q5input.classList.add(q5correct ? 'correct' : 'wrong');
+
+  const maxScore = 10;
+  const passed = score >= 6;
+
+  // Show result banner
+  const bannerEl = document.getElementById('quiz-result-banner');
+  bannerEl.className = 'quiz-result-banner ' + (passed ? 'pass' : 'fail');
+  bannerEl.style.display = 'flex';
+  bannerEl.innerHTML = `
+    <div style="text-align:center;min-width:80px">
+      <div class="quiz-score-big ${passed?'':'fail'}">${score}</div>
+      <div class="quiz-score-label">out of ${maxScore}</div>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:15px;color:var(--text-dark);margin-bottom:4px">${passed ? '🎉 Well done!' : '📖 Keep studying'}</div>
+      <div style="font-size:12px;color:var(--text-muted)">Auto-graded · Submitted ${new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})} today</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:3px">
+        ${breakdown.map(b => `<div style="font-size:11px;color:${b.correct?'#16a34a':'#dc2626'}">${b.correct?'✓':'✗'} Q${b.q}: ${b.pts} / ${b.maxPts} pts</div>`).join('')}
+      </div>
+    </div>`;
+
+  // Update sidebar status
+  document.getElementById('quiz-status').textContent = 'Graded';
+  document.getElementById('quiz-status').style.color = '#534ab7';
+
+  // Swap submit button for resubmit
+  document.getElementById('quiz-submit-area').style.display = 'none';
+  document.getElementById('quiz-resubmit-area').style.display = 'block';
+  bannerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetQuiz() {
+  quizAnswers = {};
+  quizSubmitted = false;
+  quizAnsweredCount = 0;
+
+  document.getElementById('quiz-result-banner').style.display = 'none';
+  document.getElementById('quiz-submit-area').style.display = 'block';
+  document.getElementById('quiz-resubmit-area').style.display = 'none';
+  document.getElementById('quiz-status').textContent = 'Not submitted';
+  document.getElementById('quiz-status').style.color = '#d85a30';
+  document.getElementById('quiz-progress').textContent = '0 / 5';
+  document.getElementById('quiz-progress-bar').style.width = '0%';
+
+  // Reset Q1,2,4 options
+  [1,2,4].forEach(q => {
+    ['a','b','c','d'].forEach(o => {
+      const el = document.getElementById(`q${q}-${o}`);
+      if (!el) return;
+      el.classList.remove('selected','correct','wrong');
+      el.onclick = () => selectOption(q, o);
+      document.getElementById(`q${q}-${o}-res`).textContent = '';
+    });
+  });
+
+  // Reset Q3, Q5 inputs
+  const q3 = document.getElementById('q3-input');
+  q3.value = ''; q3.readOnly = false;
+  q3.classList.remove('correct','wrong');
+  const q5 = document.getElementById('q5-input');
+  q5.value = ''; q5.readOnly = false;
+  q5.classList.remove('correct','wrong');
+
+  document.getElementById('quiz-submit-btn').disabled = true;
+}
+</script>
+
 </body>
 </html>
