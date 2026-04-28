@@ -29,8 +29,8 @@ function formatSize(bytes) {
 const inputClass =
   'w-full h-[42px] px-[14px] rounded-[10px] border border-border bg-input-bg text-text-dark text-[13px] font-serif outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 focus:bg-white transition-colors duration-150';
 
-export default function UploadMaterialModal({ courseId, onClose, onUploadSuccess }) {
-  const [section, setSection] = useState('');
+export default function UploadMaterialModal({ courseId, initialSection, onClose, onUploadSuccess }) {
+  const [section, setSection] = useState(initialSection || '');
   const [file, setFile] = useState(null);
   const [fileError, setFileError] = useState('');
   const [sectionError, setSectionError] = useState('');
@@ -277,6 +277,11 @@ export default function UploadMaterialModal({ courseId, onClose, onUploadSuccess
 
 UploadMaterialModal.propTypes = {
   courseId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  initialSection: PropTypes.string,
   onClose: PropTypes.func.isRequired,
   onUploadSuccess: PropTypes.func.isRequired,
+};
+
+UploadMaterialModal.defaultProps = {
+  initialSection: '',
 };

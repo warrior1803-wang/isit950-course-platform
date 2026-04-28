@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 const mockAssignment = {
   id: "asg1",
@@ -84,8 +84,7 @@ function UpgradePrompt() {
 }
 
 export default function AssignmentSubmission() {
-  const { id: courseId, asgId } = useParams();
-  const navigate = useNavigate();
+  const { id: courseId } = useParams();
   const fileInputRef = useRef(null);
   const resubmitInputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
@@ -145,7 +144,6 @@ export default function AssignmentSubmission() {
     });
     clearFile();
     setSubmitting(false);
-    navigate(`/courses/${courseId}/assignments/${asgId}/review`);
   }
 
   async function resubmitAssignment() {

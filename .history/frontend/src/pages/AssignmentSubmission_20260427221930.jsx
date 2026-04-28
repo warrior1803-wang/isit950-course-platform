@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 const mockAssignment = {
   id: "asg1",
@@ -14,9 +14,7 @@ const mockAssignment = {
 const mockSubmission = {
   filename: "report_draft.pdf",
   submittedAt: "2026-04-15T11:42:00",
-  status: "graded",
-  score: 8,
-  feedback: "Good structure, needs more detail in Section 4.",
+  status: "submitted",
   resubmissionsUsed: 1,
   resubmissionsLimit: 2,
 };
@@ -84,8 +82,7 @@ function UpgradePrompt() {
 }
 
 export default function AssignmentSubmission() {
-  const { id: courseId, asgId } = useParams();
-  const navigate = useNavigate();
+  const { id: courseId } = useParams();
   const fileInputRef = useRef(null);
   const resubmitInputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
@@ -145,7 +142,6 @@ export default function AssignmentSubmission() {
     });
     clearFile();
     setSubmitting(false);
-    navigate(`/courses/${courseId}/assignments/${asgId}/review`);
   }
 
   async function resubmitAssignment() {

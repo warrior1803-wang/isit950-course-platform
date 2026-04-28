@@ -25,4 +25,5 @@ Thumbs.db
 # AI tools files
 dev_notes_EN.md
 .cursorrules
+.history/
 frontend/package-lock.json
