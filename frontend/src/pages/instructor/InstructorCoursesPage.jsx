@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CourseManageCard from '../../components/instructor/CourseManageCard';
+import AssignmentModal from '../../components/instructor/AssignmentModal';
 import CourseModal from '../../components/instructor/CourseModal';
 import UploadMaterialModal from '../../components/instructor/UploadMaterialModal';
 import api from '../../api/axios';
@@ -8,21 +10,41 @@ function formatMaterial(material) {
   return {
     id: material.id,
     filename: material.filename,
-    section: material.section,
+    section: material.section || 'Unsectioned',
     url: material.url,
     size: material.size,
     uploadedAt: new Date(material.uploadedAt).toLocaleDateString('en-AU'),
   };
 }
 
+function formatAssignment(assignment, options = {}) {
+  const formatted = {
+    id: assignment.id,
+    title: assignment.title || 'Untitled assignment',
+    description: assignment.description || '',
+    dueDate: assignment.dueDate || null,
+    maxScore: assignment.maxScore ?? null,
+    type: String(assignment.type || 'FILE').toUpperCase() === 'AUTO' ? 'AUTO' : 'FILE',
+    submissionStatus: assignment.submissionStatus || null,
+  };
+  if (options.includeQuestionDetails) {
+    if (assignment.questionCount != null) formatted.questionCount = assignment.questionCount;
+    if (Array.isArray(assignment.questions)) formatted.questions = assignment.questions;
+  }
+  return formatted;
+}
+
 export default function InstructorCoursesPage() {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [modal, setModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', course: {...} }
-  const [uploadModal, setUploadModal] = useState(null); // null | { courseId }
+  const [uploadModal, setUploadModal] = useState(null); // null | { courseId, section }
+  const [assignmentModal, setAssignmentModal] = useState(null);
   const [materials, setMaterials] = useState({});
+  const [assignments, setAssignments] = useState({});
 
   async function fetchMaterialsForCourses(courseList) {
     if (!courseList.length) {
@@ -44,6 +66,27 @@ export default function InstructorCoursesPage() {
     setMaterials(Object.fromEntries(results));
   }
 
+  async function fetchAssignmentsForCourses(courseList) {
+    if (!courseList.length) {
+      setAssignments({});
+      return;
+    }
+
+    const results = await Promise.all(
+      courseList.map(async course => {
+        try {
+          const res = await api.get(`/courses/${course.id}/assignments`);
+          const items = Array.isArray(res.data?.data) ? res.data.data : [];
+          return [course.id, items.map(formatAssignment)];
+        } catch {
+          return [course.id, []];
+        }
+      })
+    );
+
+    setAssignments(Object.fromEntries(results));
+  }
+
   async function fetchCourses() {
     setLoading(true);
     setError(null);
@@ -51,7 +94,10 @@ export default function InstructorCoursesPage() {
       const res = await api.get('/courses');
       const nextCourses = res.data?.data ?? [];
       setCourses(nextCourses);
-      await fetchMaterialsForCourses(nextCourses);
+      await Promise.all([
+        fetchMaterialsForCourses(nextCourses),
+        fetchAssignmentsForCourses(nextCourses),
+      ]);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to load courses');
     } finally {
@@ -86,6 +132,57 @@ export default function InstructorCoursesPage() {
       ...prev,
       [courseId]: [newMaterial, ...(prev[courseId] || [])],
     }));
+  }
+
+  async function handleAssignmentSubmit(fields) {
+    const isEdit = assignmentModal.mode === 'edit';
+    const courseId = assignmentModal.courseId;
+    const res = await api.request({
+      url: isEdit
+        ? `/courses/${courseId}/assignments/${assignmentModal.assignmentId}`
+        : `/courses/${courseId}/assignments`,
+      method: isEdit ? 'put' : 'post',
+      data: fields,
+    });
+    const saved = formatAssignment({
+      ...fields,
+      ...res.data,
+      id: res.data?.id ?? assignmentModal.assignmentId,
+    }, { includeQuestionDetails: true });
+    setAssignments(prev => {
+      const current = prev[courseId] || [];
+      return {
+        ...prev,
+        [courseId]: isEdit
+          ? current.map(assignment => (assignment.id === saved.id ? saved : assignment))
+          : [saved, ...current],
+      };
+    });
+    setAssignmentModal(null);
+  }
+
+  async function openEditAssignment(courseId, assignment) {
+    setAssignmentModal({
+      mode: 'edit',
+      courseId,
+      assignmentId: assignment.id,
+      initialData: assignment,
+      isLoadingDetail: true,
+    });
+    try {
+      const res = await api.get(`/courses/${courseId}/assignments/${assignment.id}`);
+      setAssignmentModal(current => {
+        if (!current || current.assignmentId !== assignment.id) return current;
+        return {
+          ...current,
+          initialData: res.data,
+          isLoadingDetail: false,
+        };
+      });
+    } catch {
+      alert('Failed to load assignment details.');
+      setAssignmentModal(null);
+    }
   }
 
   async function handleDeleteMaterial(courseId, materialId) {
@@ -156,8 +253,12 @@ export default function InstructorCoursesPage() {
             thumbnailUrl: course.thumbnailUrl || null,
           }}
           materials={materials[course.id] || []}
-          onUpload={() => setUploadModal({ courseId: course.id })}
+          assignments={assignments[course.id] || []}
+          onUpload={section => setUploadModal({ courseId: course.id, section })}
           onDeleteMaterial={materialId => handleDeleteMaterial(course.id, materialId)}
+          onViewStudents={() => navigate(`/instructor/courses/${course.id}/students`)}
+          onNewAssignment={() => setAssignmentModal({ mode: 'create', courseId: course.id })}
+          onEditAssignment={assignment => openEditAssignment(course.id, assignment)}
           onEdit={() => setModal({
             mode: 'edit',
             course: {
@@ -181,10 +282,22 @@ export default function InstructorCoursesPage() {
         />
       )}
 
+      {/* Assignment create/edit modal */}
+      {assignmentModal && (
+        <AssignmentModal
+          mode={assignmentModal.mode}
+          initialData={assignmentModal.initialData}
+          isLoadingDetail={assignmentModal.isLoadingDetail}
+          onClose={() => setAssignmentModal(null)}
+          onSubmit={handleAssignmentSubmit}
+        />
+      )}
+
       {/* Upload material modal */}
       {uploadModal && (
         <UploadMaterialModal
           courseId={uploadModal.courseId}
+          initialSection={uploadModal.section}
           onClose={() => setUploadModal(null)}
           onUploadSuccess={material => {
             handleUploadSuccess(uploadModal.courseId, material);

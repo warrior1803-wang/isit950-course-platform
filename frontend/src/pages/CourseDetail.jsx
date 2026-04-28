@@ -154,6 +154,7 @@ function normalizeAssignment(raw) {
     dueDate: raw.dueDate || null,
     openDate: raw.openDate || raw.createdAt || raw.dueDate || null,
     maxScore: raw.maxScore ?? raw.totalMarks ?? null,
+    type: raw.type || 'FILE',
     submissionStatus: submission
       ? {
           ...submission,
@@ -612,6 +613,13 @@ export default function CourseDetail() {
             <div className="material-list">
               {assignments.map(assignment => {
                 const status = assignmentStatus(assignment);
+                const isAuto = assignment.type === 'AUTO';
+                const attemptLink = isAuto
+                  ? `/courses/${id}/assignments/${assignment.id}/quiz`
+                  : `/courses/${id}/assignments/${assignment.id}/submit`;
+                const reviewLink = isAuto
+                  ? `/courses/${id}/assignments/${assignment.id}/quiz`
+                  : `/courses/${id}/assignments/${assignment.id}/review`;
                 const baseMeta = (() => {
                   if (status === 'due_soon') {
                     return {
@@ -629,7 +637,7 @@ export default function CourseDetail() {
                           flexShrink: 0,
                         },
                       },
-                      linkTo: `/courses/${id}/assignments/${assignment.id}/submit`,
+                      linkTo: attemptLink,
                       disabled: false,
                     };
                   }
@@ -649,7 +657,7 @@ export default function CourseDetail() {
                           flexShrink: 0,
                         },
                       },
-                      linkTo: `/courses/${id}/assignments/${assignment.id}/review`,
+                      linkTo: reviewLink,
                       disabled: false,
                     };
                   }
@@ -669,7 +677,7 @@ export default function CourseDetail() {
                           flexShrink: 0,
                         },
                       },
-                      linkTo: `/courses/${id}/assignments/${assignment.id}/review`,
+                      linkTo: reviewLink,
                       disabled: false,
                     };
                   }
@@ -689,7 +697,7 @@ export default function CourseDetail() {
                           flexShrink: 0,
                         },
                       },
-                      linkTo: `/courses/${id}/assignments/${assignment.id}/submit`,
+                      linkTo: attemptLink,
                       disabled: false,
                     };
                   }

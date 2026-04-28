@@ -18,6 +18,26 @@ function getFileIcon(filename) {
   return { icon: 'description', colorClass: 'bg-border text-text-muted' };
 }
 
+function formatAssignmentDate(value) {
+  if (!value) return 'No due date';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'No due date';
+  return date.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function groupMaterialsBySection(materials) {
+  return materials.reduce((groups, material) => {
+    const section = material.section || 'Unsectioned';
+    if (!groups[section]) groups[section] = [];
+    groups[section].push(material);
+    return groups;
+  }, {});
+}
+
 function CourseThumbnail({ thumbnailUrl }) {
   if (thumbnailUrl) {
     return (
@@ -77,24 +97,106 @@ MaterialItem.propTypes = {
   onDelete: PropTypes.func.isRequired,
 };
 
-function UploadStrip({ onUpload }) {
+function SectionUploadButton({ onUpload }) {
   return (
-    <div
+    <button
+      type="button"
+      className="h-[30px] px-3 rounded-[10px] border border-border bg-transparent text-[11px] text-text-muted flex items-center gap-1.5 hover:border-accent hover:text-accent hover:bg-accent/5 transition-colors duration-150"
+      onClick={onUpload}
+    >
+      <span className="material-symbols-rounded text-[15px]">upload</span>
+      Upload
+    </button>
+  );
+}
+
+SectionUploadButton.propTypes = {
+  onUpload: PropTypes.func.isRequired,
+};
+
+function EmptyUploadStrip({ onUpload }) {
+  return (
+    <button
+      type="button"
       className="flex items-center justify-center gap-2.5 p-4 border border-dashed border-border rounded-[10px] cursor-pointer text-text-muted text-[12px] hover:border-accent hover:text-accent hover:bg-accent/5 transition-colors duration-150"
       onClick={onUpload}
     >
       <span className="material-symbols-rounded text-base">cloud_upload</span>
       Drop files here or browse to upload
+    </button>
+  );
+}
+
+EmptyUploadStrip.propTypes = {
+  onUpload: PropTypes.func.isRequired,
+};
+
+function AssignmentItem({ assignment, onEdit }) {
+  const isAuto = assignment.type === 'AUTO';
+  const meta = [
+    isAuto
+      ? `${assignment.questionCount ?? assignment.questions?.length ?? 'Auto'} questions`
+      : 'File Upload',
+    `Due ${formatAssignmentDate(assignment.dueDate)}`,
+    assignment.maxScore != null ? `${assignment.maxScore} marks` : null,
+  ].filter(Boolean).join(' · ');
+
+  return (
+    <div className="flex items-center gap-3 px-[14px] py-3 border-b border-border last:border-b-0 bg-white">
+      <span className={`material-symbols-rounded text-xl ${isAuto ? 'text-[#534ab7]' : 'text-accent'}`}>
+        {isAuto ? 'auto_fix_high' : 'assignment'}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] text-text-dark truncate">
+          {assignment.title}
+          {isAuto && (
+            <span className="ml-1.5 text-[10px] text-[#534ab7] bg-[#534ab7]/10 border border-[#534ab7]/20 rounded-full px-2 py-0.5">
+              Auto-Mark
+            </span>
+          )}
+        </div>
+        <div className="text-[11px] text-text-muted truncate">{meta}</div>
+      </div>
+      <button
+        type="button"
+        className="w-7 h-7 rounded-md bg-transparent border border-border cursor-pointer text-text-muted hover:text-accent hover:bg-accent/10 transition-colors duration-150 flex items-center justify-center"
+        title="Edit assignment"
+        onClick={() => onEdit(assignment)}
+        aria-label={`Edit ${assignment.title}`}
+      >
+        <span className="material-symbols-rounded text-base">edit</span>
+      </button>
     </div>
   );
 }
 
-UploadStrip.propTypes = {
-  onUpload: PropTypes.func.isRequired,
+AssignmentItem.propTypes = {
+  assignment: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    title: PropTypes.string.isRequired,
+    dueDate: PropTypes.string,
+    maxScore: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    type: PropTypes.string,
+    questionCount: PropTypes.number,
+    questions: PropTypes.arrayOf(PropTypes.shape({})),
+  }).isRequired,
+  onEdit: PropTypes.func.isRequired,
 };
 
-export default function CourseManageCard({ course, materials, onEdit, onUpload, onDeleteMaterial }) {
+export default function CourseManageCard({
+  course,
+  materials,
+  assignments,
+  onEdit,
+  onViewStudents,
+  onUpload,
+  onDeleteMaterial,
+  onNewAssignment,
+  onEditAssignment,
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const groupedMaterials = groupMaterialsBySection(materials);
+  const materialSections = Object.entries(groupedMaterials);
 
   return (
     <div className="bg-input-bg rounded-2xl border border-border p-5 mb-4">
@@ -145,6 +247,7 @@ export default function CourseManageCard({ course, materials, onEdit, onUpload, 
           <button
             className="w-8 h-8 rounded-lg border border-border bg-transparent flex items-center justify-center cursor-pointer hover:bg-accent/10 text-text-muted"
             title="View students"
+            onClick={() => onViewStudents?.(course)}
           >
             <span className="material-symbols-rounded text-base">group</span>
           </button>
@@ -164,15 +267,57 @@ export default function CourseManageCard({ course, materials, onEdit, onUpload, 
 
       {/* Expanded area */}
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
-          {materials.length > 0 && materials.map(m => (
-            <MaterialItem
-              key={m.id}
-              material={m}
-              onDelete={onDeleteMaterial}
-            />
-          ))}
-          <UploadStrip onUpload={onUpload} />
+        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-3">
+          {materialSections.length > 0 ? (
+            materialSections.map(([section, sectionMaterials], index) => (
+              <div key={section} className={index > 0 ? 'pt-3 border-t border-border' : ''}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[13px] font-medium text-text-dark">{section}</div>
+                  <SectionUploadButton onUpload={() => onUpload?.(section)} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  {sectionMaterials.map(m => (
+                    <MaterialItem
+                      key={m.id}
+                      material={m}
+                      onDelete={onDeleteMaterial}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <EmptyUploadStrip onUpload={() => onUpload?.('')} />
+          )}
+
+          <div className="pt-3 border-t border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[13px] font-medium text-text-dark">Assignments</div>
+              <button
+                type="button"
+                className="h-[30px] px-3 rounded-[10px] border border-border bg-transparent text-[11px] text-text-muted flex items-center gap-1.5 hover:border-accent hover:text-accent hover:bg-accent/5 transition-colors duration-150"
+                onClick={() => onNewAssignment?.(course)}
+              >
+                <span className="material-symbols-rounded text-[15px]">add</span>
+                New assignment
+              </button>
+            </div>
+            {assignments.length > 0 ? (
+              <div className="border border-border rounded-[10px] overflow-hidden">
+                {assignments.map(assignment => (
+                  <AssignmentItem
+                    key={assignment.id}
+                    assignment={assignment}
+                    onEdit={onEditAssignment}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="border border-dashed border-border rounded-[10px] px-4 py-3 text-[12px] text-text-muted bg-white">
+                No assignments yet.
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -181,7 +326,7 @@ export default function CourseManageCard({ course, materials, onEdit, onUpload, 
 
 CourseManageCard.propTypes = {
   course: PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     title: PropTypes.string.isRequired,
     code: PropTypes.string.isRequired,
     meta: PropTypes.string.isRequired,
@@ -199,11 +344,24 @@ CourseManageCard.propTypes = {
       uploadedAt: PropTypes.string.isRequired,
     })
   ),
+  assignments: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      title: PropTypes.string.isRequired,
+      dueDate: PropTypes.string,
+      maxScore: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      type: PropTypes.string,
+    })
+  ),
   onEdit: PropTypes.func,
+  onViewStudents: PropTypes.func,
   onUpload: PropTypes.func,
   onDeleteMaterial: PropTypes.func,
+  onNewAssignment: PropTypes.func,
+  onEditAssignment: PropTypes.func,
 };
 
 CourseManageCard.defaultProps = {
   materials: [],
+  assignments: [],
 };

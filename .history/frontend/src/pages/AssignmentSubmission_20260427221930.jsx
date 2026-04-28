@@ -14,9 +14,7 @@ const mockAssignment = {
 const mockSubmission = {
   filename: "report_draft.pdf",
   submittedAt: "2026-04-15T11:42:00",
-  status: "graded",
-  score: 8,
-  feedback: "Good structure, needs more detail in Section 4.",
+  status: "submitted",
   resubmissionsUsed: 1,
   resubmissionsLimit: 2,
 };

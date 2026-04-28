@@ -1,57 +1,49 @@
-import { useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useMemo, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 
 const mockAssignment = {
-  id: "asg1",
-  title: "Week 7 Progress Report",
+  id: 'asg1',
+  title: 'Week 7 Progress Report',
   description:
     "Submit your team's Week 7 Progress Report as a single PDF document. The report must include all seven sections as outlined in the subject guide.",
-  dueDate: "2026-04-17T17:00:00",
+  dueDate: '2026-04-17T17:00:00',
   maxScore: 10,
-  type: "FILE",
+  type: 'FILE',
 };
 
-const mockSubmission = {
-  filename: "report_draft.pdf",
-  submittedAt: "2026-04-15T11:42:00",
-  status: "graded",
-  score: 8,
-  feedback: "Good structure, needs more detail in Section 4.",
-  resubmissionsUsed: 1,
-  resubmissionsLimit: 2,
-};
+const mockSubmission = null;
 // submitted state:
 // { filename: 'report_draft.pdf', submittedAt: '2026-04-15T11:42:00', status: 'submitted', resubmissionsUsed: 1, resubmissionsLimit: 2 }
 // graded state:
 // { filename: 'report_draft.pdf', submittedAt: '2026-04-15T11:42:00', status: 'graded', score: 8, feedback: 'Good structure, needs more detail in Section 4.', resubmissionsUsed: 1, resubmissionsLimit: 2 }
 
 const mockCourse = {
-  code: "ISIT950",
-  name: "Course Collaboration Platform",
+  code: 'ISIT950',
+  name: 'Course Collaboration Platform',
 };
 
 function formatDateTime(value) {
-  if (!value) return "-";
+  if (!value) return '-';
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "-";
-  const date = new Intl.DateTimeFormat("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+  if (Number.isNaN(d.getTime())) return '-';
+  const date = new Intl.DateTimeFormat('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
   }).format(d);
-  const time = new Intl.DateTimeFormat("en-AU", {
-    hour: "numeric",
-    minute: "2-digit",
+  const time = new Intl.DateTimeFormat('en-AU', {
+    hour: 'numeric',
+    minute: '2-digit',
     hour12: true,
   })
     .format(d)
-    .replace(/\s/g, "")
+    .replace(/\s/g, '')
     .toLowerCase();
   return `${date} at ${time}`;
 }
 
 function formatBytes(bytes) {
-  if (!Number.isFinite(bytes)) return "";
+  if (!Number.isFinite(bytes)) return '';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -59,8 +51,8 @@ function formatBytes(bytes) {
 
 function acceptFile(file) {
   const maxBytes = 50 * 1024 * 1024;
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  if (ext !== "pdf" && ext !== "docx") return false;
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  if (ext !== 'pdf' && ext !== 'docx') return false;
   return file.size <= maxBytes;
 }
 
@@ -69,12 +61,8 @@ function UpgradePrompt() {
     <div className="upgrade-prompt">
       <span className="material-symbols-rounded icon">warning</span>
       <div className="upgrade-prompt-body">
-        <div className="upgrade-prompt-title">
-          Resubmission limit reached (Free plan)
-        </div>
-        <div className="upgrade-prompt-sub">
-          Upgrade to Member for unlimited resubmissions
-        </div>
+        <div className="upgrade-prompt-title">Resubmission limit reached (Free plan)</div>
+        <div className="upgrade-prompt-sub">Upgrade to Member for unlimited resubmissions</div>
       </div>
       <Link to="/membership" className="upgrade-prompt-btn">
         Upgrade
@@ -95,50 +83,42 @@ export default function AssignmentSubmission() {
   const [submission, setSubmission] = useState(mockSubmission);
 
   const dueLabel = useMemo(() => formatDateTime(mockAssignment.dueDate), []);
-  const isOverdue = useMemo(
-    () => new Date(mockAssignment.dueDate) < new Date(),
-    [],
-  );
-  const submitted =
-    submission?.status === "submitted" || submission?.status === "graded";
-  const graded = submission?.status === "graded";
-  const statusLabel = graded
-    ? "Graded"
-    : submitted
-      ? "Submitted"
-      : "Not submitted";
+  const isOverdue = useMemo(() => new Date(mockAssignment.dueDate) < new Date(), []);
+  const submitted = submission?.status === 'submitted' || submission?.status === 'graded';
+  const graded = submission?.status === 'graded';
+  const statusLabel = graded ? 'Graded' : submitted ? 'Submitted' : 'Not submitted';
   const resubmissionsUsed = submission?.resubmissionsUsed ?? 0;
   const resubmissionsLimit = submission?.resubmissionsLimit ?? 2;
   const limitReached = submitted && resubmissionsUsed >= resubmissionsLimit;
 
-  function pickFile(file, mode = "submit") {
+  function pickFile(file, mode = 'submit') {
     if (!file || !acceptFile(file)) {
-      if (mode === "resubmit") setResubmitFile(null);
+      if (mode === 'resubmit') setResubmitFile(null);
       else setPickedFile(null);
       return;
     }
-    if (mode === "resubmit") setResubmitFile(file);
+    if (mode === 'resubmit') setResubmitFile(file);
     else setPickedFile(file);
   }
 
-  function clearFile(mode = "submit") {
-    if (mode === "resubmit") {
+  function clearFile(mode = 'submit') {
+    if (mode === 'resubmit') {
       setResubmitFile(null);
-      if (resubmitInputRef.current) resubmitInputRef.current.value = "";
+      if (resubmitInputRef.current) resubmitInputRef.current.value = '';
       return;
     }
     setPickedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   async function submitAssignment() {
     if (!pickedFile || submitting) return;
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 450));
+    await new Promise(resolve => setTimeout(resolve, 450));
     setSubmission({
       filename: pickedFile.name,
       submittedAt: new Date().toISOString(),
-      status: "submitted",
+      status: 'submitted',
       resubmissionsUsed: 0,
       resubmissionsLimit: 2,
     });
@@ -149,49 +129,48 @@ export default function AssignmentSubmission() {
   async function resubmitAssignment() {
     if (!resubmitFile || submitting || limitReached) return;
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    setSubmission((current) => ({
+    await new Promise(resolve => setTimeout(resolve, 450));
+    setSubmission(current => ({
       ...current,
       filename: resubmitFile.name,
       submittedAt: new Date().toISOString(),
-      status: "submitted",
+      status: 'submitted',
       score: undefined,
       feedback: undefined,
       resubmissionsUsed: (current?.resubmissionsUsed ?? 0) + 1,
       resubmissionsLimit: current?.resubmissionsLimit ?? 2,
     }));
-    clearFile("resubmit");
+    clearFile('resubmit');
     setSubmitting(false);
   }
 
-  function renderUploadZone({ mode = "submit", compact = false } = {}) {
-    const activeRef = mode === "resubmit" ? resubmitInputRef : fileInputRef;
-    const activeFile = mode === "resubmit" ? resubmitFile : pickedFile;
-    const activeDragOver = mode === "resubmit" ? resubmitDragOver : dragOver;
-    const setActiveDragOver =
-      mode === "resubmit" ? setResubmitDragOver : setDragOver;
+  function renderUploadZone({ mode = 'submit', compact = false } = {}) {
+    const activeRef = mode === 'resubmit' ? resubmitInputRef : fileInputRef;
+    const activeFile = mode === 'resubmit' ? resubmitFile : pickedFile;
+    const activeDragOver = mode === 'resubmit' ? resubmitDragOver : dragOver;
+    const setActiveDragOver = mode === 'resubmit' ? setResubmitDragOver : setDragOver;
 
     return (
       <>
         <div
-          className={`upload-zone${compact ? " upload-zone-compact" : ""}${
-            activeDragOver ? " dragover" : ""
+          className={`upload-zone${compact ? ' upload-zone-compact' : ''}${
+            activeDragOver ? ' dragover' : ''
           }`}
           role="button"
           tabIndex={0}
           onClick={() => activeRef.current?.click()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               activeRef.current?.click();
             }
           }}
-          onDragOver={(e) => {
+          onDragOver={e => {
             e.preventDefault();
             setActiveDragOver(true);
           }}
           onDragLeave={() => setActiveDragOver(false)}
-          onDrop={(e) => {
+          onDrop={e => {
             e.preventDefault();
             setActiveDragOver(false);
             pickFile(e.dataTransfer.files?.[0], mode);
@@ -199,30 +178,24 @@ export default function AssignmentSubmission() {
         >
           <span className="material-symbols-rounded icon">upload_file</span>
           <div className="upload-zone-title">Drag and drop your file here</div>
-          <div className="upload-zone-sub">
-            or browse to upload · PDF, DOCX up to 50 MB
-          </div>
+          <div className="upload-zone-sub">or browse to upload · PDF, DOCX up to 50 MB</div>
         </div>
         <input
           ref={activeRef}
           type="file"
-          style={{ display: "none" }}
+          style={{ display: 'none' }}
           accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          onChange={(e) => pickFile(e.target.files?.[0], mode)}
+          onChange={e => pickFile(e.target.files?.[0], mode)}
         />
         <div className="file-list">
           {activeFile && (
             <div className="file-item">
               <div className="file-item-icon">
-                <span className="material-symbols-rounded icon">
-                  description
-                </span>
+                <span className="material-symbols-rounded icon">description</span>
               </div>
               <div className="file-item-info">
                 <div className="file-item-name">{activeFile.name}</div>
-                <div className="file-item-size">
-                  {formatBytes(activeFile.size)}
-                </div>
+                <div className="file-item-size">{formatBytes(activeFile.size)}</div>
               </div>
               <button
                 type="button"
@@ -246,10 +219,7 @@ export default function AssignmentSubmission() {
           {mockCourse.code}
         </Link>
         <span className="material-symbols-rounded">chevron_right</span>
-        <Link
-          to={`/courses/${courseId}?tab=assignments`}
-          className="breadcrumb-link"
-        >
+        <Link to={`/courses/${courseId}?tab=assignments`} className="breadcrumb-link">
           Assignments
         </Link>
         <span className="material-symbols-rounded">chevron_right</span>
@@ -261,7 +231,7 @@ export default function AssignmentSubmission() {
           <div className="asgn-card">
             <div className="asgn-title">{mockAssignment.title}</div>
             <div className="asgn-meta-row">
-              <span className={`asgn-meta-chip${isOverdue ? " urgent" : ""}`}>
+              <span className={`asgn-meta-chip${isOverdue ? ' urgent' : ''}`}>
                 <span className="material-symbols-rounded icon">schedule</span>
                 Due {dueLabel}
               </span>
@@ -288,7 +258,7 @@ export default function AssignmentSubmission() {
                 disabled={!pickedFile || submitting}
               >
                 <span className="material-symbols-rounded icon">send</span>
-                {submitting ? "Submitting..." : "Submit assignment"}
+                {submitting ? 'Submitting...' : 'Submit assignment'}
               </button>
             </>
           )}
@@ -296,16 +266,11 @@ export default function AssignmentSubmission() {
           {submitted && (
             <>
               <div className="submit-success submit-state-banner">
-                <span className="material-symbols-rounded icon">
-                  check_circle
-                </span>
+                <span className="material-symbols-rounded icon">check_circle</span>
                 <div>
-                  <div className="submit-success-title">
-                    Submitted successfully
-                  </div>
+                  <div className="submit-success-title">Submitted successfully</div>
                   <div className="submit-success-sub">
-                    {submission.filename} · Submitted{" "}
-                    {formatDateTime(submission.submittedAt)}
+                    {submission.filename} · Submitted {formatDateTime(submission.submittedAt)}
                   </div>
                 </div>
               </div>
@@ -315,8 +280,7 @@ export default function AssignmentSubmission() {
                   <div className="grade-card-header">
                     <div>
                       <div className="grade-score">
-                        {submission.score}{" "}
-                        <span>/ {mockAssignment.maxScore}</span>
+                        {submission.score} <span>/ {mockAssignment.maxScore}</span>
                       </div>
                       <div className="grade-feedback-label">Feedback</div>
                     </div>
@@ -328,28 +292,23 @@ export default function AssignmentSubmission() {
 
               {!graded && (
                 <div className="resubmit-card">
-                  <div className="resubmit-heading">
-                    Submit a new file to replace your current submission
-                  </div>
+                  <div className="resubmit-heading">Submit a new file to replace your current submission</div>
                   <div className="resubmit-chip">
-                    {resubmissionsUsed} resubmissions used of{" "}
-                    {resubmissionsLimit}
+                    {resubmissionsUsed} resubmissions used of {resubmissionsLimit}
                   </div>
                   {limitReached ? (
                     <UpgradePrompt />
                   ) : (
                     <>
-                      {renderUploadZone({ mode: "resubmit", compact: true })}
+                      {renderUploadZone({ mode: 'resubmit', compact: true })}
                       <button
                         type="button"
                         className="submit-btn"
                         onClick={resubmitAssignment}
                         disabled={!resubmitFile || submitting}
                       >
-                        <span className="material-symbols-rounded icon">
-                          send
-                        </span>
-                        {submitting ? "Submitting..." : "Resubmit assignment"}
+                        <span className="material-symbols-rounded icon">send</span>
+                        {submitting ? 'Submitting...' : 'Resubmit assignment'}
                       </button>
                     </>
                   )}
@@ -364,32 +323,22 @@ export default function AssignmentSubmission() {
             <div className="info-card-title">Submission info</div>
             <div className="info-row">
               <span className="info-row-label">Status</span>
-              <span
-                className={`info-row-val ${submitted ? "success" : "urgent"}`}
-              >
-                {statusLabel}
-              </span>
+              <span className={`info-row-val ${submitted ? 'success' : 'urgent'}`}>{statusLabel}</span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Due date</span>
-              <span className={`info-row-val${isOverdue ? " urgent" : ""}`}>
-                {dueLabel}
-              </span>
+              <span className={`info-row-val${isOverdue ? ' urgent' : ''}`}>{dueLabel}</span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Marks</span>
               <span className="info-row-val">
-                {graded
-                  ? `${submission.score} / ${mockAssignment.maxScore}`
-                  : `${mockAssignment.maxScore} points`}
+                {graded ? `${submission.score} / ${mockAssignment.maxScore}` : `${mockAssignment.maxScore} points`}
               </span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Resubmissions</span>
               <span className="info-row-val">
-                {submitted
-                  ? `${resubmissionsUsed} / ${resubmissionsLimit}`
-                  : `0 / ${resubmissionsLimit}`}
+                {submitted ? `${resubmissionsUsed} / ${resubmissionsLimit}` : `0 / ${resubmissionsLimit}`}
               </span>
             </div>
           </div>

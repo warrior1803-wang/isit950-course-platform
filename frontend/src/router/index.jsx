@@ -8,11 +8,14 @@ import LoginPage from '../pages/auth/LoginPage';
 import CourseList from '../pages/CourseList';
 import CourseDetail from '../pages/CourseDetail';
 import AssignmentSubmission from '../pages/AssignmentSubmission';
+import AssignmentQuiz from '../pages/AssignmentQuiz';
 import AssignmentReview from '../pages/AssignmentReview';
 import Forum from '../pages/Forum';
 // import Assignments from '../pages/Assignments';
 import AssignmentList from '../pages/AssignmentList';
+import InstructorGrading from '../pages/InstructorGrading';
 import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
+import InstructorCourseStudentsPage from '../pages/instructor/InstructorCourseStudentsPage';
 import BrowseCourses from '../pages/BrowseCourses';
 
 // Temporary placeholder for pages not yet implemented
@@ -120,6 +123,10 @@ export default function AppRouter() {
             element={<AssignmentSubmission />}
           />
           <Route
+            path="/courses/:id/assignments/:asgId/quiz"
+            element={<AssignmentQuiz />}
+          />
+          <Route
             path="/courses/:id/assignments/:asgId/review"
             element={<AssignmentReview />}
           />
@@ -136,7 +143,8 @@ export default function AppRouter() {
         <Route element={<InstructorLayout />}>
           <Route path="/dashboard" element={<Soon page="Instructor Dashboard" />} />
           <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
-          <Route path="/instructor/grading" element={<Soon page="Grading" />} />
+          <Route path="/instructor/courses/:id/students" element={<InstructorCourseStudentsPage />} />
+          <Route path="/instructor/grading" element={<InstructorGrading />} />
           <Route path="/instructor/discussions" element={<Soon page="Discussions Inbox" />} />
           <Route path="/instructor/announcements" element={<Soon page="Announcements" />} />
           <Route path="/instructor/analytics" element={<Soon page="Student Analytics" />} />
