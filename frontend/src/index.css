@@ -2502,11 +2502,12 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
 }
 .mem-usage-bar {
   height: 100%;
-  border-radius: 3px;
-  background: var(--accent);
+  border-radius: 4px;
   transition: width 0.3s;
 }
-.mem-usage-bar.warn { background: #e09640; }
+.mem-usage-bar.warn {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
 .mem-usage-count {
   font-size: 12px;
   color: var(--text-dark);
@@ -2559,10 +2560,10 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
 .mem-upgrade-btn {
   width: 100%;
   padding: 12px;
-  background: #3d2e35;
-  color: #f0e8e2;
-  border: none;
   border-radius: 10px;
+  background: linear-gradient(135deg, #c9a227, #ffd700);
+  color: #5a3e00;
+  border: none;
   font-size: 14px;
   font-family: 'Gowun Batang', serif;
   cursor: pointer;
