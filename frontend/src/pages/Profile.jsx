@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import api from '../lib/axios';
 
 function getInitials(name = '') {
   return name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
@@ -16,8 +15,6 @@ export default function Profile() {
   const [collabMode, setCollabMode] = useState(user?.collabMode ?? 'online');
   const [availability, setAvailability] = useState(user?.availability ?? '');
   const [skillInput, setSkillInput] = useState('');
-  const [saving, setSaving] = useState(false);
-
   if (!user) return null;
 
   const membership = user.membership;
@@ -38,16 +35,8 @@ export default function Profile() {
     setSkills(prev => prev.filter(s => s !== skill));
   }
 
-  async function saveCollab() {
-    setSaving(true);
-    try {
-      await api.patch('/auth/me', { skills, collabMode, availability });
-    } catch {
-      // backend endpoint not yet implemented
-    } finally {
-      setSaving(false);
-      setCollabEditing(false);
-    }
+  function saveCollab() {
+    setCollabEditing(false);
   }
 
   function cancelCollab() {
@@ -201,8 +190,8 @@ export default function Profile() {
                   >
                     Cancel
                   </button>
-                  <button className="pei-save-btn" onClick={saveCollab} disabled={saving}>
-                    {saving ? 'Saving…' : 'Save changes'}
+                  <button className="pei-save-btn" onClick={saveCollab}>
+                    Save changes
                   </button>
                 </div>
               </div>
