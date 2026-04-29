@@ -18,6 +18,7 @@ import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
 import InstructorCourseStudentsPage from '../pages/instructor/InstructorCourseStudentsPage';
 import BrowseCourses from '../pages/BrowseCourses';
 import Profile from '../pages/Profile';
+import Membership from '../pages/Membership';
 
 // Temporary placeholder for pages not yet implemented
 function Soon({ page }) {
@@ -135,6 +136,7 @@ export default function AppRouter() {
           <Route path="/assignments" element={<AssignmentList/>} />
           <Route path="/announcements" element={<Soon page="Announcements" />} />
           <Route path="/browsecourses" element={<BrowseCourses />} />
+          <Route path="/membership" element={<Membership />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
       </Route>

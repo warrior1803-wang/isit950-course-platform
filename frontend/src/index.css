@@ -2242,6 +2242,11 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
   color: #8b6914;
   border: 1px solid rgba(255, 215, 0, 0.3);
 }
+.mem-badge.member {
+  background: linear-gradient(135deg, #fff8e1, #fff3cd);
+  color: #8b6914;
+  border: 1px solid #ffd700;
+}
 
 .profile-email {
   font-size: 12px;
@@ -2444,4 +2449,157 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
 
 @media (max-width: 720px) {
   .profile-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Membership page ────────────────────────────────────────────────────── */
+.mem-status-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.mem-status-hero.free {
+  background: rgba(156, 138, 142, 0.1);
+  border: 1px solid rgba(156, 138, 142, 0.2);
+}
+.mem-status-hero.member {
+  background: linear-gradient(135deg, #fff8e1, #fff3cd);
+  border: 1px solid #ffd700;
+}
+.mem-icon { font-size: 28px; }
+.mem-hero-title { font-size: 16px; color: var(--text-dark); margin-bottom: 3px; }
+.mem-hero-sub { font-size: 12px; color: var(--text-muted); }
+
+.mem-page-card {
+  background: #faf5f3;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  max-width: 760px;
+}
+
+.mem-usage-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.mem-usage-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  width: 180px;
+  flex-shrink: 0;
+}
+.mem-usage-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(156, 138, 142, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mem-usage-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+.mem-usage-bar.warn { background: #e09640; }
+.mem-usage-count {
+  font-size: 12px;
+  color: var(--text-dark);
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.mem-plans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.mem-plan-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #fff;
+}
+.mem-plan-card:hover { border-color: var(--accent); }
+.mem-plan-card.selected {
+  border-color: #ffd700;
+  background: linear-gradient(135deg, #fffdf0, #fff8e1);
+}
+.mem-plan-name { font-size: 13px; color: var(--text-dark); margin-bottom: 6px; }
+.mem-plan-price { font-size: 20px; color: var(--text-dark); margin-bottom: 8px; }
+.mem-plan-price span { font-size: 12px; color: var(--text-muted); }
+.mem-plan-savings {
+  font-size: 11px;
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.mem-benefit-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.mem-benefit-list li.on { color: var(--text-dark); }
+
+.mem-upgrade-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3d2e35;
+  color: #f0e8e2;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Gowun Batang', serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+.mem-upgrade-btn:hover { opacity: 0.85; }
+
+/* Payment modal extras */
+.pay-plan-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #fff8e1, #fff3cd);
+  border: 1px solid #ffd700;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #8b6914;
+  margin-bottom: 16px;
+}
+.pay-plan-icon { font-size: 18px; }
+.pay-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.field { display: flex; flex-direction: column; }
+.field label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.field-full { grid-column: 1 / -1; }
+.pay-secure-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 14px;
 }

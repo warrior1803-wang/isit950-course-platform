@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { membershipApi } from '../api';
 
 function getInitials(name = '') {
   return name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
@@ -15,11 +16,19 @@ export default function Profile() {
   const [collabMode, setCollabMode] = useState(user?.collabMode ?? 'online');
   const [availability, setAvailability] = useState(user?.availability ?? '');
   const [skillInput, setSkillInput] = useState('');
+  const [memData, setMemData] = useState(null);
+
+  useEffect(() => {
+    if (user?.role === 'STUDENT') {
+      membershipApi.get().then(res => setMemData(res.data)).catch(() => {});
+    }
+  }, [user]);
+
   if (!user) return null;
 
-  const membership = user.membership;
-  const isPremium = membership?.type === 'PREMIUM';
-  const planLabel = isPremium ? '✦ Premium Plan' : '✦ Free Plan';
+  const isPremium = memData ? memData.type !== 'FREE' : user.membership?.type !== 'FREE';
+  const planLabel = isPremium ? '⭐ Member' : '✦ Free Plan';
+  const badgeClass = isPremium ? 'member' : 'free';
   const roleName = user.role === 'INSTRUCTOR' ? 'Instructor' : 'Student';
 
   function handleSkillKeyDown(e) {
@@ -59,7 +68,7 @@ export default function Profile() {
           <div className="profile-name">{user.name}</div>
           <div className="profile-role-badge">{roleName}</div>
           <div style={{ margin: '6px 0 10px' }}>
-            <span className={`mem-badge ${isPremium ? 'premium' : 'free'}`}>{planLabel}</span>
+            <span className={`mem-badge ${badgeClass}`}>{planLabel}</span>
           </div>
           <div className="profile-email">{user.email}</div>
           <div className="profile-stat-row">
@@ -208,10 +217,14 @@ export default function Profile() {
               <div>
                 <div style={{ fontSize: 13, color: 'var(--text-dark)', marginBottom: 3 }}>Current plan</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  {isPremium ? 'Unlimited posts and resubmissions' : 'Limited posts and resubmissions'}
+                  {isPremium
+                    ? 'Unlimited posts and resubmissions'
+                    : memData
+                      ? `${memData.usage.weeklyPostsUsed} / ${memData.usage.weeklyPostsLimit} posts used this week · ${memData.usage.resubmissionsUsed} / ${memData.usage.resubmissionsLimit} resubmissions used`
+                      : 'Limited posts and resubmissions'}
                 </div>
               </div>
-              <span className={`mem-badge ${isPremium ? 'premium' : 'free'}`}>{planLabel}</span>
+              <span className={`mem-badge ${badgeClass}`}>{planLabel}</span>
             </div>
             {!isPremium && (
               <div style={{ paddingTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

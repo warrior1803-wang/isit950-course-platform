@@ -10,6 +10,7 @@ const NAV_ITEMS = [
 ];
 
 const ACCOUNT_ITEMS = [
+  { to: '/membership', icon: 'star', label: 'Membership' },
   { to: '/profile', icon: 'manage_accounts', label: 'Profile' },
 ];
 

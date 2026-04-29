@@ -44,6 +44,11 @@ export const forumApi = {
   deletePost: (courseId, postId) => api.delete(`/courses/${courseId}/posts/${postId}`),
 };
 
+export const membershipApi = {
+  get: () => api.get('/membership'),
+  upgrade: (data) => api.post('/membership/upgrade', data),
+};
+
 export const assignmentApi = {
   list: (courseId) => api.get(`/courses/${courseId}/assignments`),
   create: (courseId, data) => api.post(`/courses/${courseId}/assignments`, data),
