@@ -16,6 +16,8 @@ export default function Membership() {
   const [modalOpen, setModalOpen] = useState(false);
   const [upgraded, setUpgraded] = useState(false);
 
+  const [paying, setPaying] = useState(false);
+
   // payment form state
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
@@ -46,9 +48,19 @@ export default function Membership() {
     return v.length >= 3 ? v.slice(0, 2) + ' / ' + v.slice(2) : v;
   }
 
-  function processPayment() {
-    setUpgraded(true);
-    setModalOpen(false);
+  async function processPayment() {
+    setPaying(true);
+    await new Promise(r => setTimeout(r, 800));
+    try {
+      await membershipApi.upgrade({
+        plan: selectedPlan === 'monthly' ? 'MONTHLY' : 'ANNUAL',
+        paymentToken: 'stub-token',
+      });
+      setUpgraded(true);
+      setModalOpen(false);
+    } finally {
+      setPaying(false);
+    }
   }
 
   if (loading) return null;
@@ -240,8 +252,8 @@ export default function Membership() {
                 </div>
               </div>
               <p className="pay-secure-note">🔒 This is a simulated payment — no real charge will be made</p>
-              <button className="mem-upgrade-btn" style={{ marginTop: 4 }} onClick={processPayment}>
-                Pay Now
+              <button className="mem-upgrade-btn" style={{ marginTop: 4 }} onClick={processPayment} disabled={paying}>
+                {paying ? 'Processing…' : 'Pay Now'}
               </button>
             </div>
           </div>
