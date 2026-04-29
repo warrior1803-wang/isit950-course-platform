@@ -92,24 +92,24 @@ export default function Membership() {
           <div className="mem-usage-label">Discussion posts</div>
           <div className="mem-usage-bar-wrap">
             <div
-              className={`mem-usage-bar${postsPercent >= 70 && !isPremium ? ' warn' : ''}`}
-              style={{ width: isPremium ? '100%' : `${postsPercent}%` }}
+              className={`mem-usage-bar${isPremium ? ' ok' : postsPercent >= 70 ? ' warn' : ''}`}
+              style={{ width: isPremium ? '0%' : `${postsPercent}%` }}
             />
           </div>
           <div className="mem-usage-count">
-            {isPremium ? 'Unlimited' : `${postsUsed} / ${postsLimit}`}
+            {isPremium ? '∞ / ∞' : `${postsUsed} / ${postsLimit}`}
           </div>
         </div>
         <div className="mem-usage-row">
           <div className="mem-usage-label">Assignment resubmissions</div>
           <div className="mem-usage-bar-wrap">
             <div
-              className={`mem-usage-bar${resubPercent >= 50 && !isPremium ? ' warn' : ''}`}
-              style={{ width: isPremium ? '100%' : `${resubPercent}%` }}
+              className={`mem-usage-bar${isPremium ? ' ok' : resubPercent >= 50 ? ' warn' : ''}`}
+              style={{ width: isPremium ? '0%' : `${resubPercent}%` }}
             />
           </div>
           <div className="mem-usage-count">
-            {isPremium ? 'Unlimited' : `${resubUsed} / ${resubLimit}`}
+            {isPremium ? '∞ / ∞' : `${resubUsed} / ${resubLimit}`}
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12 }}>
