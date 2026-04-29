@@ -195,8 +195,8 @@ function normalizePost(raw) {
 function resolveMaterialUrl(url) {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/')) return `http://localhost:8080${url}`;
-  return `http://localhost:8080/${url}`;
+  if (url.startsWith('/')) return url;
+  return `/${url}`;
 }
 
 export default function CourseDetail() {
