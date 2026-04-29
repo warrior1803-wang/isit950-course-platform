@@ -2,6 +2,7 @@ package com.learningplatform.backend.service;
 
 import com.learningplatform.backend.common.exception.BusinessException;
 import com.learningplatform.backend.common.exception.NotFoundException;
+import com.learningplatform.backend.dto.AnnouncementRequest;
 import com.learningplatform.backend.dto.AnnouncementResponse;
 import com.learningplatform.backend.dto.AssignmentListResponse;
 import com.learningplatform.backend.dto.PostRequest;
@@ -52,6 +53,27 @@ public class CourseContentService {
                 .toList();
     }
 
+    public AnnouncementResponse createAnnouncement(Long courseId, AnnouncementRequest request, String userEmail) {
+        AccessContext context = requireInstructorOwnership(courseId, userEmail);
+        String title = safe(request.getTitle());
+        String body = safe(request.getBody());
+
+        if (title.isBlank()) {
+            throw new BusinessException("Announcement title is required");
+        }
+        if (body.isBlank()) {
+            throw new BusinessException("Announcement body is required");
+        }
+
+        Announcement announcement = new Announcement();
+        announcement.setCourse(context.course());
+        announcement.setAuthor(context.user());
+        announcement.setTitle(title);
+        announcement.setBody(body);
+
+        return toAnnouncementResponse(announcementRepository.save(announcement));
+    }
+
     public List<AssignmentListResponse> getAssignments(Long courseId, String userEmail) {
         AccessContext context = requireCourseAccess(courseId, userEmail);
         return assignmentRepository.findByCourseOrderByDueDateAsc(context.course()).stream()
@@ -64,6 +86,18 @@ public class CourseContentService {
         return postRepository.findByCourseOrderByCreatedAtDesc(context.course()).stream()
                 .map(this::toPostResponse)
                 .toList();
+    }
+
+    public PostResponse getPost(Long courseId, Long postId, String userEmail) {
+        requireCourseAccess(courseId, userEmail);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        if (!post.getCourse().getId().equals(courseId)) {
+            throw new NotFoundException("Post not found");
+        }
+
+        return toPostResponse(post);
     }
 
     public PostResponse createPost(Long courseId, PostRequest request, String userEmail) {
@@ -87,13 +121,17 @@ public class CourseContentService {
         return toPostResponse(postRepository.save(post));
     }
 
-    public ReplyResponse createReply(Long postId, ReplyRequest request, String userEmail) {
+    public ReplyResponse createReply(Long courseId, Long postId, ReplyRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Post not found"));
 
-        requireCourseAccess(post.getCourse().getId(), userEmail);
+        if (!post.getCourse().getId().equals(courseId)) {
+            throw new NotFoundException("Post not found");
+        }
+
+        requireCourseAccess(courseId, userEmail);
 
         String body = safe(request.getBody());
         if (body.isBlank()) {
@@ -124,6 +162,22 @@ public class CourseContentService {
             }
         } else {
             throw new BusinessException("Invalid user role");
+        }
+
+        return new AccessContext(user, course);
+    }
+
+    private AccessContext requireInstructorOwnership(Long courseId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found"));
+
+        if (user.getRole() != UserRole.INSTRUCTOR) {
+            throw new AccessDeniedException("Only instructors can manage announcements");
+        }
+        if (!course.getInstructor().getId().equals(user.getId())) {
+            throw new AccessDeniedException("You do not own this course");
         }
 
         return new AccessContext(user, course);
@@ -207,4 +261,19 @@ public class CourseContentService {
 
     private record AccessContext(User user, Course course) {
     }
+
+    public boolean deleteAnnouncement(Long courseId, Long announcementId, String userEmail) {
+        AccessContext context = requireInstructorOwnership(courseId, userEmail);
+
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElse(null);
+
+        if (announcement == null || !announcement.getCourse().getId().equals(courseId)) {
+            return false;
+        }
+
+        announcementRepository.delete(announcement);
+        return true;
+    }
+
 }

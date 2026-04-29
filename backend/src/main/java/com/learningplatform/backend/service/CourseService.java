@@ -228,10 +228,15 @@ public class CourseService {
 
         for (Enrolment enrolment : enrolments) {
             User student = enrolment.getStudent();
+            String membershipType = student.getMembershipType() == null
+                    ? "FREE"
+                    : student.getMembershipType();
+
             result.add(new StudentSummaryResponse(
                     student.getId(),
                     student.getName(),
-                    student.getEmail()
+                    student.getEmail(),
+                    new StudentSummaryResponse.MembershipSummary(membershipType)
             ));
         }
 

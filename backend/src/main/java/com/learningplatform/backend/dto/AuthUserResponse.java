@@ -1,7 +1,20 @@
 package com.learningplatform.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.learningplatform.backend.model.enums.UserRole;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthUserResponse {
 
     private Long id;
@@ -9,8 +22,11 @@ public class AuthUserResponse {
     private String email;
     private UserRole role;
 
-    public AuthUserResponse() {
-    }
+    // Student-only fields
+    private List<String> skills;
+    private String collabMode;
+    private String availability;
+    private MembershipResponse membership;
 
     public AuthUserResponse(Long id, String name, String email, UserRole role) {
         this.id = id;
@@ -19,35 +35,13 @@ public class AuthUserResponse {
         this.role = role;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public UserRole getRole() {
-        return role;
-    }
-
-    public void setRole(UserRole role) {
-        this.role = role;
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MembershipResponse {
+        private String type;
+        private LocalDateTime since;
+        private LocalDateTime expiresAt;
     }
 }

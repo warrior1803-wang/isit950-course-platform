@@ -29,6 +29,12 @@ public class Submission {
 
     private String filename;
 
+    @Column(name = "answers_json", columnDefinition = "TEXT")
+    private String answersJson;
+
+    @Column(name = "breakdown_json", columnDefinition = "TEXT")
+    private String breakdownJson;
+
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
@@ -39,6 +45,15 @@ public class Submission {
 
     @Enumerated(EnumType.STRING)
     private SubmissionStatus status;
+
+    @Column(name = "overridden_score")
+    private Integer overriddenScore;
+
+    @Column(name = "overridden_by")
+    private String overriddenBy;
+
+    @Column(name = "override_reason", columnDefinition = "TEXT")
+    private String overrideReason;
 
     @PrePersist
     public void prePersist() {

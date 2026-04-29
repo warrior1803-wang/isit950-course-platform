@@ -22,34 +22,42 @@ export const enrolmentApi = {
 };
 
 export const materialApi = {
-  list: (courseId) => api.get(`/materials/${courseId}`),
+  list: (courseId) => api.get(`/courses/${courseId}/materials`),
   upload: (courseId, formData) =>
-    api.post(`/materials/${courseId}`, formData, {
+    api.post(`/courses/${courseId}/materials`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  delete: (id) => api.delete(`/materials/${id}`),
+  delete: (courseId, materialId) => api.delete(`/courses/${courseId}/materials/${materialId}`),
 };
 
 export const announcementApi = {
-  list: (courseId) => api.get(`/announcements/${courseId}`),
-  create: (courseId, data) => api.post(`/announcements/${courseId}`, data),
-  delete: (id) => api.delete(`/announcements/${id}`),
+  list: (courseId) => api.get(`/courses/${courseId}/announcements`),
+  create: (courseId, data) => api.post(`/courses/${courseId}/announcements`, data),
+  delete: (courseId, annId) => api.delete(`/courses/${courseId}/announcements/${annId}`),
 };
 
 export const forumApi = {
-  listPosts: (courseId) => api.get(`/forum/${courseId}`),
-  createPost: (courseId, data) => api.post(`/forum/${courseId}`, data),
-  createReply: (postId, data) => api.post(`/forum/posts/${postId}/replies`, data),
-  deletePost: (id) => api.delete(`/forum/posts/${id}`),
+  listPosts: (courseId) => api.get(`/courses/${courseId}/posts`),
+  getPost: (courseId, postId) => api.get(`/courses/${courseId}/posts/${postId}`),
+  createPost: (courseId, data) => api.post(`/courses/${courseId}/posts`, data),
+  createReply: (courseId, postId, data) => api.post(`/courses/${courseId}/posts/${postId}/replies`, data),
+  deletePost: (courseId, postId) => api.delete(`/courses/${courseId}/posts/${postId}`),
 };
 
 export const assignmentApi = {
-  list: (courseId) => api.get(`/assignments/${courseId}`),
-  create: (courseId, data) => api.post(`/assignments/${courseId}`, data),
-  submit: (id, formData) =>
-    api.post(`/assignments/${id}/submit`, formData, {
+  list: (courseId) => api.get(`/courses/${courseId}/assignments`),
+  create: (courseId, data) => api.post(`/courses/${courseId}/assignments`, data),
+  get: (courseId, assignmentId) => api.get(`/courses/${courseId}/assignments/${assignmentId}`),
+  update: (courseId, assignmentId, data) => api.put(`/courses/${courseId}/assignments/${assignmentId}`, data),
+  delete: (courseId, assignmentId) => api.delete(`/courses/${courseId}/assignments/${assignmentId}`),
+  submit: (courseId, assignmentId, formData) =>
+    api.post(`/courses/${courseId}/assignments/${assignmentId}/submit`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  listSubmissions: (id) => api.get(`/assignments/${id}/submissions`),
-  grade: (submissionId, data) => api.patch(`/assignments/submissions/${submissionId}/grade`, data),
+  listSubmissions: (courseId, assignmentId) =>
+    api.get(`/courses/${courseId}/assignments/${assignmentId}/submissions`),
+  mySubmission: (courseId, assignmentId) =>
+    api.get(`/courses/${courseId}/assignments/${assignmentId}/submissions/me`),
+  grade: (courseId, assignmentId, submissionId, data) =>
+    api.put(`/courses/${courseId}/assignments/${assignmentId}/submissions/${submissionId}/grade`, data),
 };

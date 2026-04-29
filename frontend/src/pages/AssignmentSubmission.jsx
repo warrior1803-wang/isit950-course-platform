@@ -1,271 +1,364 @@
-// Sprint 2: mock data — swap for real axios calls in Sprint 3.
-// TODO Sprint 3: restore → assignmentApi.list(courseId) and assignmentApi.submit(id, formData)
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
-import { getMockCourse } from '../mock/courses';
-import { getMockAssignment } from '../mock/assignments';
+import { useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+
+const mockAssignment = {
+  id: "asg1",
+  title: "Week 7 Progress Report",
+  description:
+    "Submit your team's Week 7 Progress Report as a single PDF document. The report must include all seven sections as outlined in the subject guide.",
+  dueDate: "2026-04-17T17:00:00",
+  maxScore: 10,
+  type: "FILE",
+};
+
+const mockSubmission = {
+  filename: "report_draft.pdf",
+  submittedAt: "2026-04-15T11:42:00",
+  status: "graded",
+  score: 8,
+  feedback: "Good structure, needs more detail in Section 4.",
+  resubmissionsUsed: 1,
+  resubmissionsLimit: 2,
+};
+// submitted state:
+// { filename: 'report_draft.pdf', submittedAt: '2026-04-15T11:42:00', status: 'submitted', resubmissionsUsed: 1, resubmissionsLimit: 2 }
+// graded state:
+// { filename: 'report_draft.pdf', submittedAt: '2026-04-15T11:42:00', status: 'graded', score: 8, feedback: 'Good structure, needs more detail in Section 4.', resubmissionsUsed: 1, resubmissionsLimit: 2 }
+
+const mockCourse = {
+  code: "ISIT950",
+  name: "Course Collaboration Platform",
+};
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  const date = new Intl.DateTimeFormat("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+  const time = new Intl.DateTimeFormat("en-AU", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+    .format(d)
+    .replace(/\s/g, "")
+    .toLowerCase();
+  return `${date} at ${time}`;
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes)) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function acceptFile(file) {
+  const maxBytes = 50 * 1024 * 1024;
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (ext !== "pdf" && ext !== "docx") return false;
+  return file.size <= maxBytes;
+}
+
+function UpgradePrompt() {
+  return (
+    <div className="upgrade-prompt">
+      <span className="material-symbols-rounded icon">warning</span>
+      <div className="upgrade-prompt-body">
+        <div className="upgrade-prompt-title">
+          Resubmission limit reached (Free plan)
+        </div>
+        <div className="upgrade-prompt-sub">
+          Upgrade to Member for unlimited resubmissions
+        </div>
+      </div>
+      <Link to="/membership" className="upgrade-prompt-btn">
+        Upgrade
+      </Link>
+    </div>
+  );
+}
 
 export default function AssignmentSubmission() {
-  const { id: courseId, asgId: assignmentId } = useParams();
+  const { id: courseId, asgId } = useParams();
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const [assignment, setAssignment] = useState(null);
-  const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const resubmitInputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  const [resubmitDragOver, setResubmitDragOver] = useState(false);
   const [pickedFile, setPickedFile] = useState(null);
+  const [resubmitFile, setResubmitFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submittedAt, setSubmittedAt] = useState(null);
+  const [submission, setSubmission] = useState(mockSubmission);
 
-  useEffect(() => {
-    // Sprint 2: resolve from mock data
-    const t = setTimeout(() => {
-      setAssignment(getMockAssignment(courseId, assignmentId));
-      setCourse(getMockCourse(courseId));
-      setLoading(false);
-    }, 200);
-    return () => clearTimeout(t);
-  }, [courseId, assignmentId]);
+  const dueLabel = useMemo(() => formatDateTime(mockAssignment.dueDate), []);
+  const isOverdue = useMemo(
+    () => new Date(mockAssignment.dueDate) < new Date(),
+    [],
+  );
+  const submitted =
+    submission?.status === "submitted" || submission?.status === "graded";
+  const graded = submission?.status === "graded";
+  const statusLabel = graded
+    ? "Graded"
+    : submitted
+      ? "Submitted"
+      : "Not submitted";
+  const resubmissionsUsed = submission?.resubmissionsUsed ?? 0;
+  const resubmissionsLimit = submission?.resubmissionsLimit ?? 2;
+  const limitReached = submitted && resubmissionsUsed >= resubmissionsLimit;
 
-  const submitted = Boolean(submittedAt);
-
-  const dueLabel = useMemo(() => {
-    if (!assignment?.dueDate) return '';
-    const d = new Date(assignment.dueDate);
-    const date = new Intl.DateTimeFormat('en-AU', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }).format(d);
-    const time = new Intl.DateTimeFormat('en-AU', {
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(d);
-    return `${date}, ${time}`;
-  }, [assignment?.dueDate]);
-
-  const isUrgent = useMemo(() => {
-    if (!assignment?.dueDate) return false;
-    const due = new Date(assignment.dueDate);
-    const now = new Date();
-    const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    return diffDays <= 7 && diffDays >= -365;
-  }, [assignment?.dueDate]);
-
-  const canSubmit = Boolean(pickedFile) && !submitted && !submitting;
-
-  function formatBytes(bytes) {
-    if (!Number.isFinite(bytes)) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
-  function acceptFile(file) {
-    const maxBytes = 50 * 1024 * 1024;
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    const okExt = ext === 'pdf' || ext === 'docx';
-    if (!okExt) return { ok: false, reason: 'Please upload a PDF or DOCX file.' };
-    if (file.size > maxBytes) return { ok: false, reason: 'File must be ≤ 50 MB.' };
-    return { ok: true, reason: null };
-  }
-
-  function pickFile(file) {
-    if (!file) return;
-    const res = acceptFile(file);
-    if (!res.ok) {
-      // keep UX minimal: just ignore invalid; in Sprint 3 we'd show a toast
-      setPickedFile(null);
+  function pickFile(file, mode = "submit") {
+    if (!file || !acceptFile(file)) {
+      if (mode === "resubmit") setResubmitFile(null);
+      else setPickedFile(null);
       return;
     }
-    setPickedFile(file);
+    if (mode === "resubmit") setResubmitFile(file);
+    else setPickedFile(file);
+  }
+
+  function clearFile(mode = "submit") {
+    if (mode === "resubmit") {
+      setResubmitFile(null);
+      if (resubmitInputRef.current) resubmitInputRef.current.value = "";
+      return;
+    }
+    setPickedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function submitAssignment() {
-    if (!pickedFile || submitted || submitting) return;
+    if (!pickedFile || submitting) return;
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 650)); // simulate upload
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    setSubmission({
+      filename: pickedFile.name,
+      submittedAt: new Date().toISOString(),
+      status: "submitted",
+      resubmissionsUsed: 0,
+      resubmissionsLimit: 2,
+    });
+    clearFile();
     setSubmitting(false);
-    setSubmittedAt(new Date());
+    navigate(`/courses/${courseId}/assignments/${asgId}/review`);
   }
 
-  if (loading) return <LoadingSpinner />;
-  if (!assignment) return <div>Assignment not found.</div>;
+  async function resubmitAssignment() {
+    if (!resubmitFile || submitting || limitReached) return;
+    setSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    setSubmission((current) => ({
+      ...current,
+      filename: resubmitFile.name,
+      submittedAt: new Date().toISOString(),
+      status: "submitted",
+      score: undefined,
+      feedback: undefined,
+      resubmissionsUsed: (current?.resubmissionsUsed ?? 0) + 1,
+      resubmissionsLimit: current?.resubmissionsLimit ?? 2,
+    }));
+    clearFile("resubmit");
+    setSubmitting(false);
+  }
+
+  function renderUploadZone({ mode = "submit", compact = false } = {}) {
+    const activeRef = mode === "resubmit" ? resubmitInputRef : fileInputRef;
+    const activeFile = mode === "resubmit" ? resubmitFile : pickedFile;
+    const activeDragOver = mode === "resubmit" ? resubmitDragOver : dragOver;
+    const setActiveDragOver =
+      mode === "resubmit" ? setResubmitDragOver : setDragOver;
+
+    return (
+      <>
+        <div
+          className={`upload-zone${compact ? " upload-zone-compact" : ""}${
+            activeDragOver ? " dragover" : ""
+          }`}
+          role="button"
+          tabIndex={0}
+          onClick={() => activeRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              activeRef.current?.click();
+            }
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setActiveDragOver(true);
+          }}
+          onDragLeave={() => setActiveDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setActiveDragOver(false);
+            pickFile(e.dataTransfer.files?.[0], mode);
+          }}
+        >
+          <span className="material-symbols-rounded icon">upload_file</span>
+          <div className="upload-zone-title">Drag and drop your file here</div>
+          <div className="upload-zone-sub">
+            or browse to upload · PDF, DOCX up to 50 MB
+          </div>
+        </div>
+        <input
+          ref={activeRef}
+          type="file"
+          style={{ display: "none" }}
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          onChange={(e) => pickFile(e.target.files?.[0], mode)}
+        />
+        <div className="file-list">
+          {activeFile && (
+            <div className="file-item">
+              <div className="file-item-icon">
+                <span className="material-symbols-rounded icon">
+                  description
+                </span>
+              </div>
+              <div className="file-item-info">
+                <div className="file-item-name">{activeFile.name}</div>
+                <div className="file-item-size">
+                  {formatBytes(activeFile.size)}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="file-item-remove"
+                aria-label="Remove file"
+                onClick={() => clearFile(mode)}
+              >
+                <span className="material-symbols-rounded icon">close</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          fontSize: 12,
-          color: 'var(--text-muted)',
-          marginBottom: 20,
-        }}
-      >
-        <Link to={`/courses/${courseId}`} style={{ cursor: 'pointer', color: 'var(--accent)' }}>
-          {course?.code ?? `Course ${courseId}`}
+      <div className="breadcrumb-row">
+        <Link to={`/courses/${courseId}`} className="breadcrumb-link">
+          {mockCourse.code}
         </Link>
-        <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
-          chevron_right
-        </span>
-        <Link to={`/courses/${courseId}`} style={{ cursor: 'pointer', color: 'var(--accent)' }}>
+        <span className="material-symbols-rounded">chevron_right</span>
+        <Link
+          to={`/courses/${courseId}?tab=assignments`}
+          className="breadcrumb-link"
+        >
           Assignments
         </Link>
-        <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
-          chevron_right
-        </span>
-        <span>{assignment.title}</span>
+        <span className="material-symbols-rounded">chevron_right</span>
+        <span>{mockAssignment.title}</span>
       </div>
 
       <div className="submit-layout">
         <div className="submit-main">
           <div className="asgn-card">
-            <div className="asgn-title">{assignment.title}</div>
+            <div className="asgn-title">{mockAssignment.title}</div>
             <div className="asgn-meta-row">
-              <span className={`asgn-meta-chip${isUrgent ? ' urgent' : ''}`}>
+              <span className={`asgn-meta-chip${isOverdue ? " urgent" : ""}`}>
                 <span className="material-symbols-rounded icon">schedule</span>
-                {assignment.dueDate ? `Due ${dueLabel}` : 'No due date'}
+                Due {dueLabel}
               </span>
               <span className="asgn-meta-chip">
                 <span className="material-symbols-rounded icon">star</span>
-                {assignment.maxScore} marks
+                {mockAssignment.maxScore} marks
               </span>
               <span className="asgn-meta-chip">
                 <span className="material-symbols-rounded icon">school</span>
-                {course?.code ?? `Course ${courseId}`} · {course?.instructor?.name ?? 'Instructor'}
-              </span>
-              <span className="asgn-meta-chip">
-                <span className="material-symbols-rounded icon">group</span>
-                {/* Group submission */}
-                {assignment.submissionMode}
+                {mockCourse.code} · {mockCourse.name}
               </span>
             </div>
             <div className="asgn-desc-heading">Description</div>
-            <div className="asgn-desc">{assignment.description}</div>
+            <div className="asgn-desc">{mockAssignment.description}</div>
           </div>
 
-          {/* Upload + submit */}
           {!submitted && (
             <>
-              <div
-                id="upload-zone"
-                className={`upload-zone${dragOver ? ' dragover' : ''}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }
-                }}
-                onDragOver={e => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={e => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  const file = e.dataTransfer.files?.[0];
-                  pickFile(file);
-                }}
+              {renderUploadZone()}
+              <button
+                type="button"
+                className="submit-btn"
+                onClick={submitAssignment}
+                disabled={!pickedFile || submitting}
               >
-                <span className="material-symbols-rounded icon">upload_file</span>
-                <div className="upload-zone-title">Drag and drop your file here</div>
-                <div className="upload-zone-sub">
-                  or <span>browse to upload</span> · {assignment.allowedFileTypes} up to 50 MB
-                </div>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: 'none' }}
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={e => pickFile(e.target.files?.[0])}
-              />
-
-              <div className="file-list" id="file-list">
-                {pickedFile && (
-                  <div className="file-item">
-                    <div className="file-item-icon">
-                      <span className="material-symbols-rounded icon">description</span>
-                    </div>
-                    <div className="file-item-info">
-                      <div className="file-item-name">{pickedFile.name}</div>
-                      <div className="file-item-size">{formatBytes(pickedFile.size)}</div>
-                    </div>
-                    <button
-                      type="button"
-                      className="file-item-remove"
-                      aria-label="Remove file"
-                      onClick={() => {
-                        setPickedFile(null);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
-                    >
-                      <span className="material-symbols-rounded icon">close</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div id="submit-area">
-                <button
-                  type="button"
-                  className="submit-btn"
-                  id="submit-btn"
-                  onClick={submitAssignment}
-                  disabled={!canSubmit}
-                >
-                  <span className="material-symbols-rounded icon">send</span>
-                  {submitting ? 'Submitting…' : 'Submit assignment'}
-                </button>
-              </div>
+                <span className="material-symbols-rounded icon">send</span>
+                {submitting ? "Submitting..." : "Submit assignment"}
+              </button>
             </>
           )}
 
-          <div
-            className="submit-success"
-            id="submit-success"
-            style={{ display: submitted ? 'block' : 'none' }}
-          >
-            <span className="material-symbols-rounded icon">check_circle</span>
-            <div className="submit-success-title">Submitted successfully</div>
-            <div className="submit-success-sub">
-              Your assignment has been received.
-              <br />
-              Submitted on{' '}
-              {submittedAt
-                ? new Intl.DateTimeFormat('en-AU', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  }).format(submittedAt)
-                : ''}
-              <br />
-              <br />
-              Your instructor will provide feedback once marking is complete.
-            </div>
-            <Link
-              to={`/courses/${courseId}`}
-              className="submit-btn"
-              style={{
-                marginTop: 20,
-                maxWidth: 240,
-                marginLeft: 'auto',
-                marginRight: 'auto',
-                textDecoration: 'none',
-              }}
-            >
-              <span className="material-symbols-rounded icon">arrow_back</span>
-              Back to course
-            </Link>
-          </div>
+          {submitted && (
+            <>
+              <div className="submit-success submit-state-banner">
+                <span className="material-symbols-rounded icon">
+                  check_circle
+                </span>
+                <div>
+                  <div className="submit-success-title">
+                    Submitted successfully
+                  </div>
+                  <div className="submit-success-sub">
+                    {submission.filename} · Submitted{" "}
+                    {formatDateTime(submission.submittedAt)}
+                  </div>
+                </div>
+              </div>
+
+              {graded && (
+                <div className="grade-card">
+                  <div className="grade-card-header">
+                    <div>
+                      <div className="grade-score">
+                        {submission.score}{" "}
+                        <span>/ {mockAssignment.maxScore}</span>
+                      </div>
+                      <div className="grade-feedback-label">Feedback</div>
+                    </div>
+                    <span className="graded-badge">Graded</span>
+                  </div>
+                  <div className="grade-feedback">{submission.feedback}</div>
+                </div>
+              )}
+
+              {!graded && (
+                <div className="resubmit-card">
+                  <div className="resubmit-heading">
+                    Submit a new file to replace your current submission
+                  </div>
+                  <div className="resubmit-chip">
+                    {resubmissionsUsed} resubmissions used of{" "}
+                    {resubmissionsLimit}
+                  </div>
+                  {limitReached ? (
+                    <UpgradePrompt />
+                  ) : (
+                    <>
+                      {renderUploadZone({ mode: "resubmit", compact: true })}
+                      <button
+                        type="button"
+                        className="submit-btn"
+                        onClick={resubmitAssignment}
+                        disabled={!resubmitFile || submitting}
+                      >
+                        <span className="material-symbols-rounded icon">
+                          send
+                        </span>
+                        {submitting ? "Submitting..." : "Resubmit assignment"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div className="submit-sidebar">
@@ -274,58 +367,32 @@ export default function AssignmentSubmission() {
             <div className="info-row">
               <span className="info-row-label">Status</span>
               <span
-                className={`info-row-val${!submitted ? ' urgent' : ''}`}
-                id="sub-status"
-                style={!submitted ? { color: '#d85a30' } : undefined}
+                className={`info-row-val ${submitted ? "success" : "urgent"}`}
               >
-                {submitted ? 'Submitted' : 'Not submitted'}
+                {statusLabel}
               </span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Due date</span>
-              <span className={`info-row-val${isUrgent ? ' urgent' : ''}`}>
-                {assignment.dueDate ? dueLabel : '-'}
+              <span className={`info-row-val${isOverdue ? " urgent" : ""}`}>
+                {dueLabel}
               </span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Marks</span>
-              <span className="info-row-val">{assignment.maxScore} points</span>
+              <span className="info-row-val">
+                {graded
+                  ? `${submission.score} / ${mockAssignment.maxScore}`
+                  : `${mockAssignment.maxScore} points`}
+              </span>
             </div>
             <div className="info-row">
-              <span className="info-row-label">Attempts</span>
-              <span className="info-row-val">{assignment.attempts}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-row-label">File type</span>
-              <span className="info-row-val">{assignment.allowedFileTypes}</span>
-            </div>
-          </div>
-
-          <div className="info-card">
-            <div className="info-card-title">Submission checklist</div>
-            <div className="checklist-item">
-              <span className="material-symbols-rounded icon">check_circle</span> All 7 report
-              sections included
-            </div>
-            <div className="checklist-item">
-              <span className="material-symbols-rounded icon">check_circle</span> Screenshots
-              clearly labelled
-            </div>
-            <div className="checklist-item">
-              <span className="material-symbols-rounded icon">check_circle</span> GitHub commit log
-              included
-            </div>
-            <div className="checklist-item">
-              <span className="material-symbols-rounded icon">check_circle</span> Sprint Board
-              screenshot included
-            </div>
-            <div className="checklist-item">
-              <span className="material-symbols-rounded icon">check_circle</span> Reviewed by all
-              team members
-            </div>
-            <div className="checklist-item">
-              <span className="material-symbols-rounded icon">check_circle</span> Submitted as
-              single PDF
+              <span className="info-row-label">Resubmissions</span>
+              <span className="info-row-val">
+                {submitted
+                  ? `${resubmissionsUsed} / ${resubmissionsLimit}`
+                  : `0 / ${resubmissionsLimit}`}
+              </span>
             </div>
           </div>
         </div>
