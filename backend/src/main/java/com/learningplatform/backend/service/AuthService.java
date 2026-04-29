@@ -8,10 +8,15 @@ import com.learningplatform.backend.dto.AuthUserResponse;
 import com.learningplatform.backend.dto.LoginRequest;
 import com.learningplatform.backend.dto.RegisterRequest;
 import com.learningplatform.backend.model.User;
+import com.learningplatform.backend.model.enums.UserRole;
 import com.learningplatform.backend.repository.UserRepository;
 import com.learningplatform.backend.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class AuthService {
@@ -47,12 +52,7 @@ public class AuthService {
 
         String token = jwtService.generateToken(savedUser);
 
-        AuthUserResponse userResponse = new AuthUserResponse(
-                savedUser.getId(),
-                savedUser.getName(),
-                savedUser.getEmail(),
-                savedUser.getRole()
-        );
+        AuthUserResponse userResponse = toAuthUserResponse(savedUser);
 
         return new AuthResponse(token, userResponse);
     }
@@ -67,12 +67,7 @@ public class AuthService {
 
         String token = jwtService.generateToken(user);
 
-        AuthUserResponse userResponse = new AuthUserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole()
-        );
+        AuthUserResponse userResponse = toAuthUserResponse(user);
 
         return new AuthResponse(token, userResponse);
     }
@@ -80,5 +75,50 @@ public class AuthService {
     public User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("User not found"));
+    }
+
+    private AuthUserResponse toAuthUserResponse(User user) {
+        if (user.getRole() != UserRole.STUDENT) {
+            return new AuthUserResponse(
+                    user.getId(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getRole()
+            );
+        }
+
+        List<String> skills = Collections.emptyList();
+
+        if (user.getSkills() != null && !user.getSkills().isBlank()) {
+            skills = Arrays.stream(user.getSkills().split(","))
+                    .map(String::trim)
+                    .filter(skill -> !skill.isBlank())
+                    .toList();
+        }
+
+        AuthUserResponse.MembershipResponse membership =
+                new AuthUserResponse.MembershipResponse(
+                        "FREE",
+                        null,
+                        null
+                );
+
+        return new AuthUserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                skills,
+                user.getCollabMode(),
+                user.getAvailability(),
+                membership
+        );
+    }
+
+    public AuthUserResponse getCurrentUserResponse(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("User not found"));
+
+        return toAuthUserResponse(user);
     }
 }

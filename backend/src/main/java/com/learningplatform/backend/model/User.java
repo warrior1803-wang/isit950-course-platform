@@ -32,8 +32,29 @@ public class User {
     @Column(nullable = false)
     private UserRole role;
 
+    @Column(name = "skills")
+    private String skills;
+
+    @Column(name = "collab_mode")
+    private String collabMode;
+
+    @Column(name = "availability")
+    private String availability;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "membership_type")
+    private String membershipType;
+
+    @Column(name = "membership_since")
+    private LocalDateTime membershipSince;
+
+    @Column(name = "membership_expires_at")
+    private LocalDateTime membershipExpiresAt;
+
+    @Column(name = "membership_plan")
+    private String membershipPlan;
 
     @PrePersist
     public void prePersist() {

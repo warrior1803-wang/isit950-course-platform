@@ -12,4 +12,12 @@ public class StudentSummaryResponse {
     private Long id;
     private String name;
     private String email;
+    private MembershipSummary membership;
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class MembershipSummary {
+        private String type;
+    }
 }

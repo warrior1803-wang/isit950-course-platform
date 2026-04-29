@@ -261,4 +261,19 @@ public class CourseContentService {
 
     private record AccessContext(User user, Course course) {
     }
+
+    public boolean deleteAnnouncement(Long courseId, Long announcementId, String userEmail) {
+        AccessContext context = requireInstructorOwnership(courseId, userEmail);
+
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElse(null);
+
+        if (announcement == null || !announcement.getCourse().getId().equals(courseId)) {
+            return false;
+        }
+
+        announcementRepository.delete(announcement);
+        return true;
+    }
+
 }

@@ -4,7 +4,6 @@ import com.learningplatform.backend.dto.AuthResponse;
 import com.learningplatform.backend.dto.AuthUserResponse;
 import com.learningplatform.backend.dto.LoginRequest;
 import com.learningplatform.backend.dto.RegisterRequest;
-import com.learningplatform.backend.model.User;
 import com.learningplatform.backend.service.AuthService;
 import com.learningplatform.backend.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -38,19 +37,14 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ApiResponse<?> getCurrentUser() {
+    public ApiResponse<AuthUserResponse> getCurrentUser() {
 
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
 
-        User user = authService.getCurrentUser(email);
-        AuthUserResponse response = new AuthUserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole()
-        );
+        AuthUserResponse response = authService.getCurrentUserResponse(email);
+
         return ApiResponse.success("User fetched successfully", response);
     }
 }
