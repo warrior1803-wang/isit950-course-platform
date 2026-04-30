@@ -98,6 +98,10 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const totalPoints = fields.questions.reduce(
+    (sum, question) => sum + (Number(question.points) || 0),
+    0,
+  );
 
   useEffect(() => {
     if (!initialData) return;
@@ -190,7 +194,9 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
     if (!fields.title.trim()) nextErrors.title = 'This field is required';
     if (!fields.description.trim()) nextErrors.description = 'This field is required';
     if (!fields.dueDate || !toIsoDate(fields.dueDate)) nextErrors.dueDate = 'Choose a valid due date';
-    if (!fields.maxScore || Number(fields.maxScore) < 1) nextErrors.maxScore = 'Enter at least 1 mark';
+    if (fields.type === 'FILE' && (!fields.maxScore || Number(fields.maxScore) < 1)) {
+      nextErrors.maxScore = 'Enter at least 1 mark';
+    }
     if (fields.type === 'FILE' && (!fields.fileSizeLimitMb || Number(fields.fileSizeLimitMb) < 1)) {
       nextErrors.fileSizeLimitMb = 'Enter at least 1 MB';
     }
@@ -226,7 +232,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
         title: fields.title.trim(),
         description: fields.description.trim(),
         dueDate: toIsoDate(fields.dueDate),
-        maxScore: Number(fields.maxScore),
+        maxScore: fields.type === 'AUTO' ? totalPoints : Number(fields.maxScore),
         type: fields.type,
       };
       if (fields.type === 'AUTO') {
@@ -308,10 +314,16 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                     min="1"
                     className={inputClass}
                     placeholder="e.g. 20"
-                    value={fields.maxScore}
+                    value={fields.type === 'AUTO' ? totalPoints : fields.maxScore}
+                    readOnly={fields.type === 'AUTO'}
                     onChange={e => setField('maxScore', e.target.value)}
                     disabled={disabled}
                   />
+                  {fields.type === 'AUTO' && (
+                    <p className="text-[12px] text-text-muted">
+                      Auto-calculated from question points
+                    </p>
+                  )}
                 </Field>
               </div>
 

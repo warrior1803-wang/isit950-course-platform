@@ -144,10 +144,11 @@ export default function InstructorCoursesPage() {
       method: isEdit ? 'put' : 'post',
       data: fields,
     });
+    const payload = res.data?.data ?? res.data ?? {};
     const saved = formatAssignment({
       ...fields,
-      ...res.data,
-      id: res.data?.id ?? assignmentModal.assignmentId,
+      ...payload,
+      id: payload.id ?? assignmentModal.assignmentId,
     }, { includeQuestionDetails: true });
     setAssignments(prev => {
       const current = prev[courseId] || [];
@@ -171,11 +172,12 @@ export default function InstructorCoursesPage() {
     });
     try {
       const res = await api.get(`/courses/${courseId}/assignments/${assignment.id}`);
+      const payload = res.data?.data ?? res.data;
       setAssignmentModal(current => {
         if (!current || current.assignmentId !== assignment.id) return current;
         return {
           ...current,
-          initialData: res.data,
+          initialData: payload,
           isLoadingDetail: false,
         };
       });
