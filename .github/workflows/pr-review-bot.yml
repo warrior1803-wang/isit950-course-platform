@@ -88,7 +88,7 @@ jobs:
             // ── 4. Read full content of changed files (cap at 12000 chars total) ──
             let fullFileContents = '';
             let totalChars = 0;
-            const FILE_TOTAL_CAP = 12000;
+            const FILE_TOTAL_CAP = 4000;
 
             for (const file of changedFiles) {
               if (totalChars >= FILE_TOTAL_CAP) break;
@@ -131,7 +131,7 @@ jobs:
               // Search for related backend files
               const backendBlocks = [];
               let backendChars = 0;
-              const BACKEND_CAP = 8000;
+              const BACKEND_CAP = 2000;
 
               for (const keyword of uniqueKeywords) {
                 if (backendChars >= BACKEND_CAP) break;
@@ -145,7 +145,7 @@ jobs:
                     if (backendChars >= BACKEND_CAP) break;
                     try {
                       const content = fs.readFileSync(backendFile, 'utf8');
-                      const block = '\n\n### ☕ Related backend: ' + backendFile + '\n```java\n' + content.slice(0, 3000) + (content.length > 3000 ? '\n... [truncated]' : '') + '\n```';
+                      const block = '\n\n### ☕ Related backend: ' + backendFile + '\n```java\n' + content.slice(0, 1500) + (content.length > 1500 ? '\n... [truncated]' : '') + '\n```';
                       backendBlocks.push(block);
                       backendChars += block.length;
                     } catch (e) {}
@@ -166,7 +166,7 @@ jobs:
               diff = execSync(
                 "git diff origin/" + pr.base.ref + "...HEAD -- . ':(exclude)package-lock.json' ':(exclude)*.lock' ':(exclude)*.snap'",
                 { maxBuffer: 1024 * 1024 * 10 }
-              ).toString().slice(0, 6000);
+              ).toString().slice(0, 3000);
             } catch (e) {
               diff = 'Could not retrieve diff: ' + e.message;
             }
