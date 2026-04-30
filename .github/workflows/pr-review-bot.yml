@@ -26,6 +26,7 @@ jobs:
         with:
           script: |
             const { execSync } = require('child_process');
+            const fs = require('fs');
 
             const pr = context.payload.pull_request;
             const prBody = pr.body || '';
@@ -73,13 +74,99 @@ jobs:
               issueContext = issueBlocks.join('\n\n---\n\n');
             }
 
-            // ── 3. Get PR diff ────────────────────────────────────────────
+            // ── 3. Get changed files list ─────────────────────────────────
+            let changedFiles = [];
+            try {
+              changedFiles = execSync(
+                "git diff origin/" + pr.base.ref + "...HEAD --name-only -- . ':(exclude)package-lock.json' ':(exclude)*.lock' ':(exclude)*.snap'",
+                { maxBuffer: 1024 * 1024 * 10 }
+              ).toString().trim().split('\n').filter(Boolean);
+            } catch (e) {
+              console.error('Could not get changed files:', e.message);
+            }
+
+            // ── 4. Read full content of changed files (cap at 12000 chars total) ──
+            let fullFileContents = '';
+            let totalChars = 0;
+            const FILE_TOTAL_CAP = 4000;
+
+            for (const file of changedFiles) {
+              if (totalChars >= FILE_TOTAL_CAP) break;
+              try {
+                const content = fs.readFileSync(file, 'utf8');
+                const block = '\n\n### 📄 Full file: ' + file + '\n```\n' + content + '\n```';
+                if (totalChars + block.length > FILE_TOTAL_CAP) {
+                  // Add truncated version
+                  const remaining = FILE_TOTAL_CAP - totalChars;
+                  fullFileContents += '\n\n### 📄 Full file: ' + file + ' (truncated)\n```\n' + content.slice(0, remaining) + '\n... [truncated]\n```';
+                  totalChars = FILE_TOTAL_CAP;
+                } else {
+                  fullFileContents += block;
+                  totalChars += block.length;
+                }
+              } catch (e) {
+                // File might be deleted or binary, skip
+              }
+            }
+
+            // ── 5. Auto-fetch related backend files for frontend changes ──
+            let backendContext = '';
+            const frontendChanged = changedFiles.some(f =>
+              f.includes('frontend/') || f.endsWith('.jsx') || f.endsWith('.tsx')
+            );
+
+            if (frontendChanged) {
+              // Extract keywords from changed frontend filenames to find related backend files
+              const keywords = changedFiles
+                .filter(f => f.includes('frontend/'))
+                .map(f => {
+                  const name = f.split('/').pop().replace(/\.(jsx|tsx|js|ts)$/, '');
+                  // Convert PascalCase to search terms e.g. AssignmentSubmission -> Assignment
+                  return name.replace(/([A-Z])/g, ' $1').trim().split(' ')[0];
+                })
+                .filter(Boolean);
+
+              const uniqueKeywords = [...new Set(keywords)];
+
+              // Search for related backend files
+              const backendBlocks = [];
+              let backendChars = 0;
+              const BACKEND_CAP = 2000;
+
+              for (const keyword of uniqueKeywords) {
+                if (backendChars >= BACKEND_CAP) break;
+                try {
+                  const matches = execSync(
+                    `find backend/src -name "*${keyword}*.java" 2>/dev/null | head -3`,
+                    { maxBuffer: 1024 * 1024 }
+                  ).toString().trim().split('\n').filter(Boolean);
+
+                  for (const backendFile of matches) {
+                    if (backendChars >= BACKEND_CAP) break;
+                    try {
+                      const content = fs.readFileSync(backendFile, 'utf8');
+                      const block = '\n\n### ☕ Related backend: ' + backendFile + '\n```java\n' + content.slice(0, 1500) + (content.length > 1500 ? '\n... [truncated]' : '') + '\n```';
+                      backendBlocks.push(block);
+                      backendChars += block.length;
+                    } catch (e) {}
+                  }
+                } catch (e) {}
+              }
+
+              if (backendBlocks.length > 0) {
+                backendContext = '\n\n## Related Backend Files (auto-fetched for context)\n'
+                  + '> These files were NOT changed in this PR — included so the reviewer understands the full system behaviour.\n'
+                  + backendBlocks.join('');
+              }
+            }
+
+            // ── 6. Get PR diff (for reference) ───────────────────────────
             let diff = '';
             try {
               diff = execSync(
                 "git diff origin/" + pr.base.ref + "...HEAD -- . ':(exclude)package-lock.json' ':(exclude)*.lock' ':(exclude)*.snap'",
                 { maxBuffer: 1024 * 1024 * 10 }
-              ).toString().slice(0, 15000);
+              ).toString().slice(0, 3000);
             } catch (e) {
               diff = 'Could not retrieve diff: ' + e.message;
             }
@@ -88,7 +175,7 @@ jobs:
               diff = 'No code changes detected in this PR.';
             }
 
-            // ── 4. Build review format prompt ─────────────────────────────
+            // ── 7. Build review format prompt ─────────────────────────────
             const multiIssueNote = issueNumbers.length > 1
               ? 'Note: This PR covers ' + issueNumbers.length + ' issues (' + issueLabel + '). Review each issue separately.'
               : '';
@@ -102,7 +189,13 @@ jobs:
                 + '- \u274c Missing / Incomplete: which are not addressed yet\n\n'
                 + 'Then a combined section at the end:\n\n'
                 + '### \u26a0\ufe0f Code Quality Issues\n'
-                + 'Bugs, missing error handling, bad practices across the whole diff. Skip if none.\n\n'
+                + 'Only flag issues specific to THIS project\'s conventions (generic style issues are handled by Copilot code review separately):\n'
+                + '- Wrong API response envelope (must use `response.data.data` for most APIs; `response.data` for Assignment APIs only)\n'
+                + '- Mock data or hardcoded test data left in production code\n'
+                + '- Missing null/undefined guard on API response fields used in arithmetic or rendering\n'
+                + '- Hardcoded localhost URLs\n'
+                + '- UI not guarded before API response loads (rendering before data arrives)\n'
+                + 'Skip if none of the above apply.\n\n'
                 + '### \ud83d\udca1 Suggestions\n'
                 + 'Optional improvements. Skip if none.\n\n'
                 + '### \ud83d\udccb Verdict\n'
@@ -115,7 +208,13 @@ jobs:
                 + '### \u274c Missing or Incomplete\n'
                 + 'Which criteria are NOT addressed.\n\n'
                 + '### \u26a0\ufe0f Code Quality Issues\n'
-                + 'Bugs, missing error handling, bad practices. Skip if none.\n\n'
+                + 'Only flag issues specific to THIS project\'s conventions (generic style issues are handled by Copilot code review separately):\n'
+                + '- Wrong API response envelope (must use `response.data.data` for most APIs; `response.data` for Assignment APIs only)\n'
+                + '- Mock data or hardcoded test data left in production code\n'
+                + '- Missing null/undefined guard on API response fields used in arithmetic or rendering\n'
+                + '- Hardcoded localhost URLs\n'
+                + '- UI not guarded before API response loads (rendering before data arrives)\n'
+                + 'Skip if none of the above apply.\n\n'
                 + '### \ud83d\udca1 Suggestions\n'
                 + 'Optional improvements. Skip if none.\n\n'
                 + '### \ud83d\udccb Verdict\n'
@@ -123,11 +222,19 @@ jobs:
                 + 'One sentence explaining why.';
             }
 
-            // ── 5. Call GitHub Models API (GPT-4o) ────────────────────────
+            // ── 8. Call GitHub Models API (GPT-4o) ────────────────────────
             const userPrompt = 'Please review this PR against the linked issue requirements. ' + multiIssueNote + '\n\n'
               + '## Linked Issues / Acceptance Criteria\n' + issueContext + '\n\n'
               + '## PR Title\n' + prTitle + '\n\n'
-              + '## Code Diff\n```diff\n' + diff + '\n```\n\n'
+              + '## Full Content of Changed Files\n'
+              + '> Use these to understand the complete implementation — not just what changed.\n'
+              + fullFileContents + '\n\n'
+              + backendContext + '\n\n'
+              + '## Code Diff (for reference)\n```diff\n' + diff + '\n```\n\n'
+              + '## Important Context\n'
+              + '- This is a React (frontend) + Java Spring Boot (backend) project\n'
+              + '- Assignment answer comparison (case-insensitive, FILLIN/UNIQUE types) is handled entirely in the backend — do NOT flag this as a missing frontend implementation\n'
+              + '- API responses: most APIs use `response.data.data` envelope, except Assignment APIs which use `response.data` directly\n\n'
               + reviewFormat;
 
             const response = await fetch(
@@ -143,7 +250,7 @@ jobs:
                   messages: [
                     {
                       role: 'system',
-                      content: 'You are a senior software engineer doing a pre-review of a pull request for a university group project (React + Java Spring Boot). Be concise, specific, and actionable. Use markdown formatting.'
+                      content: 'You are a senior software engineer doing a pre-review of a pull request for a university group project (React + Java Spring Boot). You have access to the FULL content of changed files, not just the diff — use this to make accurate judgements. Be concise, specific, and actionable. Only flag issues that genuinely exist in the code provided. Do not hallucinate missing implementations if they are handled in backend files or in unchanged files. Use markdown formatting.'
                     },
                     {
                       role: 'user',
@@ -157,7 +264,7 @@ jobs:
 
             const data = await response.json();
 
-            // ── 6. Handle API errors ──────────────────────────────────────
+            // ── 9. Handle API errors ──────────────────────────────────────
             if (!response.ok) {
               console.error('GitHub Models API error:', JSON.stringify(data));
               await github.rest.issues.createComment({
@@ -173,7 +280,7 @@ jobs:
               ? data.choices[0].message.content
               : 'No response received from model.';
 
-            // ── 7. Post PR comment ────────────────────────────────────────
+            // ── 10. Post PR comment ───────────────────────────────────────
             const issueCountNote = issueNumbers.length > 1
               ? ' \u00b7 **' + issueNumbers.length + ' issues reviewed:** ' + issueLabel
               : ' \u00b7 Linked issue: **' + issueLabel + '**';
