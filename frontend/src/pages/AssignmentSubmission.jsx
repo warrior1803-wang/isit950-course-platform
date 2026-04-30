@@ -1,34 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-
-const mockAssignment = {
-  id: "asg1",
-  title: "Week 7 Progress Report",
-  description:
-    "Submit your team's Week 7 Progress Report as a single PDF document. The report must include all seven sections as outlined in the subject guide.",
-  dueDate: "2026-04-17T17:00:00",
-  maxScore: 10,
-  type: "FILE",
-};
-
-const mockSubmission = {
-  filename: "report_draft.pdf",
-  submittedAt: "2026-04-15T11:42:00",
-  status: "graded",
-  score: 8,
-  feedback: "Good structure, needs more detail in Section 4.",
-  resubmissionsUsed: 1,
-  resubmissionsLimit: 2,
-};
-// submitted state:
-// { filename: 'report_draft.pdf', submittedAt: '2026-04-15T11:42:00', status: 'submitted', resubmissionsUsed: 1, resubmissionsLimit: 2 }
-// graded state:
-// { filename: 'report_draft.pdf', submittedAt: '2026-04-15T11:42:00', status: 'graded', score: 8, feedback: 'Good structure, needs more detail in Section 4.', resubmissionsUsed: 1, resubmissionsLimit: 2 }
-
-const mockCourse = {
-  code: "ISIT950",
-  name: "Course Collaboration Platform",
-};
+import { assignmentApi } from "../api";
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -93,12 +65,84 @@ export default function AssignmentSubmission() {
   const [pickedFile, setPickedFile] = useState(null);
   const [resubmitFile, setResubmitFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submission, setSubmission] = useState(mockSubmission);
+  const [assignment, setAssignment] = useState(null);
+  const [submission, setSubmission] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
-  const dueLabel = useMemo(() => formatDateTime(mockAssignment.dueDate), []);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAssignment() {
+      setLoading(true);
+      setError("");
+      setSubmitError("");
+      setShowUpgradePrompt(false);
+
+      const [assignmentResult, submissionResult] = await Promise.allSettled([
+        assignmentApi.get(courseId, asgId),
+        assignmentApi.mySubmission(courseId, asgId),
+      ]);
+
+      if (cancelled) return;
+
+      if (assignmentResult.status === "fulfilled") {
+        const nextAssignment = assignmentResult.value.data?.data;
+        if (nextAssignment?.type === "AUTO") {
+          navigate(`/courses/${courseId}/assignments/${asgId}/quiz`, {
+            replace: true,
+          });
+          return;
+        }
+        setAssignment(nextAssignment);
+      } else {
+        setAssignment(null);
+        setError(
+          assignmentResult.reason?.response?.data?.message ||
+            assignmentResult.reason?.response?.data?.error ||
+            "Failed to load assignment.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (submissionResult.status === "fulfilled") {
+        const nextSubmission = submissionResult.value.data;
+        setSubmission(nextSubmission);
+        if (nextSubmission?.status === "graded") {
+          navigate(`/courses/${courseId}/assignments/${asgId}/review`, {
+            replace: true,
+          });
+          return;
+        }
+      } else if (submissionResult.reason?.response?.status === 404) {
+        setSubmission(null);
+      } else {
+        setError(
+          submissionResult.reason?.response?.data?.message ||
+            submissionResult.reason?.response?.data?.error ||
+            "Failed to load your submission.",
+        );
+      }
+
+      setLoading(false);
+    }
+
+    loadAssignment();
+    return () => {
+      cancelled = true;
+    };
+  }, [asgId, courseId, navigate]);
+
+  const dueLabel = useMemo(
+    () => formatDateTime(assignment?.dueDate),
+    [assignment?.dueDate],
+  );
   const isOverdue = useMemo(
-    () => new Date(mockAssignment.dueDate) < new Date(),
-    [],
+    () => Boolean(assignment?.dueDate && new Date(assignment.dueDate) < new Date()),
+    [assignment?.dueDate],
   );
   const submitted =
     submission?.status === "submitted" || submission?.status === "graded";
@@ -106,10 +150,11 @@ export default function AssignmentSubmission() {
   const statusLabel = graded
     ? "Graded"
     : submitted
-      ? "Submitted"
+      ? "Awaiting grade"
       : "Not submitted";
   const resubmissionsUsed = submission?.resubmissionsUsed ?? 0;
-  const resubmissionsLimit = submission?.resubmissionsLimit ?? 2;
+  const resubmissionsLimit =
+    submission?.resubmissionsLimit ?? assignment?.resubmissionsLimit ?? 0;
   const limitReached = submitted && resubmissionsUsed >= resubmissionsLimit;
 
   function pickFile(file, mode = "submit") {
@@ -135,35 +180,55 @@ export default function AssignmentSubmission() {
   async function submitAssignment() {
     if (!pickedFile || submitting) return;
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    setSubmission({
-      filename: pickedFile.name,
-      submittedAt: new Date().toISOString(),
-      status: "submitted",
-      resubmissionsUsed: 0,
-      resubmissionsLimit: 2,
-    });
-    clearFile();
-    setSubmitting(false);
-    navigate(`/courses/${courseId}/assignments/${asgId}/review`);
+    setSubmitError("");
+    setShowUpgradePrompt(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", pickedFile);
+      await assignmentApi.submitFile(courseId, asgId, formData);
+      clearFile();
+      navigate(`/courses/${courseId}/assignments/${asgId}/review`);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setShowUpgradePrompt(true);
+      } else {
+        setSubmitError(
+          err.response?.data?.message ||
+            err.response?.data?.error ||
+            "Failed to submit assignment.",
+        );
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function resubmitAssignment() {
     if (!resubmitFile || submitting || limitReached) return;
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    setSubmission((current) => ({
-      ...current,
-      filename: resubmitFile.name,
-      submittedAt: new Date().toISOString(),
-      status: "submitted",
-      score: undefined,
-      feedback: undefined,
-      resubmissionsUsed: (current?.resubmissionsUsed ?? 0) + 1,
-      resubmissionsLimit: current?.resubmissionsLimit ?? 2,
-    }));
-    clearFile("resubmit");
-    setSubmitting(false);
+    setSubmitError("");
+    setShowUpgradePrompt(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", resubmitFile);
+      await assignmentApi.submitFile(courseId, asgId, formData);
+      clearFile("resubmit");
+      navigate(`/courses/${courseId}/assignments/${asgId}/review`);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setShowUpgradePrompt(true);
+      } else {
+        setSubmitError(
+          err.response?.data?.message ||
+            err.response?.data?.error ||
+            "Failed to resubmit assignment.",
+        );
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function renderUploadZone({ mode = "submit", compact = false } = {}) {
@@ -241,11 +306,31 @@ export default function AssignmentSubmission() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="submit-layout">
+        <div className="submit-main">
+          <div className="asgn-card">Loading assignment...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !assignment) {
+    return (
+      <div className="submit-layout">
+        <div className="submit-main">
+          <div className="asgn-card">{error || "Assignment not found."}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="breadcrumb-row">
         <Link to={`/courses/${courseId}`} className="breadcrumb-link">
-          {mockCourse.code}
+          Course {courseId}
         </Link>
         <span className="material-symbols-rounded">chevron_right</span>
         <Link
@@ -255,13 +340,13 @@ export default function AssignmentSubmission() {
           Assignments
         </Link>
         <span className="material-symbols-rounded">chevron_right</span>
-        <span>{mockAssignment.title}</span>
+        <span>{assignment.title}</span>
       </div>
 
       <div className="submit-layout">
         <div className="submit-main">
           <div className="asgn-card">
-            <div className="asgn-title">{mockAssignment.title}</div>
+            <div className="asgn-title">{assignment.title}</div>
             <div className="asgn-meta-row">
               <span className={`asgn-meta-chip${isOverdue ? " urgent" : ""}`}>
                 <span className="material-symbols-rounded icon">schedule</span>
@@ -269,20 +354,22 @@ export default function AssignmentSubmission() {
               </span>
               <span className="asgn-meta-chip">
                 <span className="material-symbols-rounded icon">star</span>
-                {mockAssignment.maxScore} marks
+                {assignment.maxScore} marks
               </span>
               <span className="asgn-meta-chip">
                 <span className="material-symbols-rounded icon">school</span>
-                {mockCourse.code} · {mockCourse.name}
+                Course {courseId}
               </span>
             </div>
             <div className="asgn-desc-heading">Description</div>
-            <div className="asgn-desc">{mockAssignment.description}</div>
+            <div className="asgn-desc">{assignment.description}</div>
           </div>
 
           {!submitted && (
             <>
               {renderUploadZone()}
+              {submitError && <div className="form-error">{submitError}</div>}
+              {showUpgradePrompt && <UpgradePrompt />}
               <button
                 type="button"
                 className="submit-btn"
@@ -303,7 +390,7 @@ export default function AssignmentSubmission() {
                 </span>
                 <div>
                   <div className="submit-success-title">
-                    Submitted successfully
+                    Awaiting grade
                   </div>
                   <div className="submit-success-sub">
                     {submission.filename} · Submitted{" "}
@@ -318,7 +405,7 @@ export default function AssignmentSubmission() {
                     <div>
                       <div className="grade-score">
                         {submission.score}{" "}
-                        <span>/ {mockAssignment.maxScore}</span>
+                        <span>/ {assignment.maxScore}</span>
                       </div>
                       <div className="grade-feedback-label">Feedback</div>
                     </div>
@@ -342,6 +429,8 @@ export default function AssignmentSubmission() {
                   ) : (
                     <>
                       {renderUploadZone({ mode: "resubmit", compact: true })}
+                      {submitError && <div className="form-error">{submitError}</div>}
+                      {showUpgradePrompt && <UpgradePrompt />}
                       <button
                         type="button"
                         className="submit-btn"
@@ -382,8 +471,8 @@ export default function AssignmentSubmission() {
               <span className="info-row-label">Marks</span>
               <span className="info-row-val">
                 {graded
-                  ? `${submission.score} / ${mockAssignment.maxScore}`
-                  : `${mockAssignment.maxScore} points`}
+                  ? `${submission.score} / ${assignment.maxScore}`
+                  : `${assignment.maxScore} points`}
               </span>
             </div>
             <div className="info-row">

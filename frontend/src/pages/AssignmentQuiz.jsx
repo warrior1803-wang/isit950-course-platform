@@ -1,55 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-
-const mockAssignment = {
-  id: 'asg2',
-  title: 'Week 5 Scrum Quiz',
-  description:
-    'Answer all 5 questions. Your submission will be automatically marked and your score displayed immediately.',
-  dueDate: '2026-05-08T23:59:00',
-  maxScore: 10,
-  type: 'AUTO',
-  questions: [
-    {
-      id: 'q1',
-      type: 'MCQ',
-      text: 'In Scrum, who is responsible for managing and prioritising the Product Backlog?',
-      points: 2,
-      options: ['Scrum Master', 'Product Owner', 'Development Team', 'Stakeholders'],
-      correctOption: 1,
-    },
-    {
-      id: 'q2',
-      type: 'MCQ',
-      text: 'What is the recommended maximum length of a Sprint?',
-      points: 2,
-      options: ['1 week', '2 weeks', '4 weeks', '8 weeks'],
-      correctOption: 2,
-    },
-    {
-      id: 'q3',
-      type: 'FILLIN',
-      text: 'The Scrum ceremony where the team inspects the Sprint and adapts the process is called the Sprint _______.',
-      points: 2,
-      correctAnswer: 'Retrospective',
-    },
-    {
-      id: 'q4',
-      type: 'MCQ',
-      text: 'Which Scrum event is a 15-minute daily planning session?',
-      points: 2,
-      options: ['Sprint Planning', 'Daily Scrum', 'Sprint Review', 'Sprint Retrospective'],
-      correctOption: 1,
-    },
-    {
-      id: 'q5',
-      type: 'UNIQUE',
-      text: 'What does the abbreviation "WIP" stand for in the context of Scrum and Kanban boards?',
-      points: 2,
-      correctAnswer: 'Work in Progress',
-    },
-  ],
-};
+import { assignmentApi } from '../api';
 
 const optionLetters = ['A', 'B', 'C', 'D'];
 
@@ -73,13 +24,6 @@ function formatDateTime(value) {
   return `${date} at ${time}`;
 }
 
-function normaliseAnswer(value) {
-  return String(value || '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toLowerCase();
-}
-
 function AutoMarkBadge() {
   return <span className="auto-mark-badge">Auto-Mark</span>;
 }
@@ -99,104 +43,245 @@ function UpgradePrompt() {
   );
 }
 
+function buildResult(submission, assignment) {
+  const perQuestion = {};
+  const breakdown = Array.isArray(submission?.breakdown) ? submission.breakdown : [];
+
+  breakdown.forEach(item => {
+    perQuestion[String(item.questionId)] = {
+      correct: Boolean(item.correct),
+      points: item.points ?? 0,
+    };
+  });
+
+  return {
+    score: submission?.score ?? 0,
+    maxScore: submission?.maxScore ?? assignment?.maxScore ?? 0,
+    perQuestion,
+    breakdown,
+  };
+}
+
 export default function AssignmentQuiz() {
-  const { id: courseId } = useParams();
+  const { id: courseId, asgId } = useParams();
+  const [assignment, setAssignment] = useState(null);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
   const [resubmissionsUsed, setResubmissionsUsed] = useState(0);
-  const resubmissionsLimit = 1;
+  const [resubmissionsLimit, setResubmissionsLimit] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [preparingResubmission, setPreparingResubmission] = useState(false);
+  const questions = assignment?.questions ?? [];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadQuiz() {
+      setLoading(true);
+      setError('');
+      setSubmitError('');
+      setShowUpgradePrompt(false);
+
+      const [assignmentResult, submissionResult] = await Promise.allSettled([
+        assignmentApi.get(courseId, asgId),
+        assignmentApi.mySubmission(courseId, asgId),
+      ]);
+
+      if (cancelled) return;
+
+      if (assignmentResult.status === 'fulfilled') {
+        const nextAssignment = assignmentResult.value.data?.data;
+        setAssignment(nextAssignment);
+        setResubmissionsLimit(nextAssignment?.resubmissionsLimit ?? 0);
+      } else {
+        setAssignment(null);
+        setError(
+          assignmentResult.reason?.response?.data?.message ||
+            assignmentResult.reason?.response?.data?.error ||
+            'Failed to load quiz.',
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (submissionResult.status === 'fulfilled') {
+        const submission = submissionResult.value.data;
+        setResubmissionsUsed(submission?.resubmissionsUsed ?? 0);
+        setResubmissionsLimit(
+          submission?.resubmissionsLimit ??
+            assignmentResult.value.data?.data?.resubmissionsLimit ??
+            0,
+        );
+
+        if (submission?.status === 'graded') {
+          setSubmitted(true);
+          setResult(buildResult(submission, assignmentResult.value.data?.data));
+        }
+      } else if (submissionResult.reason?.response?.status !== 404) {
+        setError(
+          submissionResult.reason?.response?.data?.message ||
+            submissionResult.reason?.response?.data?.error ||
+            'Failed to load your submission status.',
+        );
+      }
+
+      setLoading(false);
+    }
+
+    loadQuiz();
+    return () => {
+      cancelled = true;
+    };
+  }, [asgId, courseId]);
 
   const answeredCount = useMemo(
     () =>
-      mockAssignment.questions.filter(question => {
+      questions.filter(question => {
         const value = answers[question.id];
         return question.type === 'MCQ' ? value != null : String(value || '').trim().length > 0;
       }).length,
-    [answers]
+    [answers, questions]
   );
 
-  const allAnswered = answeredCount === mockAssignment.questions.length;
-  const progressPercent = (answeredCount / mockAssignment.questions.length) * 100;
+  const allAnswered = questions.length > 0 && answeredCount === questions.length;
+  const progressPercent = questions.length ? (answeredCount / questions.length) * 100 : 0;
   const resubmissionsRemaining = Math.max(resubmissionsLimit - resubmissionsUsed, 0);
   const limitReached = submitted && resubmissionsRemaining === 0;
 
   function updateAnswer(questionId, value) {
-    if (submitted) return;
+    if (submitted || loading) return;
     setAnswers(current => ({ ...current, [questionId]: value }));
   }
 
-  function calculateResult() {
-    let score = 0;
-    const perQuestion = {};
+  async function submitQuiz() {
+    if (!allAnswered || submitted || submitting) return;
+    setSubmitting(true);
+    setSubmitError('');
+    setShowUpgradePrompt(false);
 
-    mockAssignment.questions.forEach(question => {
-      const answer = answers[question.id];
-      const correct =
-        question.type === 'MCQ'
-          ? answer === question.correctOption
-          : normaliseAnswer(answer) === normaliseAnswer(question.correctAnswer);
-      const earned = correct ? question.points : 0;
-      score += earned;
-      perQuestion[question.id] = { correct, earned };
-    });
-
-    return { score, perQuestion };
-  }
-
-  function submitQuiz() {
-    if (!allAnswered || submitted) return;
-    setResult(calculateResult());
-    setSubmitted(true);
+    try {
+      const response = await assignmentApi.submitAuto(courseId, asgId, answers);
+      setResult(buildResult(response.data, assignment));
+      setSubmitted(true);
+      setPreparingResubmission(false);
+      setResubmissionsUsed(current =>
+        response.data?.resubmissionsUsed ?? (preparingResubmission ? current + 1 : current),
+      );
+      setResubmissionsLimit(current => response.data?.resubmissionsLimit ?? current);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setShowUpgradePrompt(true);
+      } else {
+        setSubmitError(
+          err.response?.data?.message ||
+            err.response?.data?.error ||
+            'Failed to submit quiz.',
+        );
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function resubmitQuiz() {
-    if (resubmissionsRemaining <= 0) return;
-    setResubmissionsUsed(current => current + 1);
+    if (resubmissionsRemaining <= 0) {
+      return;
+    }
     setAnswers({});
     setResult(null);
     setSubmitted(false);
+    setPreparingResubmission(true);
+    setSubmitError('');
+    setShowUpgradePrompt(false);
+  }
+
+  function renderResultTable() {
+    if (!result?.breakdown?.length) return null;
+
+    return (
+      <div className="quiz-result-table-card">
+        <table className="quiz-result-table">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Your Answer</th>
+              <th>Correct Answer</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.breakdown.map((item, index) => {
+              const question = questions.find(
+                candidate => String(candidate.id) === String(item.questionId),
+              );
+              return (
+                <tr key={item.questionId ?? index}>
+                  <td>{item.questionText ?? question?.text ?? `Question ${index + 1}`}</td>
+                  <td>{item.studentAnswer ?? '—'}</td>
+                  <td>{item.correctAnswer ?? '—'}</td>
+                  <td>{item.points ?? 0}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
   function renderQuestion(question, index) {
-    const questionResult = result?.perQuestion?.[question.id];
+    const questionResult = result?.perQuestion?.[String(question.id)];
     const selectedAnswer = answers[question.id];
+    const earnedPoints = questionResult?.points ?? questionResult?.earned ?? 0;
 
     return (
       <div key={question.id} className="quiz-question-card">
         <div className="quiz-question-header">
           <div className="quiz-question-num">Question {index + 1}</div>
           <div className="quiz-question-points">
-            {submitted && questionResult ? `+${questionResult.earned} pts` : `${question.points} pts`}
+            {submitted && questionResult ? `+${earnedPoints} pts` : `${question.points} pts`}
           </div>
         </div>
         <div className="quiz-question-text">{question.text}</div>
 
         {question.type === 'MCQ' ? (
-          <div className="quiz-options">
-            {question.options.map((option, optionIndex) => {
-              const selected = selectedAnswer === optionIndex;
-              const correct = optionIndex === question.correctOption;
-              const showCorrect = submitted && correct;
-              const showWrong = submitted && selected && !correct;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  className={`quiz-option${selected ? ' selected' : ''}${showCorrect ? ' correct' : ''}${
-                    showWrong ? ' wrong' : ''
-                  }`}
-                  onClick={() => updateAnswer(question.id, optionIndex)}
-                  disabled={submitted}
-                >
-                  <span className="quiz-radio" />
-                  <span className="quiz-option-label">
-                    {optionLetters[optionIndex]}. {option}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <>
+            <div className="quiz-options">
+              {(question.options ?? []).map((option, optionIndex) => {
+                const selected = selectedAnswer === optionIndex;
+                const showCorrect = submitted && selected && questionResult?.correct;
+                const showWrong = submitted && selected && questionResult && !questionResult.correct;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    className={`quiz-option${selected ? ' selected' : ''}${showCorrect ? ' correct' : ''}${
+                      showWrong ? ' wrong' : ''
+                    }`}
+                    onClick={() => updateAnswer(question.id, optionIndex)}
+                    disabled={submitted}
+                  >
+                    <span className="quiz-radio" />
+                    <span className="quiz-option-label">
+                      {optionLetters[optionIndex]}. {option}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {submitted && questionResult && (
+              <div className="quiz-answer-review">
+                <div className={questionResult.correct ? 'quiz-correct-answer' : 'quiz-wrong-answer'}>
+                  {questionResult.correct ? 'Marked correct' : 'Marked incorrect'}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div>
             <input
@@ -210,7 +295,11 @@ export default function AssignmentQuiz() {
             {submitted && (
               <div className="quiz-answer-review">
                 <div>Your answer: {answers[question.id] || '-'}</div>
-                <div className="quiz-correct-answer">Correct answer: {question.correctAnswer}</div>
+                {questionResult && (
+                  <div className={questionResult.correct ? 'quiz-correct-answer' : 'quiz-wrong-answer'}>
+                    {questionResult.correct ? 'Marked correct' : 'Marked incorrect'}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -219,32 +308,52 @@ export default function AssignmentQuiz() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="submit-layout">
+        <div className="submit-main">
+          <div className="asgn-card">Loading quiz...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !assignment) {
+    return (
+      <div className="submit-layout">
+        <div className="submit-main">
+          <div className="asgn-card">{error || 'Quiz not found.'}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="breadcrumb-row">
         <Link to={`/courses/${courseId}`} className="breadcrumb-link">
-          ISIT950
+          Course {courseId}
         </Link>
         <span className="material-symbols-rounded">chevron_right</span>
         <Link to={`/courses/${courseId}?tab=assignments`} className="breadcrumb-link">
           Assignments
         </Link>
         <span className="material-symbols-rounded">chevron_right</span>
-        <span>{mockAssignment.title}</span>
+        <span>{assignment.title}</span>
       </div>
 
       <div className="submit-layout">
         <div className="submit-main">
           <div className="asgn-card">
-            <div className="asgn-title">{mockAssignment.title}</div>
+            <div className="asgn-title">{assignment.title}</div>
             <div className="asgn-meta-row">
               <span className="asgn-meta-chip">
                 <span className="material-symbols-rounded icon">schedule</span>
-                Due {formatDateTime(mockAssignment.dueDate)}
+                Due {formatDateTime(assignment.dueDate)}
               </span>
               <span className="asgn-meta-chip">
                 <span className="material-symbols-rounded icon">star</span>
-                {mockAssignment.maxScore} marks
+                {assignment.maxScore} marks
               </span>
               <AutoMarkBadge />
               <span className="instant-chip">
@@ -253,33 +362,39 @@ export default function AssignmentQuiz() {
               </span>
             </div>
             <div className="asgn-desc-heading">Description</div>
-            <div className="asgn-desc">{mockAssignment.description}</div>
+            <div className="asgn-desc">{assignment.description}</div>
           </div>
 
           {submitted && result && (
-            <div className="quiz-result-banner">
-              <div className="quiz-result-score">
-                {result.score} / {mockAssignment.maxScore}
-              </div>
-              <div>
-                <AutoMarkBadge />
-                <div className="quiz-result-message">
-                  {result.score >= mockAssignment.maxScore / 2
-                    ? 'Passed. Your result is available immediately.'
-                    : 'Not yet passed. Review the correct answers and try again.'}
+            <>
+              <div className="quiz-result-banner">
+                <div className="quiz-result-score">
+                  {result.score} / {result.maxScore}
+                </div>
+                <div>
+                  <AutoMarkBadge />
+                  <div className="quiz-result-message">
+                    {result.score >= result.maxScore / 2
+                      ? 'Passed. Your result is available immediately.'
+                      : 'Not yet passed. Review your result and try again.'}
+                  </div>
                 </div>
               </div>
-            </div>
+              {renderResultTable()}
+            </>
           )}
 
           <div className="quiz-question-list">
-            {mockAssignment.questions.map((question, index) => renderQuestion(question, index))}
+            {questions.map((question, index) => renderQuestion(question, index))}
           </div>
 
+          {submitError && <div className="form-error">{submitError}</div>}
+          {showUpgradePrompt && <UpgradePrompt />}
+
           {!submitted ? (
-            <button type="button" className="submit-btn" onClick={submitQuiz} disabled={!allAnswered}>
+            <button type="button" className="submit-btn" onClick={submitQuiz} disabled={!allAnswered || submitting}>
               <span className="material-symbols-rounded icon">send</span>
-              Submit quiz
+              {submitting ? 'Submitting...' : 'Submit quiz'}
             </button>
           ) : (
             <div className="resubmit-card">
@@ -318,17 +433,21 @@ export default function AssignmentQuiz() {
             </div>
             <div className="info-row">
               <span className="info-row-label">Due date</span>
-              <span className="info-row-val">{formatDateTime(mockAssignment.dueDate)}</span>
+              <span className="info-row-val">{formatDateTime(assignment.dueDate)}</span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Marks</span>
               <span className="info-row-val">
-                {submitted && result ? `${result.score} / ${mockAssignment.maxScore}` : `${mockAssignment.maxScore} points`}
+                {submitted && result ? `${result.score} / ${result.maxScore}` : `${assignment.maxScore} points`}
               </span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Questions</span>
-              <span className="info-row-val">{mockAssignment.questions.length}</span>
+              <span className="info-row-val">{questions.length}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-row-label">Resubmissions</span>
+              <span className="info-row-val">{resubmissionsRemaining} remaining</span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Result</span>
@@ -339,7 +458,7 @@ export default function AssignmentQuiz() {
           <div className="info-card">
             <div className="info-card-title">Progress</div>
             <div className="progress-count">
-              {answeredCount} / {mockAssignment.questions.length} answered
+              {answeredCount} / {questions.length} answered
             </div>
             <div className="quiz-progress-bar">
               <div className="quiz-progress-fill" style={{ width: `${progressPercent}%` }} />

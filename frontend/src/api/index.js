@@ -55,10 +55,14 @@ export const assignmentApi = {
   get: (courseId, assignmentId) => api.get(`/courses/${courseId}/assignments/${assignmentId}`),
   update: (courseId, assignmentId, data) => api.put(`/courses/${courseId}/assignments/${assignmentId}`, data),
   delete: (courseId, assignmentId) => api.delete(`/courses/${courseId}/assignments/${assignmentId}`),
-  submit: (courseId, assignmentId, formData) =>
+  submit: (courseId, assignmentId, data, config) =>
+    api.post(`/courses/${courseId}/assignments/${assignmentId}/submit`, data, config),
+  submitFile: (courseId, assignmentId, formData) =>
     api.post(`/courses/${courseId}/assignments/${assignmentId}/submit`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  submitAuto: (courseId, assignmentId, answers) =>
+    api.post(`/courses/${courseId}/assignments/${assignmentId}/submit`, { answers }),
   listSubmissions: (courseId, assignmentId) =>
     api.get(`/courses/${courseId}/assignments/${assignmentId}/submissions`),
   mySubmission: (courseId, assignmentId) =>
