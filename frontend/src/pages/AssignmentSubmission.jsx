@@ -59,11 +59,8 @@ export default function AssignmentSubmission() {
   const { id: courseId, asgId } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const resubmitInputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
-  const [resubmitDragOver, setResubmitDragOver] = useState(false);
   const [pickedFile, setPickedFile] = useState(null);
-  const [resubmitFile, setResubmitFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [assignment, setAssignment] = useState(null);
   const [submission, setSubmission] = useState(null);
@@ -155,30 +152,22 @@ export default function AssignmentSubmission() {
   const resubmissionsUsed = submission?.resubmissionsUsed ?? 0;
   const resubmissionsLimit =
     submission?.resubmissionsLimit ?? assignment?.resubmissionsLimit ?? 0;
-  const limitReached = submitted && resubmissionsUsed >= resubmissionsLimit;
 
-  function pickFile(file, mode = "submit") {
+  function pickFile(file) {
     if (!file || !acceptFile(file)) {
-      if (mode === "resubmit") setResubmitFile(null);
-      else setPickedFile(null);
+      setPickedFile(null);
       return;
     }
-    if (mode === "resubmit") setResubmitFile(file);
-    else setPickedFile(file);
+    setPickedFile(file);
   }
 
-  function clearFile(mode = "submit") {
-    if (mode === "resubmit") {
-      setResubmitFile(null);
-      if (resubmitInputRef.current) resubmitInputRef.current.value = "";
-      return;
-    }
+  function clearFile() {
     setPickedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function submitAssignment() {
-    if (!pickedFile || submitting) return;
+    if (!pickedFile || submitting || submitted) return;
     setSubmitting(true);
     setSubmitError("");
     setShowUpgradePrompt(false);
@@ -204,64 +193,40 @@ export default function AssignmentSubmission() {
     }
   }
 
-  async function resubmitAssignment() {
-    if (!resubmitFile || submitting || limitReached) return;
-    setSubmitting(true);
-    setSubmitError("");
-    setShowUpgradePrompt(false);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", resubmitFile);
-      await assignmentApi.submitFile(courseId, asgId, formData);
-      clearFile("resubmit");
-      navigate(`/courses/${courseId}/assignments/${asgId}/review`);
-    } catch (err) {
-      if (err.response?.status === 403) {
-        setShowUpgradePrompt(true);
-      } else {
-        setSubmitError(
-          err.response?.data?.message ||
-            err.response?.data?.error ||
-            "Failed to resubmit assignment.",
-        );
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function renderUploadZone({ mode = "submit", compact = false } = {}) {
-    const activeRef = mode === "resubmit" ? resubmitInputRef : fileInputRef;
-    const activeFile = mode === "resubmit" ? resubmitFile : pickedFile;
-    const activeDragOver = mode === "resubmit" ? resubmitDragOver : dragOver;
-    const setActiveDragOver =
-      mode === "resubmit" ? setResubmitDragOver : setDragOver;
+  function renderUploadZone({ compact = false, disabled = false } = {}) {
+    const uploadDisabled = disabled || submitting;
 
     return (
       <>
         <div
           className={`upload-zone${compact ? " upload-zone-compact" : ""}${
-            activeDragOver ? " dragover" : ""
+            dragOver ? " dragover" : ""
+          }${
+            uploadDisabled ? " disabled" : ""
           }`}
           role="button"
-          tabIndex={0}
-          onClick={() => activeRef.current?.click()}
+          aria-disabled={uploadDisabled}
+          tabIndex={uploadDisabled ? -1 : 0}
+          onClick={() => {
+            if (!uploadDisabled) fileInputRef.current?.click();
+          }}
           onKeyDown={(e) => {
+            if (uploadDisabled) return;
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              activeRef.current?.click();
+              fileInputRef.current?.click();
             }
           }}
           onDragOver={(e) => {
+            if (uploadDisabled) return;
             e.preventDefault();
-            setActiveDragOver(true);
+            setDragOver(true);
           }}
-          onDragLeave={() => setActiveDragOver(false)}
+          onDragLeave={() => setDragOver(false)}
           onDrop={(e) => {
             e.preventDefault();
-            setActiveDragOver(false);
-            pickFile(e.dataTransfer.files?.[0], mode);
+            setDragOver(false);
+            if (!uploadDisabled) pickFile(e.dataTransfer.files?.[0]);
           }}
         >
           <span className="material-symbols-rounded icon">upload_file</span>
@@ -271,14 +236,15 @@ export default function AssignmentSubmission() {
           </div>
         </div>
         <input
-          ref={activeRef}
+          ref={fileInputRef}
           type="file"
           style={{ display: "none" }}
           accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          onChange={(e) => pickFile(e.target.files?.[0], mode)}
+          disabled={uploadDisabled}
+          onChange={(e) => pickFile(e.target.files?.[0])}
         />
         <div className="file-list">
-          {activeFile && (
+          {pickedFile && (
             <div className="file-item">
               <div className="file-item-icon">
                 <span className="material-symbols-rounded icon">
@@ -286,16 +252,17 @@ export default function AssignmentSubmission() {
                 </span>
               </div>
               <div className="file-item-info">
-                <div className="file-item-name">{activeFile.name}</div>
+                <div className="file-item-name">{pickedFile.name}</div>
                 <div className="file-item-size">
-                  {formatBytes(activeFile.size)}
+                  {formatBytes(pickedFile.size)}
                 </div>
               </div>
               <button
                 type="button"
                 className="file-item-remove"
                 aria-label="Remove file"
-                onClick={() => clearFile(mode)}
+                disabled={uploadDisabled}
+                onClick={clearFile}
               >
                 <span className="material-symbols-rounded icon">close</span>
               </button>
@@ -390,7 +357,7 @@ export default function AssignmentSubmission() {
                 </span>
                 <div>
                   <div className="submit-success-title">
-                    Awaiting grade
+                    Already submitted
                   </div>
                   <div className="submit-success-sub">
                     {submission.filename} · Submitted{" "}
@@ -418,32 +385,22 @@ export default function AssignmentSubmission() {
               {!graded && (
                 <div className="resubmit-card">
                   <div className="resubmit-heading">
-                    Submit a new file to replace your current submission
+                    Already submitted
                   </div>
                   <div className="resubmit-chip">
-                    {resubmissionsUsed} resubmissions used of{" "}
-                    {resubmissionsLimit}
+                    Your file submission is locked while it awaits grading.
                   </div>
-                  {limitReached ? (
-                    <UpgradePrompt />
-                  ) : (
-                    <>
-                      {renderUploadZone({ mode: "resubmit", compact: true })}
-                      {submitError && <div className="form-error">{submitError}</div>}
-                      {showUpgradePrompt && <UpgradePrompt />}
-                      <button
-                        type="button"
-                        className="submit-btn"
-                        onClick={resubmitAssignment}
-                        disabled={!resubmitFile || submitting}
-                      >
-                        <span className="material-symbols-rounded icon">
-                          send
-                        </span>
-                        {submitting ? "Submitting..." : "Resubmit assignment"}
-                      </button>
-                    </>
-                  )}
+                  {renderUploadZone({ compact: true, disabled: true })}
+                  <button
+                    type="button"
+                    className="submit-btn"
+                    disabled
+                  >
+                    <span className="material-symbols-rounded icon">
+                      lock
+                    </span>
+                    Already submitted
+                  </button>
                 </div>
               )}
             </>

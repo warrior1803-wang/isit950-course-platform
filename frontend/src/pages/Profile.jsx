@@ -220,7 +220,7 @@ export default function Profile() {
                   {isPremium
                     ? 'Unlimited posts and resubmissions'
                     : memData
-                      ? `${memData.usage.weeklyPostsUsed} / ${memData.usage.weeklyPostsLimit} posts used this week · ${memData.usage.resubmissionsUsed} / ${memData.usage.resubmissionsLimit} resubmissions used`
+                      ? `${memData.usage.weeklyPostsUsed ?? 0} / ${memData.usage.weeklyPostsLimit ?? 0} posts used this week · ${memData.usage.resubmissionsUsed ?? 0} / ${memData.usage.resubmissionsLimit ?? 0} resubmissions used`
                       : 'Limited posts and resubmissions'}
                 </div>
               </div>

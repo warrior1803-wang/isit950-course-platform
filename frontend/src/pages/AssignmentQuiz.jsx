@@ -150,7 +150,9 @@ export default function AssignmentQuiz() {
 
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
   const progressPercent = questions.length ? (answeredCount / questions.length) * 100 : 0;
-  const resubmissionsRemaining = Math.max(resubmissionsLimit - resubmissionsUsed, 0);
+  const safeResubmissionsUsed = resubmissionsUsed ?? 0;
+  const safeResubmissionsLimit = resubmissionsLimit ?? 0;
+  const resubmissionsRemaining = Math.max(safeResubmissionsLimit - safeResubmissionsUsed, 0);
   const limitReached = submitted && resubmissionsRemaining === 0;
 
   function updateAnswer(questionId, value) {

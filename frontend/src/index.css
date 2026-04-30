@@ -1421,6 +1421,16 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
   background: #f7eff4;
 }
 
+.upload-zone.disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.upload-zone.disabled:hover {
+  border-color: var(--border);
+  background: var(--input-bg);
+}
+
 .upload-zone .icon {
   font-size: 36px;
   color: var(--text-muted);
