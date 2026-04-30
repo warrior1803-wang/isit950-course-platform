@@ -5,6 +5,7 @@ import com.learningplatform.backend.common.exception.NotFoundException;
 import com.learningplatform.backend.dto.AnnouncementRequest;
 import com.learningplatform.backend.dto.AnnouncementResponse;
 import com.learningplatform.backend.dto.AssignmentListResponse;
+import com.learningplatform.backend.dto.EnrolmentResponse;
 import com.learningplatform.backend.dto.PostRequest;
 import com.learningplatform.backend.dto.PostResponse;
 import com.learningplatform.backend.dto.ReplyRequest;
@@ -14,6 +15,7 @@ import com.learningplatform.backend.dto.UserSummaryResponse;
 import com.learningplatform.backend.model.Announcement;
 import com.learningplatform.backend.model.Assignment;
 import com.learningplatform.backend.model.Course;
+import com.learningplatform.backend.model.Enrolment;
 import com.learningplatform.backend.model.Post;
 import com.learningplatform.backend.model.Reply;
 import com.learningplatform.backend.model.Submission;
@@ -45,6 +47,7 @@ public class CourseContentService {
     private final SubmissionRepository submissionRepository;
     private final PostRepository postRepository;
     private final ReplyRepository replyRepository;
+
 
     public List<AnnouncementResponse> getAnnouncements(Long courseId, String userEmail) {
         AccessContext context = requireCourseAccess(courseId, userEmail);
@@ -277,4 +280,32 @@ public class CourseContentService {
         return true;
     }
 
+    public List<EnrolmentResponse> getEnrolments(Long courseId, String instructorEmail) {
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        if (!course.getInstructor().getEmail().equals(instructorEmail)) {
+            throw new RuntimeException("Forbidden");
+        }
+
+        List<Enrolment> enrolments = enrolmentRepository.findByCourseId(courseId);
+
+        return enrolments.stream()
+                .map(enrolment -> {
+                    User student = enrolment.getStudent();
+
+                    String membershipType = student.getMembershipType() == null
+                            ? "FREE"
+                            : student.getMembershipType();
+
+                    return new EnrolmentResponse(
+                            student.getId(),
+                            student.getName(),
+                            student.getEmail(),
+                            new EnrolmentResponse.Membership(membershipType)
+                    );
+                })
+                .toList();
+    }
 }

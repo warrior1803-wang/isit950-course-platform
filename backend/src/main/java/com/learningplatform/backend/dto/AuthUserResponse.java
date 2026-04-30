@@ -22,7 +22,6 @@ public class AuthUserResponse {
     private String email;
     private UserRole role;
 
-    // Student-only fields
     private List<String> skills;
     private String collabMode;
     private String availability;

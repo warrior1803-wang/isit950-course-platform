@@ -4,6 +4,7 @@ import com.learningplatform.backend.common.response.ApiResponse;
 import com.learningplatform.backend.dto.AnnouncementRequest;
 import com.learningplatform.backend.dto.AnnouncementResponse;
 import com.learningplatform.backend.dto.AssignmentListResponse;
+import com.learningplatform.backend.dto.EnrolmentResponse;
 import com.learningplatform.backend.dto.PostRequest;
 import com.learningplatform.backend.dto.PostResponse;
 import com.learningplatform.backend.dto.ReplyRequest;
@@ -154,6 +155,20 @@ public class CourseContentController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Announcement deleted", null)
+        );
+    }
+
+    @GetMapping("/enrolments")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<ApiResponse<List<EnrolmentResponse>>> getEnrolments(
+            @PathVariable Long courseId,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Enrolments fetched successfully",
+                        courseContentService.getEnrolments(courseId, authentication.getName())
+                )
         );
     }
 }
