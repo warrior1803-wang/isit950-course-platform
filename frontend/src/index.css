@@ -1316,6 +1316,380 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
   box-shadow: 0 0 0 3px rgba(182, 147, 169, 0.12);
 }
 
+/* ══ INSTRUCTOR DISCUSSIONS ══ */
+.inbox-shell {
+  width: 100%;
+}
+
+.inst-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.analytics-course-select.inbox-course-select-proto {
+  min-width: 260px;
+  height: 36px;
+  border-radius: 9px;
+  padding: 0 12px;
+  font-size: 13px;
+  background: var(--input-bg);
+}
+
+.grading-filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.grading-filter-btn {
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: 'Gowun Batang', serif;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+
+.grading-filter-btn.active {
+  background: var(--btn);
+  color: var(--light);
+  border-color: var(--btn);
+}
+
+.inst-disc-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.inst-disc-list-col {
+  width: 360px;
+  flex-shrink: 0;
+}
+
+.inst-disc-detail-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.inst-disc-thread-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.inst-disc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  cursor: pointer;
+  margin-bottom: 8px;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.inst-disc-item:hover {
+  border-color: var(--accent);
+  background: #f7eff4;
+}
+
+.inst-disc-item.sel {
+  border-color: var(--accent);
+  background: rgba(182, 147, 169, 0.1);
+}
+
+.inst-disc-avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 13px;
+}
+
+.inst-disc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.inst-disc-title {
+  font-size: 13px;
+  color: var(--text-dark);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inst-disc-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.inst-disc-preview {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inst-disc-badge {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.inst-disc-badge.unread {
+  background: rgba(232, 90, 48, 0.1);
+  color: #d85a30;
+  border: 1px solid rgba(232, 90, 48, 0.2);
+}
+
+.inst-disc-badge.replied {
+  background: rgba(29, 158, 117, 0.1);
+  color: #1d9e75;
+  border: 1px solid rgba(29, 158, 117, 0.2);
+}
+
+.inst-disc-panel {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+}
+
+.inst-disc-panel-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.inst-disc-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 280px;
+  color: var(--text-muted);
+  gap: 10px;
+}
+
+.inst-disc-panel-empty .material-symbols-rounded {
+  font-size: 40px;
+  opacity: 0.35;
+}
+
+.course-chip-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(83, 74, 183, 0.1);
+  color: #534ab7;
+  border: 1px solid rgba(83, 74, 183, 0.2);
+}
+
+.course-chip-sm .material-symbols-rounded {
+  font-size: 13px;
+}
+
+.inst-disc-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(232, 90, 48, 0.28);
+  background: rgba(255, 255, 255, 0.55);
+  color: #e85a30;
+  font-size: 12px;
+  font-family: 'Gowun Batang', serif;
+  cursor: pointer;
+}
+
+.inst-disc-remove-btn .material-symbols-rounded {
+  font-size: 17px;
+}
+
+.inst-disc-post-author-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.discussion-role-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  margin-right: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.2;
+  border: 1px solid rgba(221, 208, 212, 0.8);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.discussion-role-badge.inst {
+  background: rgba(29, 158, 117, 0.08);
+  border-color: rgba(29, 158, 117, 0.18);
+  color: #1d9e75;
+}
+
+.discussion-role-badge.student {
+  background: rgba(182, 147, 169, 0.08);
+  border-color: rgba(182, 147, 169, 0.2);
+  color: var(--text-muted);
+}
+
+.inbox-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inbox-reply-item {
+  margin-bottom: 0;
+}
+
+.discussion-reply-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  min-width: 96px;
+}
+
+.discussion-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #e85a30;
+  cursor: pointer;
+}
+
+.discussion-delete-btn .material-symbols-rounded {
+  font-size: 20px;
+}
+
+/* post limit banner */
+.limit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.limit-banner .material-symbols-rounded {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.limit-banner.warn {
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  color: #854d0e;
+}
+
+.limit-banner.full {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.limit-banner.ok {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.limit-upgrade-link {
+  font-size: 11px;
+  color: #8b6914;
+  text-decoration: underline;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.inst-disc-reply-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.inst-disc-reply-box {
+  align-items: flex-start;
+}
+
+.inst-reply-author-avatar {
+  margin-top: 2px;
+}
+
+.inst-disc-reply-compose {
+  flex: 1;
+  min-width: 0;
+}
+
+.inst-disc-reply-input {
+  min-height: 96px;
+}
+
+.inbox-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+@media (max-width: 1100px) {
+  .inst-page-header {
+    flex-direction: column;
+  }
+
+  .inst-disc-layout {
+    flex-direction: column;
+  }
+
+  .inst-disc-list-col {
+    width: 100%;
+  }
+
+  .inst-disc-panel-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* ── Assignment submission ─────────────────────────────────────────────── */
 .submit-layout {
   display: flex;
