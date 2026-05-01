@@ -6,8 +6,11 @@ import com.learningplatform.backend.dto.MembershipLimitsResponse;
 import com.learningplatform.backend.dto.MembershipResponse;
 import com.learningplatform.backend.dto.MembershipUpgradeRequest;
 import com.learningplatform.backend.dto.MembershipUpgradeResponse;
+import com.learningplatform.backend.model.Reply;
 import com.learningplatform.backend.model.User;
 import com.learningplatform.backend.model.enums.UserRole;
+import com.learningplatform.backend.repository.PostRepository;
+import com.learningplatform.backend.repository.ReplyRepository;
 import com.learningplatform.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +24,10 @@ import java.time.temporal.TemporalAdjusters;
 @RequiredArgsConstructor
 public class MembershipService {
 
+    public static final int WEEKLY_POST_LIMIT = 10;
     private final UserRepository userRepository;
+    private final PostRepository postRepository;
+    private final ReplyRepository replyRepository;
 
     public MembershipResponse getMembership(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
@@ -45,8 +51,8 @@ public class MembershipService {
                         isMember
                 ),
                 new MembershipResponse.Usage(
-                        0,
-                        isMember ? null : 10,
+                        getWeeklyDiscussionUsage(user).used(),
+                        isMember ? null : WEEKLY_POST_LIMIT,
                         0,
                         isMember ? null : 2
                 )
@@ -102,7 +108,7 @@ public class MembershipService {
         String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
         boolean isMember = "MEMBER".equals(type);
 
-        int weeklyPostsUsed = 0;
+        int weeklyPostsUsed = getWeeklyDiscussionUsage(user).used();
         int resubmissionsUsed = 0;
 
         LocalDateTime resetsAt = LocalDateTime.now()
@@ -133,7 +139,7 @@ public class MembershipService {
         return new MembershipLimitsResponse(
                 new MembershipLimitsResponse.LimitItem(
                         weeklyPostsUsed,
-                        postLimit,
+                        WEEKLY_POST_LIMIT,
                         Math.max(postLimit - weeklyPostsUsed, 0),
                         resetsAt
                 ),
@@ -144,5 +150,37 @@ public class MembershipService {
                         null
                 )
         );
+    }
+
+    public DiscussionPostingStatus getDiscussionPostingStatus(User user) {
+        if (user.getRole() == UserRole.INSTRUCTOR) {
+            return new DiscussionPostingStatus(false, 0, null);
+        }
+
+        String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
+        boolean isMember = "MEMBER".equals(type);
+        int used = getWeeklyDiscussionUsage(user).used();
+        return new DiscussionPostingStatus(isMember, used, isMember ? null : WEEKLY_POST_LIMIT);
+    }
+
+    private WeeklyDiscussionUsage getWeeklyDiscussionUsage(User user) {
+        LocalDateTime weekStart = currentWeekStart();
+        LocalDateTime weekEnd = weekStart.plusWeeks(1);
+        long postCount = postRepository.countByAuthorAndCreatedAtBetween(user, weekStart, weekEnd);
+        long replyCount = replyRepository.countByAuthorAndCreatedAtBetween(user, weekStart, weekEnd);
+        return new WeeklyDiscussionUsage(Math.toIntExact(postCount + replyCount));
+    }
+
+    private LocalDateTime currentWeekStart() {
+        return LocalDateTime.now()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .toLocalDate()
+                .atStartOfDay();
+    }
+
+    public record DiscussionPostingStatus(boolean member, int used, Integer limit) {
+    }
+
+    private record WeeklyDiscussionUsage(int used) {
     }
 }

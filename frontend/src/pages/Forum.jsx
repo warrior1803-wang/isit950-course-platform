@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import { courseApi, forumApi } from '../api';
+import { useAuth } from '../lib/auth';
+import {
+  formatDiscussionResetText,
+  hasReachedDiscussionLimit,
+  loadDiscussionMembershipState,
+} from '../lib/discussionMembership';
 
 function formatDateShort(iso) {
   if (!iso) return '';
@@ -22,6 +28,7 @@ function normalizePost(raw) {
     createdAt: raw.createdAt || raw.postedAt || null,
     authorRole: String(raw.author?.role || raw.authorRole || '').toLowerCase(),
     author: {
+      id: raw.author?.id || raw.authorId || null,
       name: raw.author?.name || raw.authorName || 'User',
     },
     replies: Array.isArray(raw.replies) ? raw.replies : [],
@@ -29,9 +36,11 @@ function normalizePost(raw) {
 }
 
 export default function Forum() {
+  const { user } = useAuth();
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [discussionMembership, setDiscussionMembership] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +58,7 @@ export default function Forum() {
         }));
 
         const results = await Promise.allSettled(
-          courses.map(course => forumApi.listPosts(course.id))
+          courses.map(course => forumApi.listPosts(course.id)),
         );
 
         if (cancelled) return;
@@ -88,12 +97,69 @@ export default function Forum() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMembership() {
+      if (!user || String(user.role).toUpperCase() !== 'STUDENT') {
+        setDiscussionMembership(null);
+        return;
+      }
+
+      const nextState = await loadDiscussionMembershipState();
+      if (!cancelled) {
+        setDiscussionMembership(nextState);
+      }
+    }
+
+    loadMembership();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const discussionLimitReached = hasReachedDiscussionLimit(discussionMembership);
+  const discussionUsageText = discussionMembership && !discussionMembership.isMember
+    ? `${discussionMembership.weeklyPostsUsed ?? 0} of ${discussionMembership.weeklyPostsLimit ?? 10} posts used this week — ${discussionMembership.remaining ?? 0} remaining`
+    : '';
+  const discussionResetText = discussionMembership && !discussionMembership.isMember
+    ? formatDiscussionResetText(discussionMembership.resetsAt)
+    : '';
+
+  async function handleDeletePost(courseId, postId) {
+    try {
+      await forumApi.deletePost(courseId, postId);
+      setSections(prev => prev
+        .map(section => ({
+          ...section,
+          posts: section.course.id === courseId
+            ? section.posts.filter(post => post.id !== postId)
+            : section.posts,
+        }))
+        .filter(section => section.posts.length > 0));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete discussion post.');
+    }
+  }
+
   if (loading) return <LoadingSpinner />;
 
   return (
     <div>
       <div className="global-title">Discussions</div>
       <div className="global-sub">Recent activity across all your courses</div>
+
+      {discussionMembership && !discussionMembership.isMember && (
+        <div className={`limit-banner ${discussionLimitReached ? 'full' : 'warn'}`} style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span className="material-symbols-rounded">warning</span>
+            {discussionUsageText}
+          </div>
+          <Link to="/membership" className="limit-upgrade-link">
+            Upgrade for unlimited ›
+          </Link>
+        </div>
+      )}
 
       {error ? (
         <p className="course-list-empty">{error}</p>
@@ -117,7 +183,7 @@ export default function Forum() {
                 return (
                   <Link
                     key={post.id}
-                    to={`/courses/${course.id}?tab=discussion&post=${post.id}`}
+                    to={`/courses/${course.id}/posts?post=${post.id}`}
                     className="global-item"
                   >
                     <div className={`global-item-icon ${iconCls}`}>
@@ -126,13 +192,30 @@ export default function Forum() {
                     <div className="global-item-body">
                       <div className="global-item-title">{post.title}</div>
                       <div className="global-item-meta">
-                        {post.author?.name} · {isInstructor ? 'Instructor' : 'Student'} ·{' '}
-                        {formatDateShort(post.createdAt)}
+                        {post.author?.name}
+                        <span className={`discussion-role-badge ${isInstructor ? 'inst' : 'student'}`}>
+                          {isInstructor ? 'Instructor' : 'Student'}
+                        </span>
+                        · {formatDateShort(post.createdAt)}
                       </div>
                       <div className="global-item-preview">{post.body}</div>
                     </div>
                     <div className="global-item-right">
                       <span className="pill-new">{replyLabel}</span>
+                      {user?.id === post.author?.id && (
+                        <button
+                          type="button"
+                          className="discussion-delete-btn"
+                          onClick={event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleDeletePost(course.id, post.id);
+                          }}
+                          aria-label="Delete post"
+                        >
+                          <span className="material-symbols-rounded">delete</span>
+                        </button>
+                      )}
                     </div>
                   </Link>
                 );

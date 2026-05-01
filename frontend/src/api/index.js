@@ -42,11 +42,8 @@ export const forumApi = {
   createPost: (courseId, data) => api.post(`/courses/${courseId}/posts`, data),
   createReply: (courseId, postId, data) => api.post(`/courses/${courseId}/posts/${postId}/replies`, data),
   deletePost: (courseId, postId) => api.delete(`/courses/${courseId}/posts/${postId}`),
-};
-
-export const membershipApi = {
-  get: () => api.get('/membership'),
-  upgrade: (data) => api.post('/membership/upgrade', data),
+  deleteReply: (courseId, postId, replyId) =>
+    api.delete(`/courses/${courseId}/posts/${postId}/replies/${replyId}`),
 };
 
 export const assignmentApi = {
@@ -69,4 +66,12 @@ export const assignmentApi = {
     api.get(`/courses/${courseId}/assignments/${assignmentId}/submissions/me`),
   grade: (courseId, assignmentId, submissionId, data) =>
     api.put(`/courses/${courseId}/assignments/${assignmentId}/submissions/${submissionId}/grade`, data),
+};
+
+export const membershipApi = {
+  get: () => api.get('/membership'),
+  getCurrent: () => api.get('/membership'),
+  upgrade: (data) => api.post('/membership/upgrade', data),
+  getLimits: () => api.get('/membership/limits'),
+  getStats: () => api.get('/admin/membership/stats'),
 };

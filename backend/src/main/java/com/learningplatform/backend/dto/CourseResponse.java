@@ -20,6 +20,8 @@ public class CourseResponse {
     private LocalDateTime createdAt;
     private Long instructorId;
     private String instructorName;
+    private long enrolmentCount;
+    private long materialsCount;
     private long assignmentCount;
     private long pendingCount;
 }

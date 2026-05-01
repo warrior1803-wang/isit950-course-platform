@@ -1,10 +1,12 @@
 package com.learningplatform.backend.controller;
 
+import com.learningplatform.backend.common.exception.PostLimitException;
 import com.learningplatform.backend.common.response.ApiResponse;
 import com.learningplatform.backend.dto.AnnouncementRequest;
 import com.learningplatform.backend.dto.AnnouncementResponse;
 import com.learningplatform.backend.dto.AssignmentListResponse;
 import com.learningplatform.backend.dto.EnrolmentResponse;
+import com.learningplatform.backend.dto.PostLimitResponse;
 import com.learningplatform.backend.dto.PostRequest;
 import com.learningplatform.backend.dto.PostResponse;
 import com.learningplatform.backend.dto.ReplyRequest;
@@ -106,32 +108,69 @@ public class CourseContentController {
 
     @PostMapping("/posts")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
-    public ResponseEntity<ApiResponse<PostResponse>> createPost(
+    public ResponseEntity<?> createPost(
             @PathVariable Long courseId,
             @RequestBody PostRequest request,
             Authentication authentication
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success(
-                        "Post created successfully",
-                        courseContentService.createPost(courseId, request, authentication.getName())
-                )
-        );
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.success(
+                            "Post created successfully",
+                            courseContentService.createPost(courseId, request, authentication.getName())
+                    )
+            );
+        } catch (PostLimitException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new PostLimitResponse("Post limit reached", true));
+        }
     }
 
     @PostMapping("/posts/{postId}/replies")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
-    public ResponseEntity<ApiResponse<ReplyResponse>> createReply(
+    public ResponseEntity<?> createReply(
             @PathVariable Long courseId,
             @PathVariable Long postId,
             @RequestBody ReplyRequest request,
             Authentication authentication
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success(
-                        "Reply created successfully",
-                        courseContentService.createReply(courseId, postId, request, authentication.getName())
-                )
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.success(
+                            "Reply created successfully",
+                            courseContentService.createReply(courseId, postId, request, authentication.getName())
+                    )
+            );
+        } catch (PostLimitException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new PostLimitResponse("Post limit reached", true));
+        }
+    }
+
+    @DeleteMapping("/posts/{postId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    public ResponseEntity<ApiResponse<Void>> deletePost(
+            @PathVariable Long courseId,
+            @PathVariable Long postId,
+            Authentication authentication
+    ) {
+        courseContentService.deletePost(courseId, postId, authentication.getName());
+        return ResponseEntity.ok(
+                ApiResponse.success("Post deleted", null)
+        );
+    }
+
+    @DeleteMapping("/posts/{postId}/replies/{replyId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    public ResponseEntity<ApiResponse<Void>> deleteReply(
+            @PathVariable Long courseId,
+            @PathVariable Long postId,
+            @PathVariable Long replyId,
+            Authentication authentication
+    ) {
+        courseContentService.deleteReply(courseId, postId, replyId, authentication.getName());
+        return ResponseEntity.ok(
+                ApiResponse.success("Reply deleted", null)
         );
     }
 

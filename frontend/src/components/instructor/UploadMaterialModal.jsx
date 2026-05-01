@@ -84,7 +84,7 @@ export default function UploadMaterialModal({ courseId, initialSection, onClose,
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('section', section);
+      formData.append('section', section.trim());
 
       const res = await fetch(`/api/courses/${courseId}/materials`, {
         method: 'POST',

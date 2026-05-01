@@ -20,7 +20,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (user?.role === 'STUDENT') {
-      membershipApi.get().then(res => setMemData(res.data)).catch(() => {});
+      membershipApi.getCurrent().then(res => setMemData(res.data ?? null)).catch(() => {});
     }
   }, [user]);
 
@@ -220,7 +220,7 @@ export default function Profile() {
                   {isPremium
                     ? 'Unlimited posts and resubmissions'
                     : memData
-                      ? `${memData.usage.weeklyPostsUsed ?? 0} / ${memData.usage.weeklyPostsLimit ?? 0} posts used this week · ${memData.usage.resubmissionsUsed ?? 0} / ${memData.usage.resubmissionsLimit ?? 0} resubmissions used`
+                      ? `${memData.usage?.weeklyPostsUsed ?? 0} / ${memData.usage?.weeklyPostsLimit ?? 0} posts used this week · ${memData.usage?.resubmissionsUsed ?? 0} / ${memData.usage?.resubmissionsLimit ?? 0} resubmissions used`
                       : 'Limited posts and resubmissions'}
                 </div>
               </div>
