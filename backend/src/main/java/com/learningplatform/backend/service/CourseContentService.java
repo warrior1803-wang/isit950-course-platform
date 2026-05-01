@@ -325,6 +325,10 @@ public class CourseContentService {
     }
 
     private MembershipService.DiscussionPostingStatus enforceDiscussionPostLimit(User user) {
+        if (user.getRole() == UserRole.INSTRUCTOR) {
+            return membershipService.getDiscussionPostingStatus(user);
+        }
+
         MembershipService.DiscussionPostingStatus postingStatus = membershipService.getDiscussionPostingStatus(user);
         if (!postingStatus.member() && postingStatus.limit() != null && postingStatus.used() >= postingStatus.limit()) {
             throw new PostLimitException();
@@ -336,7 +340,7 @@ public class CourseContentService {
             PostResponse response,
             MembershipService.DiscussionPostingStatus postingStatus
     ) {
-        if (postingStatus.member()) {
+        if (postingStatus.limit() == null) {
             return response;
         }
         response.setWeeklyPostsUsed(postingStatus.used() + 1);
@@ -348,7 +352,7 @@ public class CourseContentService {
             ReplyResponse response,
             MembershipService.DiscussionPostingStatus postingStatus
     ) {
-        if (postingStatus.member()) {
+        if (postingStatus.limit() == null) {
             return response;
         }
         response.setWeeklyPostsUsed(postingStatus.used() + 1);

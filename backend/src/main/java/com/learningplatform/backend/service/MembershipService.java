@@ -153,6 +153,10 @@ public class MembershipService {
     }
 
     public DiscussionPostingStatus getDiscussionPostingStatus(User user) {
+        if (user.getRole() == UserRole.INSTRUCTOR) {
+            return new DiscussionPostingStatus(false, 0, null);
+        }
+
         String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
         boolean isMember = "MEMBER".equals(type);
         int used = getWeeklyDiscussionUsage(user).used();
