@@ -13,6 +13,7 @@ import AssignmentReview from '../pages/AssignmentReview';
 import Forum from '../pages/Forum';
 // import Assignments from '../pages/Assignments';
 import AssignmentList from '../pages/AssignmentList';
+import Announcements from '../pages/Announcements';
 import InstructorGrading from '../pages/InstructorGrading';
 import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
 import InstructorCourseStudentsPage from '../pages/instructor/InstructorCourseStudentsPage';
@@ -138,7 +139,7 @@ export default function AppRouter() {
           />
           <Route path="/discussions" element={<Forum />} />
           <Route path="/assignments" element={<AssignmentList/>} />
-          <Route path="/announcements" element={<Soon page="Announcements" />} />
+          <Route path="/announcements" element={<Announcements />} />
           <Route path="/browsecourses" element={<BrowseCourses />} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/profile" element={<Profile />} />

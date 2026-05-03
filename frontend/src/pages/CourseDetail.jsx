@@ -219,6 +219,7 @@ export default function CourseDetail() {
   const [posts, setPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [courseError, setCourseError] = useState('');
   const [materialsError, setMaterialsError] = useState('');
   const [announcementsError, setAnnouncementsError] = useState('');
@@ -288,14 +289,13 @@ export default function CourseDetail() {
       const results = await Promise.allSettled([
         courseApi.get(id),
         api.get(`/courses/${id}/materials`),
-        announcementApi.list(id),
         assignmentApi.list(id),
         forumApi.listPosts(id),
       ]);
 
       if (cancelled) return;
 
-      const [courseRes, materialsRes, announcementsRes, assignmentsRes, postsRes] = results;
+      const [courseRes, materialsRes, assignmentsRes, postsRes] = results;
 
       if (courseRes.status === 'fulfilled') {
         setCourse(normalizeCourse(courseRes.value.data?.data ?? courseRes.value.data));
@@ -309,15 +309,6 @@ export default function CourseDetail() {
       } else {
         setMaterials([]);
         setMaterialsError(materialsRes.reason?.response?.data?.message || 'Materials unavailable.');
-      }
-
-      if (announcementsRes.status === 'fulfilled') {
-        setAnnouncements((announcementsRes.value.data?.data ?? []).map(normalizeAnnouncement).filter(Boolean));
-      } else {
-        setAnnouncements([]);
-        setAnnouncementsError(
-          announcementsRes.reason?.response?.data?.message || 'Announcements unavailable.',
-        );
       }
 
       if (assignmentsRes.status === 'fulfilled') {
@@ -342,6 +333,36 @@ export default function CourseDetail() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab !== 'announcements') return;
+
+    let cancelled = false;
+
+    async function loadAnnouncements() {
+      setAnnouncementsLoading(true);
+      setAnnouncementsError('');
+
+      try {
+        const res = await announcementApi.list(id);
+        if (cancelled) return;
+        setAnnouncements((res.data?.data ?? []).map(normalizeAnnouncement).filter(Boolean));
+      } catch {
+        if (cancelled) return;
+        setAnnouncements([]);
+        setAnnouncementsError('Failed to load announcements.');
+      } finally {
+        if (!cancelled) {
+          setAnnouncementsLoading(false);
+        }
+      }
+    }
+
+    loadAnnouncements();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -560,6 +581,18 @@ export default function CourseDetail() {
     }
   }
 
+  async function handleDeleteAnnouncement(announcementId) {
+    try {
+      await announcementApi.delete(id, announcementId);
+      setAnnouncements(prev => prev.filter(announcement => announcement.id !== announcementId));
+    } catch (err) {
+      setAnnouncementsError(err.response?.data?.message || 'Failed to delete announcement.');
+    }
+  }
+
+  const role = String(user?.role || localStorage.getItem('role') || '').toUpperCase();
+  const isInstructor = role === 'INSTRUCTOR';
+
   if (loading) return <LoadingSpinner />;
   if (!course) return <div>{courseError || 'Course not found.'}</div>;
 
@@ -683,20 +716,31 @@ export default function CourseDetail() {
         </div>
 
         <div className={`detail-tab-panel${activeTab === 'announcements' ? ' active' : ''}`}>
-          {announcementsError && announcements.length === 0 ? (
-            <p className="course-list-empty">{announcementsError}</p>
+          {announcementsLoading ? (
+            <p className="course-list-empty">Loading announcements...</p>
+          ) : announcementsError ? (
+            <p className="course-list-empty">Failed to load announcements.</p>
           ) : announcements.length === 0 ? (
             <p className="course-list-empty">No announcements yet.</p>
           ) : (
             <div className="ann-list">
-              {announcements.map((announcement, idx) => (
+              {announcements.map(announcement => (
                 <div key={announcement.id} className="ann-item">
                   <div className="ann-header">
-                    <div className="ann-title">
-                      {announcement.title}
-                      {idx < 2 && <span className="ann-new">New</span>}
+                    <div className="ann-title">{announcement.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div className="ann-date">{formatDateShort(announcement.createdAt)}</div>
+                      {isInstructor && (
+                        <button
+                          type="button"
+                          className="discussion-delete-btn"
+                          onClick={() => handleDeleteAnnouncement(announcement.id)}
+                          aria-label="Delete announcement"
+                        >
+                          <span className="material-symbols-rounded">delete</span>
+                        </button>
+                      )}
                     </div>
-                    <div className="ann-date">{formatDateShort(announcement.createdAt)}</div>
                   </div>
                   <div className="ann-author">{announcement.author?.name}</div>
                   <div className="ann-body">{announcement.body}</div>
