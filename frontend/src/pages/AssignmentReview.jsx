@@ -4,34 +4,34 @@ import LoadingSpinner from "../components/shared/LoadingSpinner";
 import api from "../api/axios";
 import { assignmentApi } from "../api";
 
-const MOCK_SUBMISSION = {
-  id: 1,
-  filename: "assignment1_submission.pdf",
-  fileUrl: "/api/courses/1/assignments/1/submissions/1/file",
-  submittedAt: "2026-05-01T10:30:00",
-  status: "graded",
-  score: 82,
-  maxScore: 100,
-  feedback: "Good work overall. Please elaborate more on section 3.",
-};
+async function fetchSubmission(courseId, assignmentId) {
+  const response = await api.get(
+    `/courses/${courseId}/assignments/${assignmentId}/submissions/me`,
+  );
+  return response.data;
 
-// const MOCK_SUBMISSION = {
-//   id: 1,
-//   filename: 'assignment1_submission.pdf',
-//   fileUrl: '/api/courses/1/assignments/1/submissions/1/file',
-//   submittedAt: '2026-05-01T10:30:00',
-//   status: 'submitted',
-//   score: null,
-//   maxScore: 100,
-//   feedback: null,
-// };
+  // Mock rollback:
+  // return {
+  //   id: 1,
+  //   filename: "assignment1_submission.pdf",
+  //   fileUrl: "/api/courses/1/assignments/1/submissions/1/file",
+  //   submittedAt: "2026-05-01T10:30:00",
+  //   status: "graded",
+  //   score: 82,
+  //   maxScore: 100,
+  //   feedback: "Good work overall. Please elaborate more on section 3.",
+  // };
 
-async function fetchSubmission() {
-  return MOCK_SUBMISSION;
-
-  // Swap the mock above for this when the backend endpoint is available.
-  // const response = await assignmentApi.mySubmission(courseId, assignmentId);
-  // return response.data;
+  // return {
+  //   id: 1,
+  //   filename: "assignment1_submission.pdf",
+  //   fileUrl: "/api/courses/1/assignments/1/submissions/1/file",
+  //   submittedAt: "2026-05-01T10:30:00",
+  //   status: "submitted",
+  //   score: null,
+  //   maxScore: 100,
+  //   feedback: null,
+  // };
 }
 
 function formatDateTime(iso) {
