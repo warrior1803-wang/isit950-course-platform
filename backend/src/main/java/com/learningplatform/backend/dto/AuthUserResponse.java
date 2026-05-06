@@ -1,6 +1,7 @@
 package com.learningplatform.backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.learningplatform.backend.model.enums.CollabMode;
 import com.learningplatform.backend.model.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,7 +24,7 @@ public class AuthUserResponse {
     private UserRole role;
 
     private List<String> skills;
-    private String collabMode;
+    private CollabMode collabMode;
     private String availability;
     private MembershipResponse membership;
 

@@ -1,5 +1,6 @@
 package com.learningplatform.backend.model;
 
+import com.learningplatform.backend.model.enums.CollabMode;
 import com.learningplatform.backend.model.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -7,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -32,11 +35,17 @@ public class User {
     @Column(nullable = false)
     private UserRole role;
 
-    @Column(name = "skills")
-    private String skills;
+    @ElementCollection
+    @CollectionTable(
+            name = "user_skills",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "skill")
+    private List<String> skills = new ArrayList<>();
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "collab_mode")
-    private String collabMode;
+    private CollabMode collabMode;
 
     @Column(name = "availability")
     private String availability;

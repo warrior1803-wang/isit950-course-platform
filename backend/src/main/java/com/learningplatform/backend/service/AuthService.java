@@ -7,15 +7,13 @@ import com.learningplatform.backend.dto.AuthResponse;
 import com.learningplatform.backend.dto.AuthUserResponse;
 import com.learningplatform.backend.dto.LoginRequest;
 import com.learningplatform.backend.dto.RegisterRequest;
+import com.learningplatform.backend.dto.UpdateProfileRequest;
 import com.learningplatform.backend.model.User;
 import com.learningplatform.backend.model.enums.UserRole;
 import com.learningplatform.backend.repository.UserRepository;
 import com.learningplatform.backend.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -87,14 +85,7 @@ public class AuthService {
             );
         }
 
-        List<String> skills = Collections.emptyList();
-
-        if (user.getSkills() != null && !user.getSkills().isBlank()) {
-            skills = Arrays.stream(user.getSkills().split(","))
-                    .map(String::trim)
-                    .filter(skill -> !skill.isBlank())
-                    .toList();
-        }
+        List<String> skills = user.getSkills() == null ? List.of() : user.getSkills();
 
         AuthUserResponse.MembershipResponse membership =
                 new AuthUserResponse.MembershipResponse(
@@ -120,5 +111,36 @@ public class AuthService {
                 .orElseThrow(() -> new BusinessException("User not found"));
 
         return toAuthUserResponse(user);
+    }
+
+    public AuthUserResponse updateCurrentUser(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("User not found"));
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            user.setName(request.getName());
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        if (user.getRole() == UserRole.STUDENT) {
+            if (request.getSkills() != null) {
+                user.setSkills(request.getSkills());
+            }
+
+            if (request.getCollabMode() != null) {
+                user.setCollabMode(request.getCollabMode());
+            }
+
+            if (request.getAvailability() != null) {
+                user.setAvailability(request.getAvailability());
+            }
+        }
+
+        User savedUser = userRepository.save(user);
+
+        return toAuthUserResponse(savedUser);
     }
 }
