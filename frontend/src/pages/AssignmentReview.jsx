@@ -9,29 +9,6 @@ async function fetchSubmission(courseId, assignmentId) {
     `/courses/${courseId}/assignments/${assignmentId}/submissions/me`,
   );
   return response.data;
-
-  // Mock rollback:
-  // return {
-  //   id: 1,
-  //   filename: "assignment1_submission.pdf",
-  //   fileUrl: "/api/courses/1/assignments/1/submissions/1/file",
-  //   submittedAt: "2026-05-01T10:30:00",
-  //   status: "graded",
-  //   score: 82,
-  //   maxScore: 100,
-  //   feedback: "Good work overall. Please elaborate more on section 3.",
-  // };
-
-  // return {
-  //   id: 1,
-  //   filename: "assignment1_submission.pdf",
-  //   fileUrl: "/api/courses/1/assignments/1/submissions/1/file",
-  //   submittedAt: "2026-05-01T10:30:00",
-  //   status: "submitted",
-  //   score: null,
-  //   maxScore: 100,
-  //   feedback: null,
-  // };
 }
 
 function formatDateTime(iso) {
@@ -90,14 +67,20 @@ export default function AssignmentReview() {
 
         if (submissionResult.status === "fulfilled") {
           setSubmission(submissionResult.value);
+        } else if (submissionResult.reason?.response?.status === 404) {
+          setSubmission(null);
         } else {
           setSubmission(null);
           setError("Failed to load submission. Please try again.");
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setSubmission(null);
-          setError("Failed to load submission. Please try again.");
+          if (err.response?.status === 404) {
+            setSubmission(null);
+          } else {
+            setSubmission(null);
+            setError("Failed to load submission. Please try again.");
+          }
         }
       } finally {
         if (!cancelled) {
