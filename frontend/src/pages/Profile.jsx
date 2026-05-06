@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { membershipApi } from '../api';
+import { membershipApi, authApi } from '../api';
 
 function getInitials(name = '') {
   return name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
@@ -11,11 +11,32 @@ export default function Profile() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [profile, setProfile] = useState(user);
+
+  // Collaboration section
   const [collabEditing, setCollabEditing] = useState(false);
   const [skills, setSkills] = useState(user?.skills ?? []);
   const [collabMode, setCollabMode] = useState(user?.collabMode ?? 'online');
   const [availability, setAvailability] = useState(user?.availability ?? '');
   const [skillInput, setSkillInput] = useState('');
+  const [collabSaving, setCollabSaving] = useState(false);
+  const [collabError, setCollabError] = useState(null);
+
+  // Account info edit
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState(user?.name ?? '');
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState(null);
+
+  // Password edit
+  const [editingPassword, setEditingPassword] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState(null);
+
+  const [successMessage, setSuccessMessage] = useState(null);
+
   const [memData, setMemData] = useState(null);
 
   useEffect(() => {
@@ -24,12 +45,31 @@ export default function Profile() {
     }
   }, [user]);
 
-  if (!user) return null;
+  useEffect(() => {
+    let cancelled = false;
+    authApi
+      .me()
+      .then(res => {
+        if (cancelled) return;
+        const data = res.data?.data ?? res.data;
+        setProfile(data);
+        setName(data?.name ?? '');
+        setSkills(data?.skills ?? []);
+        setCollabMode(data?.collabMode ?? 'online');
+        setAvailability(data?.availability ?? '');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
-  const isPremium = memData ? memData.type !== 'FREE' : user.membership?.type !== 'FREE';
+  if (!profile) return null;
+
+  const isPremium = memData ? memData.type !== 'FREE' : profile.membership?.type !== 'FREE';
   const planLabel = isPremium ? '⭐ Member' : '✦ Free Plan';
   const badgeClass = isPremium ? 'member' : 'free';
-  const roleName = user.role === 'INSTRUCTOR' ? 'Instructor' : 'Student';
+  const roleName = profile.role === 'INSTRUCTOR' ? 'Instructor' : 'Student';
+
+  // ── Skill tag helpers ────────────────────────────────────────────────────────
 
   function handleSkillKeyDown(e) {
     if (e.key === 'Enter' && skillInput.trim()) {
@@ -44,15 +84,101 @@ export default function Profile() {
     setSkills(prev => prev.filter(s => s !== skill));
   }
 
-  function saveCollab() {
-    setCollabEditing(false);
+  // ── Collaboration ────────────────────────────────────────────────────────────
+
+  async function saveCollab() {
+    setCollabError(null);
+    setCollabSaving(true);
+    try {
+      const res = await authApi.updateMe({ skills, collabMode, availability });
+      const updated = res.data?.data ?? res.data;
+      setProfile(prev => ({ ...prev, ...updated }));
+      setCollabEditing(false);
+    } catch (err) {
+      setCollabError(err?.response?.data?.message || err?.message || 'Failed to save.');
+    } finally {
+      setCollabSaving(false);
+    }
   }
 
   function cancelCollab() {
-    setSkills(user.skills ?? []);
-    setCollabMode(user.collabMode ?? 'online');
-    setAvailability(user.availability ?? '');
+    setSkills(profile.skills ?? []);
+    setCollabMode(profile.collabMode ?? 'online');
+    setAvailability(profile.availability ?? '');
+    setCollabError(null);
     setCollabEditing(false);
+  }
+
+  // ── Name edit ────────────────────────────────────────────────────────────────
+
+  function startEditName() {
+    setName(profile.name ?? '');
+    setNameError(null);
+    setSuccessMessage(null);
+    setEditingName(true);
+  }
+
+  function cancelEditName() {
+    setEditingName(false);
+    setName(profile.name ?? '');
+    setNameError(null);
+  }
+
+  async function saveName(e) {
+    e.preventDefault();
+    setNameError(null);
+    setSuccessMessage(null);
+    const trimmedName = name.trim();
+    if (!trimmedName) { setNameError('Name cannot be empty.'); return; }
+    setSavingName(true);
+    try {
+      const res = await authApi.updateMe({ name: trimmedName });
+      const updated = res.data?.data ?? res.data;
+      setProfile(prev => ({ ...prev, ...updated }));
+      setEditingName(false);
+      setSuccessMessage('Name updated successfully.');
+    } catch (err) {
+      setNameError(err?.response?.data?.message || err?.message || 'Failed to update name.');
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  // ── Password edit ────────────────────────────────────────────────────────────
+
+  function startEditPassword() {
+    setPassword('');
+    setConfirmPassword('');
+    setPasswordError(null);
+    setSuccessMessage(null);
+    setEditingPassword(true);
+  }
+
+  function cancelEditPassword() {
+    setEditingPassword(false);
+    setPassword('');
+    setConfirmPassword('');
+    setPasswordError(null);
+  }
+
+  async function savePassword(e) {
+    e.preventDefault();
+    setPasswordError(null);
+    setSuccessMessage(null);
+    if (!password || password.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
+    if (password !== confirmPassword) { setPasswordError('Passwords do not match.'); return; }
+    setSavingPassword(true);
+    try {
+      await authApi.updateMe({ password });
+      setPassword('');
+      setConfirmPassword('');
+      setEditingPassword(false);
+      setSuccessMessage('Password updated successfully.');
+    } catch (err) {
+      setPasswordError(err?.response?.data?.message || err?.message || 'Failed to update password.');
+    } finally {
+      setSavingPassword(false);
+    }
   }
 
   const collabModeLabel = collabMode === 'offline' ? 'Offline' : collabMode === 'both' ? 'Both' : 'Online';
@@ -60,17 +186,29 @@ export default function Profile() {
   return (
     <>
       <div className="page-title" style={{ marginBottom: 20 }}>My Profile</div>
+
+      {successMessage && (
+        <div style={{
+          fontSize: 12, color: '#1d9e75',
+          background: 'rgba(29,158,117,0.08)',
+          border: '1px solid rgba(29,158,117,0.2)',
+          borderRadius: 9, padding: '8px 12px', marginBottom: 12,
+        }}>
+          {successMessage}
+        </div>
+      )}
+
       <div className="profile-layout">
 
         {/* Left card */}
         <div className="profile-card">
-          <div className="profile-avatar-lg">{getInitials(user.name)}</div>
-          <div className="profile-name">{user.name}</div>
+          <div className="profile-avatar-lg">{getInitials(profile.name)}</div>
+          <div className="profile-name">{profile.name}</div>
           <div className="profile-role-badge">{roleName}</div>
           <div style={{ margin: '6px 0 10px' }}>
             <span className={`mem-badge ${badgeClass}`}>{planLabel}</span>
           </div>
-          <div className="profile-email">{user.email}</div>
+          <div className="profile-email">{profile.email}</div>
           <div className="profile-stat-row">
             <div className="profile-stat">
               <div className="profile-stat-num">—</div>
@@ -94,22 +232,79 @@ export default function Profile() {
           <div className="profile-info-card">
             <div className="profile-section-title">
               Account information
-              <button className="profile-edit-btn">
-                <span className="material-symbols-rounded" style={{ fontSize: 15 }}>edit</span> Edit
-              </button>
+              {!editingName && (
+                <button className="profile-edit-btn" onClick={startEditName}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 15 }}>edit</span> Edit
+                </button>
+              )}
             </div>
-            <div className="profile-row">
-              <div className="profile-row-label">Full name</div>
-              <div className="profile-row-val">{user.name}</div>
-            </div>
-            <div className="profile-row">
-              <div className="profile-row-label">Email</div>
-              <div className="profile-row-val">{user.email}</div>
-            </div>
-            <div className="profile-row">
-              <div className="profile-row-label">Role</div>
-              <div className="profile-row-val">{roleName}</div>
-            </div>
+
+            {!editingName ? (
+              <>
+                <div className="profile-row">
+                  <div className="profile-row-label">Full name</div>
+                  <div className="profile-row-val">{profile.name}</div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Email</div>
+                  <div className="profile-row-val">{profile.email}</div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Role</div>
+                  <div className="profile-row-val">{roleName}</div>
+                </div>
+              </>
+            ) : (
+              <form className="profile-edit-inline" onSubmit={saveName}>
+                <div>
+                  <div className="pei-label">Full name</div>
+                  <input
+                    className="pei-input"
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    disabled={savingName}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <div className="pei-label">Email</div>
+                  <input
+                    className="pei-input"
+                    type="email"
+                    value={profile.email}
+                    disabled
+                    style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                  />
+                </div>
+
+                {nameError && (
+                  <div style={{
+                    fontSize: 12, color: '#d85a30',
+                    background: 'rgba(216,90,48,0.08)',
+                    border: '1px solid rgba(216,90,48,0.2)',
+                    borderRadius: 9, padding: '8px 12px',
+                  }}>
+                    {nameError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="pei-save-btn"
+                    style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                    onClick={cancelEditName}
+                    disabled={savingName}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="pei-save-btn" disabled={savingName}>
+                    {savingName ? 'Saving…' : 'Save changes'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           {/* Collaboration */}
@@ -175,6 +370,7 @@ export default function Profile() {
                         key={m}
                         className={`pei-mode-btn${collabMode === m ? ' sel' : ''}`}
                         onClick={() => setCollabMode(m)}
+                        type="button"
                       >
                         {label}
                       </button>
@@ -191,16 +387,30 @@ export default function Profile() {
                     onChange={e => setAvailability(e.target.value)}
                   />
                 </div>
+
+                {collabError && (
+                  <div style={{
+                    fontSize: 12, color: '#d85a30',
+                    background: 'rgba(216,90,48,0.08)',
+                    border: '1px solid rgba(216,90,48,0.2)',
+                    borderRadius: 9, padding: '8px 12px',
+                  }}>
+                    {collabError}
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-end' }}>
                   <button
                     className="pei-save-btn"
                     style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
                     onClick={cancelCollab}
+                    disabled={collabSaving}
+                    type="button"
                   >
                     Cancel
                   </button>
-                  <button className="pei-save-btn" onClick={saveCollab}>
-                    Save changes
+                  <button className="pei-save-btn" onClick={saveCollab} disabled={collabSaving} type="button">
+                    {collabSaving ? 'Saving…' : 'Save changes'}
                   </button>
                 </div>
               </div>
@@ -246,15 +456,73 @@ export default function Profile() {
           <div className="profile-info-card">
             <div className="profile-section-title">
               Security
-              <button className="profile-edit-btn">
-                <span className="material-symbols-rounded" style={{ fontSize: 15 }}>lock</span>
-                Change password
-              </button>
+              {!editingPassword && (
+                <button className="profile-edit-btn" onClick={startEditPassword}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 15 }}>lock</span>
+                  Change password
+                </button>
+              )}
             </div>
-            <div className="profile-row">
-              <div className="profile-row-label">Password</div>
-              <div className="profile-row-val" style={{ color: 'var(--text-muted)' }}>••••••••</div>
-            </div>
+
+            {!editingPassword ? (
+              <div className="profile-row">
+                <div className="profile-row-label">Password</div>
+                <div className="profile-row-val" style={{ color: 'var(--text-muted)' }}>••••••••</div>
+              </div>
+            ) : (
+              <form className="profile-edit-inline" onSubmit={savePassword}>
+                <div>
+                  <div className="pei-label">New password</div>
+                  <input
+                    className="pei-input"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={savingPassword}
+                    placeholder="At least 6 characters"
+                    autoComplete="new-password"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <div className="pei-label">Confirm new password</div>
+                  <input
+                    className="pei-input"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    disabled={savingPassword}
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                {passwordError && (
+                  <div style={{
+                    fontSize: 12, color: '#d85a30',
+                    background: 'rgba(216,90,48,0.08)',
+                    border: '1px solid rgba(216,90,48,0.2)',
+                    borderRadius: 9, padding: '8px 12px',
+                  }}>
+                    {passwordError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, alignSelf: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="pei-save-btn"
+                    style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                    onClick={cancelEditPassword}
+                    disabled={savingPassword}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="pei-save-btn" disabled={savingPassword}>
+                    {savingPassword ? 'Saving…' : 'Update password'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
         </div>
