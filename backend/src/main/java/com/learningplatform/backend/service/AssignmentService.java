@@ -621,7 +621,11 @@ public class AssignmentService {
 
         Submission submission = submissionRepository
                 .findTopByAssignmentAndStudentOrderBySubmittedAtDesc(assignment, student)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+                .orElse(null);
+
+        if (submission == null) {
+            return null;
+        }
 
         long used = submissionRepository.countByAssignmentAndStudent(assignment, student);
 

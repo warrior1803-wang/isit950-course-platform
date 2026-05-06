@@ -1,5 +1,6 @@
 package com.learningplatform.backend.service;
 
+import com.learningplatform.backend.common.exception.PostLimitException;
 import com.learningplatform.backend.common.exception.BusinessException;
 import com.learningplatform.backend.common.exception.NotFoundException;
 import com.learningplatform.backend.dto.AnnouncementRequest;
@@ -32,11 +33,13 @@ import com.learningplatform.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CourseContentService {
 
     private final UserRepository userRepository;
@@ -47,6 +50,7 @@ public class CourseContentService {
     private final SubmissionRepository submissionRepository;
     private final PostRepository postRepository;
     private final ReplyRepository replyRepository;
+    private final MembershipService membershipService;
 
 
     public List<AnnouncementResponse> getAnnouncements(Long courseId, String userEmail) {
@@ -115,13 +119,16 @@ public class CourseContentService {
             throw new BusinessException("Post body is required");
         }
 
+        MembershipService.DiscussionPostingStatus postingStatus = enforceDiscussionPostLimit(context.user());
+
         Post post = new Post();
         post.setCourse(context.course());
         post.setAuthor(context.user());
         post.setTitle(title);
         post.setBody(body);
 
-        return toPostResponse(postRepository.save(post));
+        PostResponse response = toPostResponse(postRepository.save(post));
+        return attachDiscussionUsage(response, postingStatus);
     }
 
     public ReplyResponse createReply(Long courseId, Long postId, ReplyRequest request, String userEmail) {
@@ -141,12 +148,55 @@ public class CourseContentService {
             throw new BusinessException("Reply body is required");
         }
 
+        MembershipService.DiscussionPostingStatus postingStatus = enforceDiscussionPostLimit(user);
+
         Reply reply = new Reply();
         reply.setPost(post);
         reply.setAuthor(user);
         reply.setBody(body);
 
-        return toReplyResponse(replyRepository.save(reply));
+        ReplyResponse response = toReplyResponse(replyRepository.save(reply));
+        return attachDiscussionUsage(response, postingStatus);
+    }
+
+    public void deletePost(Long courseId, Long postId, String userEmail) {
+        AccessContext context = requireCourseAccess(courseId, userEmail);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        if (!post.getCourse().getId().equals(courseId)) {
+            throw new NotFoundException("Post not found");
+        }
+
+        if (!canManageDiscussionContent(context.user(), context.course(), post.getAuthor().getId())) {
+            throw new AccessDeniedException("Forbidden");
+        }
+
+        replyRepository.deleteByPost(post);
+        postRepository.delete(post);
+    }
+
+    public void deleteReply(Long courseId, Long postId, Long replyId, String userEmail) {
+        AccessContext context = requireCourseAccess(courseId, userEmail);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        if (!post.getCourse().getId().equals(courseId)) {
+            throw new NotFoundException("Post not found");
+        }
+
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new NotFoundException("Reply not found"));
+
+        if (!reply.getPost().getId().equals(postId)) {
+            throw new NotFoundException("Reply not found");
+        }
+
+        if (!canManageDiscussionContent(context.user(), context.course(), reply.getAuthor().getId())) {
+            throw new AccessDeniedException("Forbidden");
+        }
+
+        replyRepository.delete(reply);
     }
 
     private AccessContext requireCourseAccess(Long courseId, String userEmail) {
@@ -221,6 +271,7 @@ public class CourseContentService {
                 assignment.getCreatedAt(),
                 assignment.getDueDate(),
                 assignment.getMaxScore(),
+                assignment.getType(),
                 submissionSummary
         );
     }
@@ -236,7 +287,9 @@ public class CourseContentService {
                 post.getBody(),
                 toUserSummary(post.getAuthor()),
                 post.getCreatedAt(),
-                replies
+                replies,
+                null,
+                null
         );
     }
 
@@ -245,7 +298,9 @@ public class CourseContentService {
                 reply.getId(),
                 reply.getBody(),
                 toUserSummary(reply.getAuthor()),
-                reply.getCreatedAt()
+                reply.getCreatedAt(),
+                null,
+                null
         );
     }
 
@@ -260,6 +315,49 @@ public class CourseContentService {
             }
         }
         return "";
+    }
+
+    private boolean canManageDiscussionContent(User currentUser, Course course, Long authorId) {
+        if (currentUser.getRole() == UserRole.INSTRUCTOR) {
+            return course.getInstructor().getId().equals(currentUser.getId());
+        }
+        return currentUser.getId().equals(authorId);
+    }
+
+    private MembershipService.DiscussionPostingStatus enforceDiscussionPostLimit(User user) {
+        if (user.getRole() == UserRole.INSTRUCTOR) {
+            return membershipService.getDiscussionPostingStatus(user);
+        }
+
+        MembershipService.DiscussionPostingStatus postingStatus = membershipService.getDiscussionPostingStatus(user);
+        if (!postingStatus.member() && postingStatus.limit() != null && postingStatus.used() >= postingStatus.limit()) {
+            throw new PostLimitException();
+        }
+        return postingStatus;
+    }
+
+    private PostResponse attachDiscussionUsage(
+            PostResponse response,
+            MembershipService.DiscussionPostingStatus postingStatus
+    ) {
+        if (postingStatus.limit() == null) {
+            return response;
+        }
+        response.setWeeklyPostsUsed(postingStatus.used() + 1);
+        response.setWeeklyPostsLimit(postingStatus.limit());
+        return response;
+    }
+
+    private ReplyResponse attachDiscussionUsage(
+            ReplyResponse response,
+            MembershipService.DiscussionPostingStatus postingStatus
+    ) {
+        if (postingStatus.limit() == null) {
+            return response;
+        }
+        response.setWeeklyPostsUsed(postingStatus.used() + 1);
+        response.setWeeklyPostsLimit(postingStatus.limit());
+        return response;
     }
 
     private record AccessContext(User user, Course course) {

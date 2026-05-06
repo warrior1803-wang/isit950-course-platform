@@ -165,6 +165,9 @@ public class AssignmentController {
                 authentication.getName()
         );
 
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(response);
     }
 

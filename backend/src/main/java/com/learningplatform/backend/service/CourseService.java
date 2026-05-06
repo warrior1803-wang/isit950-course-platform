@@ -375,6 +375,8 @@ public class CourseService {
     }
 
     private CourseResponse toCourseResponse(Course course) {
+        long materialsCount = materialRepository.countByCourse(course);
+        long enrolmentCount = enrolmentRepository.countByCourse(course);
         long assignmentCount = assignmentRepository.countByCourse(course);
         long pendingCount = submissionRepository.countByAssignmentCourseAndScoreIsNull(course);
 
@@ -388,6 +390,8 @@ public class CourseService {
                 course.getCreatedAt(),
                 course.getInstructor().getId(),
                 course.getInstructor().getName(),
+                enrolmentCount,
+                materialsCount,
                 assignmentCount,
                 pendingCount
         );

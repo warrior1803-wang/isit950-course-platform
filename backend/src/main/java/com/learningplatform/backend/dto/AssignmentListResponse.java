@@ -1,5 +1,6 @@
 package com.learningplatform.backend.dto;
 
+import com.learningplatform.backend.model.enums.AssignmentType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,5 +17,6 @@ public class AssignmentListResponse {
     private LocalDateTime openDate;
     private LocalDateTime dueDate;
     private Integer maxScore;
+    private AssignmentType type;
     private SubmissionSummaryResponse submissionStatus;
 }

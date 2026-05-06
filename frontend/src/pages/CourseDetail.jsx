@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { announcementApi, assignmentApi, courseApi, forumApi } from '../api';
+import {
+  formatDiscussionResetText,
+  hasReachedDiscussionLimit,
+  incrementDiscussionUsage,
+  loadDiscussionMembershipState,
+} from '../lib/discussionMembership';
 
 const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400&q=80',
@@ -172,6 +178,7 @@ function normalizeReply(raw) {
     createdAt: raw.createdAt || raw.postedAt || new Date().toISOString(),
     authorRole: String(raw.authorRole || raw.author?.role || '').toLowerCase(),
     author: {
+      id: raw.author?.id || raw.authorId || null,
       name: raw.author?.name || raw.authorName || 'User',
     },
   };
@@ -186,6 +193,7 @@ function normalizePost(raw) {
     createdAt: raw.createdAt || raw.postedAt || new Date().toISOString(),
     authorRole: String(raw.authorRole || raw.author?.role || '').toLowerCase(),
     author: {
+      id: raw.author?.id || raw.authorId || null,
       name: raw.author?.name || raw.authorName || 'User',
     },
     replies: Array.isArray(raw.replies) ? raw.replies.map(normalizeReply).filter(Boolean) : [],
@@ -223,19 +231,46 @@ export default function CourseDetail() {
   const [replyDraft, setReplyDraft] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newBody, setNewBody] = useState('');
+  const [discussionMembership, setDiscussionMembership] = useState(null);
   const { user } = useAuth();
 
-  const activeTab = searchParams.get('tab') || 'materials';
+  const discussionMatch = useMatch('/courses/:id/posts');
+  const announcementsMatch = useMatch('/courses/:id/announcements');
+  const assignmentsMatch = useMatch('/courses/:id/assignments');
+  const activeTab = discussionMatch
+    ? 'discussion'
+    : announcementsMatch
+      ? 'announcements'
+      : assignmentsMatch
+        ? 'assignments'
+        : searchParams.get('tab') || 'materials';
 
   function changeTab(tab) {
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
-      next.set('tab', tab);
-      if (tab !== 'discussion') {
-        next.delete('view');
-        next.delete('post');
-      }
-      return next;
+    const basePath = `/courses/${id}`;
+    if (tab === 'discussion') {
+      navigate({
+        pathname: `${basePath}/posts`,
+        search: '',
+      });
+      return;
+    }
+    if (tab === 'announcements') {
+      navigate({
+        pathname: `${basePath}/announcements`,
+        search: '',
+      });
+      return;
+    }
+    if (tab === 'assignments') {
+      navigate({
+        pathname: `${basePath}/assignments`,
+        search: '',
+      });
+      return;
+    }
+    navigate({
+      pathname: basePath,
+      search: '',
     });
   }
 
@@ -307,6 +342,27 @@ export default function CourseDetail() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDiscussionMembership() {
+      if (!user || String(user.role).toUpperCase() !== 'STUDENT') {
+        setDiscussionMembership(null);
+        return;
+      }
+
+      const nextState = await loadDiscussionMembershipState();
+      if (!cancelled) {
+        setDiscussionMembership(nextState);
+      }
+    }
+
+    loadDiscussionMembership();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (loading) return;
@@ -383,6 +439,20 @@ export default function CourseDetail() {
     };
   }, [activeTab, discView, id, posts, selectedPostId]);
 
+  const discussionLimitReached = hasReachedDiscussionLimit(discussionMembership);
+  const discussionUsageText = discussionMembership && !discussionMembership.isMember
+    ? `${discussionMembership.weeklyPostsUsed ?? 0} of ${discussionMembership.weeklyPostsLimit ?? 10} posts used this week — ${discussionMembership.remaining ?? 0} remaining`
+    : '';
+  const discussionResetText = discussionMembership && !discussionMembership.isMember
+    ? formatDiscussionResetText(discussionMembership.resetsAt)
+    : '';
+
+  function canDeleteDiscussionItem(authorId) {
+    if (!user) return false;
+    if (String(user.role).toUpperCase() === 'INSTRUCTOR') return true;
+    return user.id === authorId;
+  }
+
   async function handleMaterialDownload(material) {
     const url = resolveMaterialUrl(material.url);
     if (!url) return;
@@ -413,7 +483,7 @@ export default function CourseDetail() {
 
   async function handleReplySubmit() {
     const body = replyDraft.trim();
-    if (!body || !selectedPost) return;
+    if (!body || !selectedPost || discussionLimitReached) return;
     setPostingError('');
 
     try {
@@ -431,6 +501,7 @@ export default function CourseDetail() {
             : post,
         ),
       );
+      setDiscussionMembership(prev => incrementDiscussionUsage(prev));
       setReplyDraft('');
     } catch (err) {
       setPostingError(err.response?.data?.message || 'Failed to post reply.');
@@ -438,7 +509,7 @@ export default function CourseDetail() {
   }
 
   async function handleCreatePost() {
-    if (!user) return;
+    if (!user || discussionLimitReached) return;
     const title = newTitle.trim();
     const body = newBody.trim();
     if (!title || !body) return;
@@ -450,11 +521,42 @@ export default function CourseDetail() {
       setPosts(prev => [post, ...prev]);
       setSelectedPost(post);
       setSelectedPostId(post.id);
+      setDiscussionMembership(prev => incrementDiscussionUsage(prev));
       setNewTitle('');
       setNewBody('');
       setDiscView('detail');
     } catch (err) {
       setPostingError(err.response?.data?.message || 'Failed to create post.');
+    }
+  }
+
+  async function handleDeletePost(postId) {
+    try {
+      await forumApi.deletePost(id, postId);
+      setPosts(prev => prev.filter(post => post.id !== postId));
+      if (selectedPostId === postId) {
+        setSelectedPost(null);
+        setSelectedPostId(null);
+        setDiscView('list');
+      }
+    } catch (err) {
+      setPostingError(err.response?.data?.message || 'Failed to delete post.');
+    }
+  }
+
+  async function handleDeleteReply(postId, replyId) {
+    try {
+      await forumApi.deleteReply(id, postId, replyId);
+      setSelectedPost(prev => prev
+        ? { ...prev, replies: (prev.replies ?? []).filter(reply => reply.id !== replyId) }
+        : prev);
+      setPosts(prev => prev.map(post => (
+        post.id === postId
+          ? { ...post, replies: (post.replies ?? []).filter(reply => reply.id !== replyId) }
+          : post
+      )));
+    } catch (err) {
+      setPostingError(err.response?.data?.message || 'Failed to delete reply.');
     }
   }
 
@@ -762,11 +864,29 @@ export default function CourseDetail() {
         </div>
 
         <div className={`detail-tab-panel${activeTab === 'discussion' ? ' active' : ''}`}>
+          {discussionMembership && !discussionMembership.isMember && (
+            <div className={`limit-banner ${discussionLimitReached ? 'full' : 'warn'}`}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span className="material-symbols-rounded">warning</span>
+                {discussionUsageText}
+              </div>
+              <Link to="/membership" className="limit-upgrade-link">
+                Upgrade for unlimited ›
+              </Link>
+            </div>
+          )}
+
           {discView === 'list' && (
             <div>
               <div className="disc-toolbar">
                 <div className="disc-count">{posts.length} posts</div>
-                <button type="button" className="disc-new-btn" onClick={() => setDiscView('new')}>
+                <button
+                  type="button"
+                  className="disc-new-btn"
+                  onClick={() => setDiscView('new')}
+                  disabled={discussionLimitReached}
+                  style={discussionLimitReached ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
+                >
                   <span className="material-symbols-rounded icon">add</span> New post
                 </button>
               </div>
@@ -803,14 +923,33 @@ export default function CourseDetail() {
                       <div className="disc-info">
                         <div className="disc-title">{post.title}</div>
                         <div className="disc-meta">
-                          {post.author?.name} · {post.authorRole === 'instructor' ? 'Instructor' : 'Student'} ·{' '}
+                          {post.author?.name}
+                          <span className={`discussion-role-badge ${post.authorRole === 'instructor' ? 'inst' : 'student'}`}>
+                            {post.authorRole === 'instructor' ? 'Instructor' : 'Student'}
+                          </span>
+                          ·{' '}
                           {formatDateShort(post.createdAt)}
                         </div>
                         <div className="disc-preview">{post.body}</div>
                       </div>
-                      <div className="disc-reply-count">
-                        <span className="material-symbols-rounded icon">chat_bubble</span>
-                        {post.replies?.length ?? 0}
+                      <div className="disc-side-actions">
+                        <div className="disc-reply-count">
+                          <span className="material-symbols-rounded icon">chat_bubble</span>
+                          {post.replies?.length ?? 0}
+                        </div>
+                        {canDeleteDiscussionItem(post.author?.id) && (
+                          <button
+                            type="button"
+                            className="discussion-delete-btn"
+                            onClick={event => {
+                              event.stopPropagation();
+                              handleDeletePost(post.id);
+                            }}
+                            aria-label="Delete post"
+                          >
+                            <span className="material-symbols-rounded">delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -836,15 +975,27 @@ export default function CourseDetail() {
               </button>
 
               <div className="disc-post-card">
-                <div className="disc-post-title">{selectedPost.title}</div>
+                <div className="disc-post-card-header">
+                  <div className="disc-post-title">{selectedPost.title}</div>
+                  {canDeleteDiscussionItem(selectedPost.author?.id) && (
+                    <button
+                      type="button"
+                      className="discussion-delete-btn"
+                      onClick={() => handleDeletePost(selectedPost.id)}
+                      aria-label="Delete post"
+                    >
+                      <span className="material-symbols-rounded">delete</span>
+                    </button>
+                  )}
+                </div>
                 <div className="disc-post-header">
                   <div className="disc-avatar" style={avatarStyleFor(selectedPost.author?.name, selectedPost.authorRole)}>
                     {initialsFor(selectedPost.author?.name)}
                   </div>
                   <div className="disc-post-author">
                     {selectedPost.author?.name}
-                    <span className="disc-post-role">
-                      · {selectedPost.authorRole === 'instructor' ? 'Instructor' : 'Student'}
+                    <span className={`discussion-role-badge ${selectedPost.authorRole === 'instructor' ? 'inst' : 'student'}`}>
+                      {selectedPost.authorRole === 'instructor' ? 'Instructor' : 'Student'}
                     </span>
                   </div>
                   <div className="disc-post-date">{formatDateShort(selectedPost.createdAt)}</div>
@@ -855,19 +1006,31 @@ export default function CourseDetail() {
               <div className="disc-replies-heading">{selectedPost.replies?.length ?? 0} replies</div>
               <div>
                 {(selectedPost.replies ?? []).map(reply => (
-                  <div key={reply.id} className="disc-reply-item">
+                  <div key={reply.id} className="disc-reply-item discussion-student-reply">
                     <div className="disc-avatar" style={avatarStyleFor(reply.author?.name, reply.authorRole)}>
                       {initialsFor(reply.author?.name)}
                     </div>
                     <div className="disc-info">
                       <div className="disc-reply-meta">
                         <div className="disc-reply-author">{reply.author?.name}</div>
-                        <div className="disc-reply-role">
-                          · {reply.authorRole === 'instructor' ? 'Instructor' : 'Student'}
+                        <div className={`discussion-role-badge ${reply.authorRole === 'instructor' ? 'inst' : 'student'}`}>
+                          {reply.authorRole === 'instructor' ? 'Instructor' : 'Student'}
                         </div>
-                        <div className="disc-reply-date">{formatDateShort(reply.createdAt)}</div>
                       </div>
                       <div className="disc-reply-body">{reply.body}</div>
+                    </div>
+                    <div className="discussion-reply-side">
+                      <div className="disc-reply-date">{formatDateShort(reply.createdAt)}</div>
+                      {canDeleteDiscussionItem(reply.author?.id) && (
+                        <button
+                          type="button"
+                          className="discussion-delete-btn"
+                          onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
+                          aria-label="Delete reply"
+                        >
+                          <span className="material-symbols-rounded">delete</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -887,10 +1050,24 @@ export default function CourseDetail() {
                       onChange={e => setReplyDraft(e.target.value)}
                     />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                      <button type="button" className="disc-submit-btn" onClick={handleReplySubmit}>
+                      <button
+                        type="button"
+                        className="disc-submit-btn"
+                        onClick={handleReplySubmit}
+                        disabled={discussionLimitReached}
+                        style={discussionLimitReached ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
+                      >
                         <span className="material-symbols-rounded icon">send</span> Post reply
                       </button>
                     </div>
+                    {discussionLimitReached && (
+                      <div className="discussion-limit-inline">
+                        <span>Post limit reached for this week.</span>
+                        <Link to="/membership" className="limit-upgrade-link">
+                          Upgrade
+                        </Link>
+                      </div>
+                    )}
                     {postingError && <p className="course-list-empty">{postingError}</p>}
                   </div>
                 </div>
@@ -950,13 +1127,21 @@ export default function CourseDetail() {
                     type="button"
                     className="disc-submit-btn"
                     onClick={handleCreatePost}
-                    disabled={!user}
-                    style={!user ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
+                    disabled={!user || discussionLimitReached}
+                    style={!user || discussionLimitReached ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
                   >
                     <span className="material-symbols-rounded icon">send</span> Post
                   </button>
                 </div>
                 {!user && <p className="course-list-empty">Log in to post.</p>}
+                {discussionLimitReached && (
+                  <div className="discussion-limit-inline">
+                    <span>Post limit reached for this week.</span>
+                    <Link to="/membership" className="limit-upgrade-link">
+                      Upgrade
+                    </Link>
+                  </div>
+                )}
                 {postingError && <p className="course-list-empty">{postingError}</p>}
               </div>
             </div>

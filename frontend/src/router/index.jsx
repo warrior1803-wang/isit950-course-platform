@@ -16,6 +16,7 @@ import AssignmentList from '../pages/AssignmentList';
 import InstructorGrading from '../pages/InstructorGrading';
 import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
 import InstructorCourseStudentsPage from '../pages/instructor/InstructorCourseStudentsPage';
+import InstructorDiscussionsPage from '../pages/instructor/InstructorDiscussionsPage';
 import BrowseCourses from '../pages/BrowseCourses';
 import Profile from '../pages/Profile';
 import Membership from '../pages/Membership';
@@ -120,6 +121,9 @@ export default function AppRouter() {
         <Route element={<StudentLayout />}>
           <Route path="/courses" element={<CourseList />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/courses/:id/posts" element={<CourseDetail />} />
+          <Route path="/courses/:id/announcements" element={<CourseDetail />} />
+          <Route path="/courses/:id/assignments" element={<CourseDetail />} />
           <Route
             path="/courses/:id/assignments/:asgId/submit"
             element={<AssignmentSubmission />}
@@ -148,7 +152,7 @@ export default function AppRouter() {
           <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
           <Route path="/instructor/courses/:id/students" element={<InstructorCourseStudentsPage />} />
           <Route path="/instructor/grading" element={<InstructorGrading />} />
-          <Route path="/instructor/discussions" element={<Soon page="Discussions Inbox" />} />
+          <Route path="/instructor/discussions" element={<InstructorDiscussionsPage />} />
           <Route path="/instructor/announcements" element={<Soon page="Announcements" />} />
           <Route path="/instructor/analytics" element={<Soon page="Student Analytics" />} />
           <Route path="/instructor/profile" element={<Soon page="Instructor Profile" />} />

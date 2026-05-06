@@ -123,7 +123,7 @@ export default function AssignmentReview() {
         <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
           chevron_right
         </span>
-        <Link to={`/courses/${courseId}?tab=assignments`} style={{ cursor: 'pointer', color: 'var(--accent)' }}>
+        <Link to={`/courses/${courseId}/assignments`} style={{ cursor: 'pointer', color: 'var(--accent)' }}>
           Assignments
         </Link>
         <span className="material-symbols-rounded" style={{ fontSize: 14 }}>
@@ -343,7 +343,7 @@ export default function AssignmentReview() {
 
           <div style={{ marginTop: 12 }}>
             <Link
-              to={`/courses/${courseId}?tab=assignments`}
+              to={`/courses/${courseId}/assignments`}
               className="review-download-btn"
               style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', padding: '10px 12px' }}
             >
