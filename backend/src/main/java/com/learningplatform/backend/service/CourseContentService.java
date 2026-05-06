@@ -81,6 +81,35 @@ public class CourseContentService {
         return toAnnouncementResponse(announcementRepository.save(announcement));
     }
 
+    public AnnouncementResponse updateAnnouncement(
+            Long courseId,
+            Long announcementId,
+            AnnouncementRequest request,
+            String userEmail
+    ) {
+        requireInstructorOwnership(courseId, userEmail);
+        String title = safe(request.getTitle());
+        String body = safe(request.getBody());
+
+        if (title.isBlank()) {
+            throw new BusinessException("Announcement title is required");
+        }
+        if (body.isBlank()) {
+            throw new BusinessException("Announcement body is required");
+        }
+
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new NotFoundException("Announcement not found"));
+
+        if (!announcement.getCourse().getId().equals(courseId)) {
+            throw new NotFoundException("Announcement not found");
+        }
+
+        announcement.setTitle(title);
+        announcement.setBody(body);
+        return toAnnouncementResponse(announcementRepository.save(announcement));
+    }
+
     public List<AssignmentListResponse> getAssignments(Long courseId, String userEmail) {
         AccessContext context = requireCourseAccess(courseId, userEmail);
         return assignmentRepository.findByCourseOrderByDueDateAsc(context.course()).stream()
