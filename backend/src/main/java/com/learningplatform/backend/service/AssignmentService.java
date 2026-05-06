@@ -652,6 +652,7 @@ public class AssignmentService {
                 submission.getFilename(),
                 submission.getSubmittedAt(),
                 submission.getScore(),
+                assignment.getMaxScore(),
                 submission.getFeedback(),
                 submission.getStatus().name().toLowerCase(),
                 autoGraded,

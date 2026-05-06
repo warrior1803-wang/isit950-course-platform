@@ -1,7 +1,6 @@
 package com.learningplatform.backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.learningplatform.backend.dto.AutoSubmissionResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -17,6 +16,7 @@ public class MySubmissionResponse {
     private String filename;
     private LocalDateTime submittedAt;
     private Integer score;
+    private Integer maxScore;
     private String feedback;
     private String status;
     private Boolean autoGraded;

@@ -1,131 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
+import { useParams } from "react-router-dom";
 import api from "../api/axios";
-
-const MOCK_COURSES = [
-  { id: "mock-course-isit950", code: "ISIT950", name: "Systems Development" },
-];
-
-const MOCK_ASSIGNMENTS = [
-  {
-    id: "mock-asg-week-7",
-    title: "Week 7 Progress Report",
-    type: "FILE",
-    maxScore: 10,
-  },
-  {
-    id: "mock-asg-week-5",
-    title: "Week 5 Scrum Quiz",
-    type: "AUTO",
-    maxScore: 10,
-  },
-];
-
-const MOCK_SUBMISSIONS = [
-  {
-    id: 1,
-    studentName: "Bingyan Wang",
-    initials: "BW",
-    assignmentTitle: "Week 7 Progress Report",
-    submittedAt: "2026-04-15T11:42:00",
-    status: "pending",
-    type: "FILE",
-  },
-  {
-    id: 2,
-    studentName: "Mingcan Yang",
-    initials: "MY",
-    assignmentTitle: "Week 7 Progress Report",
-    submittedAt: "2026-04-15T14:30:00",
-    status: "pending",
-    type: "FILE",
-  },
-  {
-    id: 3,
-    studentName: "Amy Lin",
-    initials: "AL",
-    assignmentTitle: "Week 7 Progress Report",
-    submittedAt: "2026-04-16T11:05:00",
-    status: "graded",
-    type: "FILE",
-    score: 8,
-    maxScore: 10,
-  },
-  {
-    id: 4,
-    studentName: "Bingyan Wang",
-    initials: "BW",
-    assignmentTitle: "Week 5 Scrum Quiz",
-    submittedAt: "2026-04-24T09:00:00",
-    status: "graded",
-    type: "AUTO",
-    score: 8,
-    maxScore: 10,
-  },
-];
-
-const MOCK_DETAIL_FILE = {
-  id: 1,
-  type: "FILE",
-  fileName: "CCP_Progress_Report_v7.pdf",
-  fileSize: "4.2 MB",
-  studentName: "Bingyan Wang",
-  submittedAt: "2026-04-15T11:42:00",
-  score: null,
-  feedback: "",
-  maxScore: 10,
-};
-
-const MOCK_DETAIL_AUTO = {
-  id: 4,
-  type: "AUTO",
-  score: 8,
-  maxScore: 10,
-  studentName: "Bingyan Wang",
-  submittedAt: "2026-04-24T09:00:00",
-  breakdown: [
-    {
-      question: "1. Who manages the Product Backlog?",
-      studentAnswer: "Product Owner",
-      correctAnswer: "Product Owner",
-      pts: 2,
-      maxPts: 2,
-      correct: true,
-    },
-    {
-      question: "2. Max Sprint length?",
-      studentAnswer: "4 weeks",
-      correctAnswer: "4 weeks",
-      pts: 2,
-      maxPts: 2,
-      correct: true,
-    },
-    {
-      question: "3. Fill in: A ______ is a time-boxed iteration.",
-      studentAnswer: "3 months",
-      correctAnswer: "Sprint",
-      pts: 0,
-      maxPts: 2,
-      correct: false,
-    },
-    {
-      question: "4. What does WIP stand for?",
-      studentAnswer: "Work in Progress",
-      correctAnswer: "Work in Progress",
-      pts: 2,
-      maxPts: 2,
-      correct: true,
-    },
-    {
-      question: "5. Scrum framework includes which roles?",
-      studentAnswer: "PO, SM, Dev Team",
-      correctAnswer: "PO, SM, Dev Team",
-      pts: 2,
-      maxPts: 2,
-      correct: true,
-    },
-  ],
-};
 
 const styles = {
   instPageHeader: {
@@ -453,6 +329,7 @@ function normalizeSubmission(raw, assignment) {
     status: normalizeStatus(raw),
     type,
     score: raw.score ?? raw.grade ?? null,
+    feedback: raw.feedback ?? "",
     maxScore: raw.maxScore ?? assignment?.maxScore ?? 10,
   };
 }
@@ -526,6 +403,12 @@ function formatDateOnly(value) {
 }
 
 export default function InstructorGrading() {
+  const {
+    courseId: routeCourseId,
+    id: routeId,
+    asgId: routeAsgId,
+    assignmentId: routeAssignmentId,
+  } = useParams();
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [assignments, setAssignments] = useState([]);
@@ -537,7 +420,14 @@ export default function InstructorGrading() {
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [score, setScore] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [usingMock, setUsingMock] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
+  const [savingGrade, setSavingGrade] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [error, setError] = useState("");
+
+  const activeCourseId = routeCourseId || routeId || selectedCourseId;
+  const activeAsgId = routeAsgId || routeAssignmentId || selectedAsgId;
 
   const selectedCourse = courses.find(
     (course) => String(course.id) === String(selectedCourseId),
@@ -560,24 +450,11 @@ export default function InstructorGrading() {
     [submissions],
   );
 
-  function applyMockData() {
-    const first = MOCK_SUBMISSIONS[0];
-    setUsingMock(true);
-    setCourses((prev) => (prev.length ? prev : MOCK_COURSES));
-    setSelectedCourseId((prev) => prev || MOCK_COURSES[0].id);
-    setAssignments((prev) => (prev.length ? prev : MOCK_ASSIGNMENTS));
-    setSelectedAsgId((prev) => prev || MOCK_ASSIGNMENTS[0].id);
-    setSubmissions(MOCK_SUBMISSIONS);
-    setSelectedSub(first);
-    setSubDetail(MOCK_DETAIL_FILE);
-    setScore("");
-    setFeedback("");
-  }
-
   useEffect(() => {
     let isMounted = true;
 
     async function loadCourses() {
+      setError("");
       try {
         const response = await api.get("/courses");
         if (!isMounted) return;
@@ -585,7 +462,15 @@ export default function InstructorGrading() {
         setCourses(nextCourses);
         setSelectedCourseId((current) => current ?? nextCourses[0]?.id ?? null);
       } catch {
-        if (isMounted) applyMockData();
+        if (!isMounted) return;
+        setCourses([]);
+        setAssignments([]);
+        setSubmissions([]);
+        setSelectedCourseId(null);
+        setSelectedAsgId(null);
+        setSelectedSub(null);
+        setSubDetail(null);
+        setError("Failed to load data. Please try again.");
       }
     }
 
@@ -599,15 +484,10 @@ export default function InstructorGrading() {
   useEffect(() => {
     if (!selectedCourseId) return;
 
-    if (usingMock) {
-      setAssignments(MOCK_ASSIGNMENTS);
-      setSelectedAsgId((current) => current ?? MOCK_ASSIGNMENTS[0].id);
-      return;
-    }
-
     let isMounted = true;
 
     async function loadAssignments() {
+      setError("");
       try {
         const response = await api.get(
           `/courses/${selectedCourseId}/assignments`,
@@ -619,11 +499,20 @@ export default function InstructorGrading() {
         setAssignments(nextAssignments);
         setSelectedAsgId(nextAssignments[0]?.id ?? null);
         if (nextAssignments.length === 0) {
-          applyMockData();
+          setSubmissions([]);
+          setSelectedSub(null);
+          setSubDetail(null);
+          setError("Failed to load data. Please try again.");
           return;
         }
       } catch {
-        if (isMounted) applyMockData();
+        if (!isMounted) return;
+        setAssignments([]);
+        setSelectedAsgId(null);
+        setSubmissions([]);
+        setSelectedSub(null);
+        setSubDetail(null);
+        setError("Failed to load data. Please try again.");
       }
     }
 
@@ -632,33 +521,32 @@ export default function InstructorGrading() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCourseId, usingMock]);
+  }, [selectedCourseId]);
 
   useEffect(() => {
     if (!selectedCourseId || !selectedAsgId) return;
 
-    if (usingMock) {
-      setSubmissions(MOCK_SUBMISSIONS);
-      setSelectedSub((current) => current ?? MOCK_SUBMISSIONS[0]);
-      return;
-    }
-
     let isMounted = true;
 
     async function loadSubmissions() {
+      setError("");
       try {
         const response = await api.get(
           `/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions`,
         );
         if (!isMounted) return;
-        const nextSubmissions = (
-          Array.isArray(response.data) ? response.data : []
-        ).map((item) => normalizeSubmission(item, selectedAssignment));
+        const nextSubmissions = response.data.map((item) =>
+          normalizeSubmission(item, selectedAssignment),
+        );
         setSubmissions(nextSubmissions);
         setSelectedSub(nextSubmissions[0] ?? null);
         setSubDetail(null);
       } catch {
-        if (isMounted) applyMockData();
+        if (!isMounted) return;
+        setSubmissions([]);
+        setSelectedSub(null);
+        setSubDetail(null);
+        setError("Failed to load data. Please try again.");
       }
     }
 
@@ -667,7 +555,7 @@ export default function InstructorGrading() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCourseId, selectedAsgId, selectedAssignment, usingMock]);
+  }, [selectedCourseId, selectedAsgId, selectedAssignment]);
 
   useEffect(() => {
     if (!selectedSub || !selectedCourseId || !selectedAsgId) {
@@ -675,20 +563,10 @@ export default function InstructorGrading() {
       return;
     }
 
-    if (usingMock) {
-      const detail =
-        selectedSub.type === "AUTO"
-          ? { ...MOCK_DETAIL_AUTO, ...selectedSub }
-          : { ...MOCK_DETAIL_FILE, ...selectedSub };
-      setSubDetail(detail);
-      setScore(detail.score ?? "");
-      setFeedback(detail.feedback ?? "");
-      return;
-    }
-
     let isMounted = true;
 
     async function loadDetail() {
+      setError("");
       try {
         const response = await api.get(
           `/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}`,
@@ -702,8 +580,13 @@ export default function InstructorGrading() {
         setSubDetail(detail);
         setScore(detail.score ?? "");
         setFeedback(detail.feedback ?? "");
+        setOverrideReason(detail.overrideReason ?? "");
+        setSaveMessage("");
+        setSaveError("");
       } catch {
-        if (isMounted) applyMockData();
+        if (!isMounted) return;
+        setSubDetail(null);
+        setError("Failed to load data. Please try again.");
       }
     }
 
@@ -717,7 +600,6 @@ export default function InstructorGrading() {
     selectedCourseId,
     selectedAsgId,
     selectedAssignment,
-    usingMock,
   ]);
 
   useEffect(() => {
@@ -760,6 +642,94 @@ export default function InstructorGrading() {
   function handleClear() {
     setScore("");
     setFeedback("");
+    setSaveMessage("");
+    setSaveError("");
+  }
+
+  function getApiErrorMessage(error) {
+    return (
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Could not save the grade. Please try again."
+    );
+  }
+
+  async function handleSaveGrade({ auto = false } = {}) {
+    if (!activeCourseId || !activeAsgId || !selectedSub?.id) return;
+
+    const nextScore = Number(score);
+    if (score === "" || Number.isNaN(nextScore)) {
+      setSaveMessage("");
+      setSaveError("Enter a valid score before saving.");
+      return;
+    }
+
+    setSavingGrade(true);
+    setSaveMessage("");
+    setSaveError("");
+
+    const body = auto
+      ? { overriddenScore: nextScore, overrideReason }
+      : { score: nextScore, feedback };
+
+    try {
+      const response = await api.put(
+        `/courses/${activeCourseId}/assignments/${activeAsgId}/submissions/${selectedSub.id}/grade`,
+        body,
+      );
+      const updatedDetail = normalizeDetail(
+        response.data,
+        selectedSub,
+        selectedAssignment,
+      );
+      const updatedSubmission = normalizeSubmission(
+        response.data,
+        selectedAssignment,
+      );
+      const nextScoreValue =
+        updatedDetail.score ?? updatedDetail.overriddenScore ?? nextScore;
+      const nextFeedback = updatedDetail.feedback ?? feedback;
+
+      setSubmissions((current) =>
+        current.map((item) =>
+          String(item.id) === String(selectedSub.id)
+            ? {
+                ...item,
+                ...updatedSubmission,
+                status: "graded",
+                score: nextScoreValue,
+                feedback: nextFeedback,
+              }
+            : item,
+        ),
+      );
+      setSelectedSub((current) =>
+        current && String(current.id) === String(selectedSub.id)
+          ? {
+              ...current,
+              ...updatedSubmission,
+              status: "graded",
+              score: nextScoreValue,
+              feedback: nextFeedback,
+            }
+          : current,
+      );
+      setSubDetail({
+        ...updatedDetail,
+        status: "graded",
+        score: nextScoreValue,
+        feedback: nextFeedback,
+      });
+      setFeedback(nextFeedback);
+      setScore(nextScoreValue ?? "");
+      setOverrideReason(updatedDetail.overrideReason ?? overrideReason);
+      if (auto) setOverrideOpen(false);
+      setSaveMessage(auto ? "Override saved ✓" : "Grade saved ✓");
+    } catch (error) {
+      setSaveError(getApiErrorMessage(error));
+    } finally {
+      setSavingGrade(false);
+    }
   }
 
   const manualSubmissions = filtered.filter((item) => item.type !== "AUTO");
@@ -793,6 +763,8 @@ export default function InstructorGrading() {
               setSelectedAsgId(null);
               setSelectedSub(null);
               setSubDetail(null);
+              setSaveMessage("");
+              setSaveError("");
             }}
           >
             <option value="">All courses</option>
@@ -810,6 +782,8 @@ export default function InstructorGrading() {
               setSelectedAsgId(event.target.value || null);
               setSelectedSub(null);
               setSubDetail(null);
+              setSaveMessage("");
+              setSaveError("");
             }}
           >
             <option value="">All assignments</option>
@@ -822,19 +796,19 @@ export default function InstructorGrading() {
         </div>
       </div>
 
-      {usingMock && (
+      {error && (
         <div
           style={{
-            background: "#fffbeb",
-            border: "1px solid #fcd34d",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
             borderRadius: 8,
             padding: "8px 14px",
             fontSize: 12,
-            color: "#92400e",
+            color: "#991b1b",
             marginBottom: 16,
           }}
         >
-          ⚠ Using mock data — Leon&apos;s Submission API (#67) not yet available
+          {error}
         </div>
       )}
 
@@ -934,6 +908,12 @@ export default function InstructorGrading() {
                 setOverrideOpen={setOverrideOpen}
                 score={score}
                 setScore={setScore}
+                overrideReason={overrideReason}
+                setOverrideReason={setOverrideReason}
+                savingGrade={savingGrade}
+                saveMessage={saveMessage}
+                saveError={saveError}
+                onSubmit={() => handleSaveGrade({ auto: true })}
               />
             ) : (
               <div id="manual-grade-area">
@@ -1008,6 +988,18 @@ export default function InstructorGrading() {
                   />
                 </div>
                 <div className="grade-actions" style={styles.gradeActions}>
+                  {(saveMessage || saveError) && (
+                    <div
+                      style={{
+                        marginRight: "auto",
+                        alignSelf: "center",
+                        fontSize: 12,
+                        color: saveError ? "#b91c1c" : "#15803d",
+                      }}
+                    >
+                      {saveError || saveMessage}
+                    </div>
+                  )}
                   <button
                     className="btn-outline"
                     type="button"
@@ -1018,16 +1010,16 @@ export default function InstructorGrading() {
                   </button>
                   <button
                     className="btn-primary"
-                    disabled
+                    disabled={savingGrade}
                     type="button"
+                    onClick={() => handleSaveGrade()}
                     style={{
                       ...styles.btnPrimary,
-                      opacity: 0.5,
-                      cursor: "not-allowed",
+                      ...(savingGrade ? { opacity: 0.7, cursor: "wait" } : {}),
                     }}
-                    title="Available in Sprint 6"
                   >
-                    <Icon>check_circle</Icon> Submit grade
+                    <Icon>check_circle</Icon>{" "}
+                    {savingGrade ? "Saving..." : "Submit grade"}
                   </button>
                 </div>
               </div>
@@ -1097,6 +1089,12 @@ function AutoGradePanel({
   setOverrideOpen,
   score,
   setScore,
+  overrideReason,
+  setOverrideReason,
+  savingGrade,
+  saveMessage,
+  saveError,
+  onSubmit,
 }) {
   const breakdown = detail.breakdown || [];
 
@@ -1281,10 +1279,24 @@ function AutoGradePanel({
               className="grade-textarea"
               rows="3"
               placeholder="e.g. Student used an acceptable alternative answer for Q3…"
+              value={overrideReason}
+              onChange={(event) => setOverrideReason(event.target.value)}
               style={styles.gradeTextarea}
             />
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            {(saveMessage || saveError) && (
+              <div
+                style={{
+                  marginRight: "auto",
+                  alignSelf: "center",
+                  fontSize: 12,
+                  color: saveError ? "#b91c1c" : "#15803d",
+                }}
+              >
+                {saveError || saveMessage}
+              </div>
+            )}
             <button
               className="btn-outline"
               type="button"
@@ -1295,16 +1307,16 @@ function AutoGradePanel({
             </button>
             <button
               className="btn-primary"
-              disabled
+              disabled={savingGrade}
               type="button"
+              onClick={onSubmit}
               style={{
                 ...styles.btnPrimary,
-                opacity: 0.5,
-                cursor: "not-allowed",
+                ...(savingGrade ? { opacity: 0.7, cursor: "wait" } : {}),
               }}
-              title="Available in Sprint 6"
             >
-              <Icon>check_circle</Icon> Submit override
+              <Icon>check_circle</Icon>{" "}
+              {savingGrade ? "Saving..." : "Submit override"}
             </button>
           </div>
         </div>
@@ -1366,4 +1378,10 @@ AutoGradePanel.propTypes = {
   setOverrideOpen: PropTypes.func.isRequired,
   score: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   setScore: PropTypes.func.isRequired,
+  overrideReason: PropTypes.string.isRequired,
+  setOverrideReason: PropTypes.func.isRequired,
+  savingGrade: PropTypes.bool.isRequired,
+  saveMessage: PropTypes.string.isRequired,
+  saveError: PropTypes.string.isRequired,
+  onSubmit: PropTypes.func.isRequired,
 };
