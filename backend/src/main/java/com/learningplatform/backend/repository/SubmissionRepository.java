@@ -23,4 +23,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     void deleteByAssignment(Assignment assignment);
 
+    List<Submission> findByAssignmentCourseAndStudent(Course course, User student);
+
+    List<Submission> findByAssignmentCourse(Course course);
+
 }

@@ -4,6 +4,7 @@ import com.learningplatform.backend.dto.AuthResponse;
 import com.learningplatform.backend.dto.AuthUserResponse;
 import com.learningplatform.backend.dto.LoginRequest;
 import com.learningplatform.backend.dto.RegisterRequest;
+import com.learningplatform.backend.dto.UpdateProfileRequest;
 import com.learningplatform.backend.service.AuthService;
 import com.learningplatform.backend.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -46,5 +47,18 @@ public class AuthController {
         AuthUserResponse response = authService.getCurrentUserResponse(email);
 
         return ApiResponse.success("User fetched successfully", response);
+    }
+
+    @PutMapping("/me")
+    public ApiResponse<AuthUserResponse> updateCurrentUser(
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        AuthUserResponse response = authService.updateCurrentUser(email, request);
+
+        return ApiResponse.success("Profile updated successfully", response);
     }
 }

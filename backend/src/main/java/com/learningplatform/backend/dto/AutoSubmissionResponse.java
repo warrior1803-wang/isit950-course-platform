@@ -25,8 +25,19 @@ public class AutoSubmissionResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BreakdownItem {
+
         private String questionId;
+
+        private String questionText;
+
+        private String studentAnswer;
+
+        private String correctAnswer;
+
         private Boolean correct;
-        private Integer points;
+
+        private Integer pointsAwarded;
+
+        private Integer maxPoints;
     }
 }

@@ -7,6 +7,7 @@ import com.learningplatform.backend.dto.AssignmentDetailResponse;
 import com.learningplatform.backend.dto.AutoSubmissionResponse;
 import com.learningplatform.backend.dto.AutoSubmitRequest;
 import com.learningplatform.backend.dto.FileSubmissionResponse;
+import com.learningplatform.backend.dto.GradeSubmissionRequest;
 import com.learningplatform.backend.dto.InstructorSubmissionDetailResponse;
 import com.learningplatform.backend.dto.MySubmissionResponse;
 import com.learningplatform.backend.dto.UpdateAssignmentRequest;
@@ -501,17 +502,42 @@ public class AssignmentService {
         List<AutoSubmissionResponse.BreakdownItem> breakdown = new ArrayList<>();
 
         for (AssignmentQuestion question : assignment.getQuestions()) {
+
             Object submittedAnswer = request.getAnswers().get(question.getQuestionKey());
 
             boolean correct = isAnswerCorrect(question, submittedAnswer);
+
             int earnedPoints = correct ? question.getPoints() : 0;
 
             totalScore += earnedPoints;
 
+            String studentAnswer =
+                    submittedAnswer == null
+                            ? null
+                            : submittedAnswer.toString();
+
+            String correctAnswer;
+
+            if (question.getType() == QuestionType.MCQ) {
+
+                correctAnswer =
+                        question.getCorrectOption() == null
+                                ? null
+                                : question.getCorrectOption().toString();
+
+            } else {
+
+                correctAnswer = question.getCorrectAnswer();
+            }
+
             breakdown.add(new AutoSubmissionResponse.BreakdownItem(
                     question.getQuestionKey(),
+                    question.getText(),
+                    studentAnswer,
+                    correctAnswer,
                     correct,
-                    earnedPoints
+                    earnedPoints,
+                    question.getPoints()
             ));
         }
 
@@ -781,5 +807,75 @@ public class AssignmentService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse submission answers");
         }
+    }
+
+    @Transactional
+    public InstructorSubmissionDetailResponse gradeSubmission(
+            Long courseId,
+            Long assignmentId,
+            Long submissionId,
+            GradeSubmissionRequest request,
+            String instructorEmail
+    ) {
+        User instructor = userRepository.findByEmail(instructorEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Assignment assignment = assignmentRepository.findByIdAndCourseId(
+                        assignmentId,
+                        courseId
+                )
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+        if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
+            throw new RuntimeException("You are not allowed to grade this submission");
+        }
+
+        Submission submission = submissionRepository
+                .findByIdAndAssignment(submissionId, assignment)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        // FILE assignment manual grading
+        if (assignment.getType() == AssignmentType.FILE) {
+
+            if (request.getScore() == null) {
+                throw new RuntimeException("Score is required");
+            }
+
+            submission.setScore(request.getScore());
+            submission.setFeedback(request.getFeedback());
+            submission.setStatus(SubmissionStatus.GRADED);
+
+            submissionRepository.save(submission);
+
+            return getSubmissionDetailForInstructor(
+                    courseId,
+                    assignmentId,
+                    submissionId,
+                    instructorEmail
+            );
+        }
+
+        // AUTO assignment override
+        if (assignment.getType() == AssignmentType.AUTO) {
+
+            if (request.getOverriddenScore() == null) {
+                throw new RuntimeException("Overridden score is required");
+            }
+
+            submission.setOverriddenScore(request.getOverriddenScore());
+            submission.setOverrideReason(request.getOverrideReason());
+            submission.setOverriddenBy(instructor.getName());
+
+            submissionRepository.save(submission);
+
+            return getSubmissionDetailForInstructor(
+                    courseId,
+                    assignmentId,
+                    submissionId,
+                    instructorEmail
+            );
+        }
+
+        throw new RuntimeException("Unsupported assignment type");
     }
 }

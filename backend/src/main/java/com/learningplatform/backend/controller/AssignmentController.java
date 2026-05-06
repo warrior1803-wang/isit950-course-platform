@@ -7,6 +7,7 @@ import com.learningplatform.backend.dto.AutoSubmissionResponse;
 import com.learningplatform.backend.dto.AutoSubmitRequest;
 import com.learningplatform.backend.dto.DeleteMessageResponse;
 import com.learningplatform.backend.dto.FileSubmissionResponse;
+import com.learningplatform.backend.dto.GradeSubmissionRequest;
 import com.learningplatform.backend.dto.InstructorSubmissionDetailResponse;
 import com.learningplatform.backend.dto.MySubmissionResponse;
 import com.learningplatform.backend.dto.ResubmissionLimitResponse;
@@ -196,6 +197,27 @@ public class AssignmentController {
                         courseId,
                         assignmentId,
                         submissionId,
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{assignmentId}/submissions/{submissionId}/grade")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<InstructorSubmissionDetailResponse> gradeSubmission(
+            @PathVariable Long courseId,
+            @PathVariable Long assignmentId,
+            @PathVariable Long submissionId,
+            @RequestBody GradeSubmissionRequest request,
+            Authentication authentication
+    ) {
+        InstructorSubmissionDetailResponse response =
+                assignmentService.gradeSubmission(
+                        courseId,
+                        assignmentId,
+                        submissionId,
+                        request,
                         authentication.getName()
                 );
 
