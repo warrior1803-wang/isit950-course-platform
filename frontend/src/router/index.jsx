@@ -18,6 +18,7 @@ import InstructorGrading from '../pages/InstructorGrading';
 import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
 import InstructorCourseStudentsPage from '../pages/instructor/InstructorCourseStudentsPage';
 import InstructorDiscussionsPage from '../pages/instructor/InstructorDiscussionsPage';
+import InstructorProfilePage from '../pages/instructor/InstructorProfilePage';
 import InstructorAnnouncementsPage from '../pages/instructor/InstructorAnnouncementsPage';
 import InstructorDashboardPage from '../pages/instructor/InstructorDashboardPage';
 import InstructorAnalyticsPage from '../pages/instructor/InstructorAnalyticsPage';
@@ -159,7 +160,7 @@ export default function AppRouter() {
           <Route path="/instructor/discussions" element={<InstructorDiscussionsPage />} />
           <Route path="/instructor/announcements" element={<InstructorAnnouncementsPage />} />
           <Route path="/instructor/analytics" element={<InstructorAnalyticsPage />} />
-          <Route path="/instructor/profile" element={<Soon page="Instructor Profile" />} />
+          <Route path="/instructor/profile" element={<InstructorProfilePage />} />
         </Route>
       </Route>
 
