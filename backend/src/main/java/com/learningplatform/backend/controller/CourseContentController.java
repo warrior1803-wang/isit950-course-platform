@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import java.util.List;
 
@@ -59,6 +60,27 @@ public class CourseContentController {
                 ApiResponse.success(
                         "Announcement created successfully",
                         courseContentService.createAnnouncement(courseId, request, authentication.getName())
+                )
+        );
+    }
+
+    @PutMapping("/announcements/{announcementId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<ApiResponse<AnnouncementResponse>> updateAnnouncement(
+            @PathVariable Long courseId,
+            @PathVariable Long announcementId,
+            @RequestBody AnnouncementRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Announcement updated successfully",
+                        courseContentService.updateAnnouncement(
+                                courseId,
+                                announcementId,
+                                request,
+                                authentication.getName()
+                        )
                 )
         );
     }

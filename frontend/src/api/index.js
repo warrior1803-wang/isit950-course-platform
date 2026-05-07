@@ -10,6 +10,8 @@ export const courseApi = {
   list: () => api.get('/courses'),
   browse: () => api.get('/courses/browse'),
   get: (id) => api.get(`/courses/${id}`),
+  students: (id) => api.get(`/courses/${id}/students`),
+  progress: (id) => api.get(`/courses/${id}/progress`),
   create: (data) => api.post('/courses', data),
   update: (id, data) => api.put(`/courses/${id}`, data),
   delete: (id) => api.delete(`/courses/${id}`),
@@ -33,6 +35,7 @@ export const materialApi = {
 export const announcementApi = {
   list: (courseId) => api.get(`/courses/${courseId}/announcements`),
   create: (courseId, data) => api.post(`/courses/${courseId}/announcements`, data),
+  update: (courseId, annId, data) => api.put(`/courses/${courseId}/announcements/${annId}`, data),
   delete: (courseId, annId) => api.delete(`/courses/${courseId}/announcements/${annId}`),
 };
 

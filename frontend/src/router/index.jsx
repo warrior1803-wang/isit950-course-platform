@@ -18,6 +18,9 @@ import InstructorGrading from '../pages/InstructorGrading';
 import InstructorCoursesPage from '../pages/instructor/InstructorCoursesPage';
 import InstructorCourseStudentsPage from '../pages/instructor/InstructorCourseStudentsPage';
 import InstructorDiscussionsPage from '../pages/instructor/InstructorDiscussionsPage';
+import InstructorAnnouncementsPage from '../pages/instructor/InstructorAnnouncementsPage';
+import InstructorDashboardPage from '../pages/instructor/InstructorDashboardPage';
+import InstructorAnalyticsPage from '../pages/instructor/InstructorAnalyticsPage';
 import BrowseCourses from '../pages/BrowseCourses';
 import Profile from '../pages/Profile';
 import Membership from '../pages/Membership';
@@ -149,13 +152,13 @@ export default function AppRouter() {
       {/* ── Instructor routes ── */}
       <Route element={<InstructorRoute />}>
         <Route element={<InstructorLayout />}>
-          <Route path="/dashboard" element={<Soon page="Instructor Dashboard" />} />
+          <Route path="/dashboard" element={<InstructorDashboardPage />} />
           <Route path="/instructor/courses" element={<InstructorCoursesPage />} />
           <Route path="/instructor/courses/:id/students" element={<InstructorCourseStudentsPage />} />
           <Route path="/instructor/grading" element={<InstructorGrading />} />
           <Route path="/instructor/discussions" element={<InstructorDiscussionsPage />} />
-          <Route path="/instructor/announcements" element={<Soon page="Announcements" />} />
-          <Route path="/instructor/analytics" element={<Soon page="Student Analytics" />} />
+          <Route path="/instructor/announcements" element={<InstructorAnnouncementsPage />} />
+          <Route path="/instructor/analytics" element={<InstructorAnalyticsPage />} />
           <Route path="/instructor/profile" element={<Soon page="Instructor Profile" />} />
         </Route>
       </Route>

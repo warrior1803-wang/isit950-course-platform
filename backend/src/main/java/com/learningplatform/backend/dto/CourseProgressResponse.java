@@ -23,5 +23,8 @@ public class CourseProgressResponse {
         private long assignmentsSubmitted;
         private long totalAssignments;
         private Double averageScore;
+        private int postsCount;
+        private int repliesCount;
+        private String lastActive;
     }
 }
