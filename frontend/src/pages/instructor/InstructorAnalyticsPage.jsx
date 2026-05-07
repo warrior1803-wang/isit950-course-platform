@@ -19,15 +19,22 @@ function formatScore(value) {
   return Number(value).toFixed(1);
 }
 
-function formatRelativeDate(value) {
+function formatReadableDate(value) {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  const diff = Date.now() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  return `${days} days ago`;
+  return date.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function hasNoRecentActivity(value) {
+  if (!value) return true;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return true;
+  return Date.now() - date.getTime() > 7 * 24 * 60 * 60 * 1000;
 }
 
 function getPillClass(level) {
@@ -160,13 +167,17 @@ export default function InstructorAnalyticsPage() {
         if (cancelled) return;
 
         const progressPayload = getApiData(progressRes);
-        const progressRows = Array.isArray(progressPayload) ? progressPayload : [];
+        const progressRows = Array.isArray(progressPayload)
+          ? progressPayload
+          : Array.isArray(progressPayload?.students)
+            ? progressPayload.students
+            : [];
         const studentPayload = getApiData(studentsRes);
         const students = Array.isArray(studentPayload) && studentPayload.length > 0
           ? studentPayload
           : progressRows.map(item => ({
-            id: item.student?.id,
-            name: item.student?.name || 'Student',
+            id: item.studentId ?? item.student?.id,
+            name: item.name ?? item.student?.name ?? 'Student',
             email: item.email ?? '',
           }));
         const assignments = Array.isArray(getApiData(assignmentsRes)) ? getApiData(assignmentsRes) : [];
@@ -183,7 +194,7 @@ export default function InstructorAnalyticsPage() {
 
         const progressByStudent = new Map(
           progressRows.map(item => [
-            String(item.student?.id ?? ''),
+            String(item.studentId ?? item.student?.id ?? ''),
             {
               postsCount: toNumber(item.postsCount),
               repliesCount: toNumber(item.repliesCount),
@@ -305,12 +316,7 @@ export default function InstructorAnalyticsPage() {
           : sortedScores.length % 2 === 1
             ? sortedScores[(sortedScores.length - 1) / 2]
             : (sortedScores[(sortedScores.length / 2) - 1] + sortedScores[sortedScores.length / 2]) / 2;
-        const noActivity = studentRows.filter(
-          row =>
-            row.assignmentsSubmitted === 0
-            && row.postsCount === 0
-            && row.repliesCount === 0,
-        ).length;
+        const noActivity = studentRows.filter(row => hasNoRecentActivity(row.lastActive)).length;
 
         setAnalytics({
           stats: {
@@ -345,10 +351,12 @@ export default function InstructorAnalyticsPage() {
   const filteredRows = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     if (!keyword) return analytics.studentRows;
-    return analytics.studentRows.filter(row =>
-      row.name.toLowerCase().includes(keyword)
-      || String(row.email || '').toLowerCase().includes(keyword),
-    );
+
+    return analytics.studentRows.filter(row => {
+      const name = String(row.name || '').toLowerCase();
+      const email = String(row.email || '').toLowerCase();
+      return name.includes(keyword) || email.includes(keyword);
+    });
   }, [analytics.studentRows, search]);
 
   const discussionBars = useMemo(() => {
@@ -549,10 +557,12 @@ export default function InstructorAnalyticsPage() {
             Per-student progress
           </div>
           <div className="search-wrap" style={{ maxWidth: 220 }}>
-            <span className="icon">search</span>
+            <span className="material-symbols-rounded icon" aria-hidden>
+              search
+            </span>
             <input
-              type="text"
-              placeholder="Search students…"
+              type="search"
+              placeholder="Search students..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -630,7 +640,7 @@ export default function InstructorAnalyticsPage() {
                     </td>
                     <td>{formatScore(row.averageScore)}</td>
                     <td style={{ color: row.engagement === 'Low' ? '#d85a30' : 'var(--text-muted)' }}>
-                      {formatRelativeDate(row.lastActive)}
+                      {formatReadableDate(row.lastActive)}
                     </td>
                     <td><span className={getPillClass(row.engagement)}>{row.engagement}</span></td>
                   </tr>

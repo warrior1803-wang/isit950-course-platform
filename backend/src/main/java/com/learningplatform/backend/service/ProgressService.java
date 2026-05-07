@@ -9,12 +9,18 @@ import com.learningplatform.backend.model.User;
 import com.learningplatform.backend.repository.AssignmentRepository;
 import com.learningplatform.backend.repository.CourseRepository;
 import com.learningplatform.backend.repository.EnrolmentRepository;
+import com.learningplatform.backend.repository.PostRepository;
+import com.learningplatform.backend.repository.ReplyRepository;
 import com.learningplatform.backend.repository.SubmissionRepository;
 import com.learningplatform.backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 public class ProgressService {
@@ -24,19 +30,25 @@ public class ProgressService {
     private final EnrolmentRepository enrolmentRepository;
     private final AssignmentRepository assignmentRepository;
     private final SubmissionRepository submissionRepository;
+    private final PostRepository postRepository;
+    private final ReplyRepository replyRepository;
 
     public ProgressService(
             CourseRepository courseRepository,
             UserRepository userRepository,
             EnrolmentRepository enrolmentRepository,
             AssignmentRepository assignmentRepository,
-            SubmissionRepository submissionRepository
+            SubmissionRepository submissionRepository,
+            PostRepository postRepository,
+            ReplyRepository replyRepository
     ) {
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
         this.enrolmentRepository = enrolmentRepository;
         this.assignmentRepository = assignmentRepository;
         this.submissionRepository = submissionRepository;
+        this.postRepository = postRepository;
+        this.replyRepository = replyRepository;
     }
 
     @Transactional
@@ -67,13 +79,19 @@ public class ProgressService {
                             .count();
 
                     Double averageScore = calculateAverageScore(submissions);
+                    int postsCount = Math.toIntExact(postRepository.countByAuthorAndCourse(student, course));
+                    int repliesCount = Math.toIntExact(replyRepository.countByAuthorAndPostCourse(student, course));
+                    String lastActive = calculateLastActive(course, student);
 
                     return new CourseProgressResponse.StudentProgressItem(
                             student.getId(),
                             student.getName(),
                             assignmentsSubmitted,
                             totalAssignments,
-                            averageScore
+                            averageScore,
+                            postsCount,
+                            repliesCount,
+                            lastActive
                     );
                 })
                 .toList();
@@ -129,5 +147,23 @@ public class ProgressService {
                 .mapToInt(Integer::intValue)
                 .average()
                 .orElse(0.0);
+    }
+
+    private String calculateLastActive(Course course, User student) {
+        Optional<LocalDateTime> lastPost = postRepository
+                .findTopByAuthorAndCourseOrderByCreatedAtDesc(student, course)
+                .map(post -> post.getCreatedAt());
+        Optional<LocalDateTime> lastReply = replyRepository
+                .findTopByAuthorAndPostCourseOrderByCreatedAtDesc(student, course)
+                .map(reply -> reply.getCreatedAt());
+        Optional<LocalDateTime> lastSubmission = submissionRepository
+                .findTopByAssignmentCourseAndStudentOrderBySubmittedAtDesc(course, student)
+                .map(submission -> submission.getSubmittedAt());
+
+        return Stream.of(lastPost, lastReply, lastSubmission)
+                .flatMap(Optional::stream)
+                .max(LocalDateTime::compareTo)
+                .map(DateTimeFormatter.ISO_LOCAL_DATE_TIME::format)
+                .orElse(null);
     }
 }

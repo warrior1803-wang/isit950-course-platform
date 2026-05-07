@@ -25,6 +25,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     List<Submission> findByAssignmentCourseAndStudent(Course course, User student);
 
+    Optional<Submission> findTopByAssignmentCourseAndStudentOrderBySubmittedAtDesc(Course course, User student);
+
     List<Submission> findByAssignmentCourse(Course course);
 
 }
