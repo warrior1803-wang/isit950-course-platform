@@ -26,22 +26,22 @@ export default function Modal({ isOpen, onClose, title, children, footer, maxWid
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="ccp-modal-overlay" onClick={onClose}>
+    <div className="ccp-modal-overlay modal-overlay open" onClick={onClose}>
       <div
-        className="ccp-modal-box"
+        className="ccp-modal-box modal-box"
         style={maxWidth !== 480 ? { maxWidth } : undefined}
         onClick={e => e.stopPropagation()}
       >
-        <div className="ccp-modal-header">
-          <div className="ccp-modal-title">{title}</div>
-          <button className="ccp-modal-close" onClick={onClose} aria-label="Close modal">
-            <span className="material-symbols-rounded">close</span>
+        <div className="ccp-modal-header modal-header">
+          <div className="ccp-modal-title modal-title">{title}</div>
+          <button className="ccp-modal-close modal-close" onClick={onClose} aria-label="Close modal">
+            <span className="material-symbols-rounded icon">close</span>
           </button>
         </div>
 
-        <div className="ccp-modal-body">{children}</div>
+        <div className="ccp-modal-body modal-body">{children}</div>
 
-        {footer && <div className="ccp-modal-footer">{footer}</div>}
+        {footer && <div className="ccp-modal-footer modal-footer">{footer}</div>}
       </div>
     </div>,
     document.body,
