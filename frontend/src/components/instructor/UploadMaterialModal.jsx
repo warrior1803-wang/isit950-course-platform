@@ -29,6 +29,12 @@ function formatSize(bytes) {
 const inputClass =
   'w-full h-[42px] px-[14px] rounded-[10px] border border-border bg-input-bg text-text-dark text-[13px] font-serif outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 focus:bg-white transition-colors duration-150';
 
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
 export default function UploadMaterialModal({ courseId, initialSection, onClose, onUploadSuccess }) {
   const [section, setSection] = useState(initialSection || '');
   const [file, setFile] = useState(null);
@@ -91,7 +97,21 @@ export default function UploadMaterialModal({ courseId, initialSection, onClose,
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: formData,
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return;
+      }
+      if (res.status === 403 && json?.upgradeRequired) {
+        throw new Error('This feature requires a membership. Upgrade');
+      }
+      if (res.status === 403) {
+        throw new Error("You don't have permission to view this");
+      }
+      if (res.status === 404) {
+        throw new Error('Content not found');
+      }
       if (!res.ok) throw new Error(json.message || 'Upload failed');
 
       clearInterval(interval);
@@ -257,9 +277,7 @@ export default function UploadMaterialModal({ courseId, initialSection, onClose,
           >
             {isUploading ? (
               <>
-                <span className="material-symbols-rounded text-base animate-spin">
-                  progress_activity
-                </span>
+                <ButtonSpinner />
                 Uploading…
               </>
             ) : (

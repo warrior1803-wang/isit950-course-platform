@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
+import { useCallback, useEffect, useState } from 'react';
+import EmptyState from '../components/shared/EmptyState';
+import ErrorState from '../components/shared/ErrorState';
 import { announcementApi, courseApi } from '../api';
+import { getApiErrorState } from '../lib/apiState';
 
 function formatDateShort(iso) {
   if (!iso) return '';
@@ -35,14 +37,11 @@ function normalizeAnnouncement(raw, courseName) {
 export default function Announcements() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadAnnouncements() {
+  const loadAnnouncements = useCallback(async (isCancelled = () => false) => {
       setLoading(true);
-      setError('');
+      setError(null);
 
       try {
         const coursesRes = await courseApi.list();
@@ -51,7 +50,7 @@ export default function Announcements() {
           courses.map(course => announcementApi.list(course.id)),
         );
 
-        if (cancelled) return;
+        if (isCancelled()) return;
 
         const merged = announcementResponses
           .flatMap((res, index) => {
@@ -63,25 +62,31 @@ export default function Announcements() {
           .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
         setAnnouncements(merged);
-      } catch {
-        if (cancelled) return;
+      } catch (err) {
+        if (isCancelled()) return;
         setAnnouncements([]);
-        setError('Failed to load announcements.');
+        setError(getApiErrorState(err));
       } finally {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setLoading(false);
         }
       }
-    }
+    }, []);
 
-    loadAnnouncements();
+  useEffect(() => {
+    let cancelled = false;
+    loadAnnouncements(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAnnouncements]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+      </div>
+    );
   }
 
   return (
@@ -90,9 +95,18 @@ export default function Announcements() {
       <p className="page-sub">Latest updates from your courses</p>
 
       {error ? (
-        <p className="course-list-empty">Failed to load announcements.</p>
+        error.kind === 'upgrade' ? (
+          <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+            This feature requires a membership. <a href="/membership" className="underline">Upgrade</a>
+          </div>
+        ) : (
+          <ErrorState
+            message={error.message}
+            onRetry={error.kind === 'retryable' ? () => loadAnnouncements() : null}
+          />
+        )
       ) : announcements.length === 0 ? (
-        <p className="course-list-empty">No announcements yet.</p>
+        <EmptyState icon="notifications" title="No announcements yet" />
       ) : (
         <div className="ann-list">
           {announcements.map(announcement => (

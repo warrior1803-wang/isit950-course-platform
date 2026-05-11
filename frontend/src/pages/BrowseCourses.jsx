@@ -1,7 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import EmptyState from '../components/shared/EmptyState';
+import ErrorState from '../components/shared/ErrorState';
 import { courseApi, enrolmentApi } from '../api';
 import { useAuth } from '../lib/auth';
+import { getApiErrorState } from '../lib/apiState';
 
 // Deterministic cover image per course id
 const COVERS = [
@@ -26,27 +29,35 @@ export default function BrowseCourses() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const loadCourses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await courseApi.browse();
+      const allCourses = res.data?.data ?? [];
+      const ids = new Set(allCourses.filter(c => c.enrolled).map(c => c.id));
+      setCourses(allCourses);
+      setEnrolledIds(ids);
+    } catch (err) {
+      setCourses([]);
+      setEnrolledIds(new Set());
+      setError(getApiErrorState(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (authLoading) return;
-    courseApi
-      .browse()
-      .then(res => {
-        const allCourses = res.data?.data ?? [];
-        const ids = new Set(allCourses.filter(c => c.enrolled).map(c => c.id));
-        setCourses(allCourses);
-        setEnrolledIds(ids);
-      })
-      .catch(() => setError('Failed to load courses. Please try again.'))
-      .finally(() => setLoading(false));
-  }, [authLoading]);
+    if (!authLoading) loadCourses();
+  }, [authLoading, loadCourses]);
 
   async function handleEnrol(courseId) {
     setEnrolling(prev => new Set(prev).add(courseId));
     try {
       await enrolmentApi.enrol(courseId);
       setEnrolledIds(prev => new Set(prev).add(courseId));
-    } catch {
-      // silently ignore
+    } catch (err) {
+      setError(getApiErrorState(err));
     } finally {
       setEnrolling(prev => {
         const next = new Set(prev);
@@ -91,19 +102,31 @@ export default function BrowseCourses() {
 
       {/* States */}
       {loading && (
-        <div className="text-[13px] text-[#9c8a8e]">Loading courses…</div>
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+        </div>
       )}
 
-      {error && (
-        <div className="text-[13px] text-[#d85a30] bg-[rgba(216,90,48,0.08)] border border-[rgba(216,90,48,0.2)] rounded-xl px-4 py-3">
-          {error}
+      {error?.kind === 'upgrade' && (
+        <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+          This feature requires a membership.{' '}
+          <Link to="/membership" className="underline">Upgrade</Link>
         </div>
+      )}
+
+      {error && error.kind !== 'upgrade' && (
+        <ErrorState
+          message={error.message}
+          onRetry={error.kind === 'retryable' ? loadCourses : null}
+        />
       )}
 
       {!loading && !error && courses.length === 0 && (
-        <div className="text-[13px] text-[#b8a8ad] text-center py-12">
-          No courses available to browse.
-        </div>
+        <EmptyState
+          icon="search"
+          title="No courses available"
+          subtitle="Check back later"
+        />
       )}
 
       {!loading && !error && courses.length > 0 && filtered.length === 0 && (
@@ -173,8 +196,11 @@ export default function BrowseCourses() {
                           handleEnrol(course.id);
                         }}
                         disabled={busy}
-                        className="text-[11px] px-3 py-1 rounded-lg bg-white text-[#2e2028] font-semibold hover:bg-[#f5eeea] active:scale-95 transition-all disabled:opacity-60 whitespace-nowrap"
+                        className="text-[11px] px-3 py-1 rounded-lg bg-white text-[#2e2028] font-semibold hover:bg-[#f5eeea] active:scale-95 transition-all disabled:opacity-60 whitespace-nowrap inline-flex items-center gap-1.5"
                       >
+                        {busy && (
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#2e2028]" />
+                        )}
                         {busy ? 'Enrolling…' : 'Enrol'}
                       </button>
                     )}

@@ -27,3 +27,5 @@ dev_notes_EN.md
 .cursorrules
 .history/
 frontend/package-lock.json
+.vercel
+.env*.local

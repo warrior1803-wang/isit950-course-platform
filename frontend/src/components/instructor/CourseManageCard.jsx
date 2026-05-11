@@ -60,7 +60,7 @@ CourseThumbnail.propTypes = {
   thumbnailUrl: PropTypes.string,
 };
 
-function MaterialItem({ material, onDelete }) {
+function MaterialItem({ material, onDelete, deleting }) {
   const { icon, colorClass } = getFileIcon(material.filename);
   return (
     <div className="flex items-center gap-2.5 py-[9px] px-3 rounded-lg border border-border bg-white">
@@ -79,9 +79,14 @@ function MaterialItem({ material, onDelete }) {
         className="w-7 h-7 rounded-md bg-transparent border-none cursor-pointer text-text-muted hover:text-[#d85a30] hover:bg-[#d85a30]/10 transition-colors duration-150 flex items-center justify-center"
         title="Delete material"
         onClick={() => onDelete(material.id)}
+        disabled={deleting}
         aria-label="Delete material"
       >
-        <span className="material-symbols-rounded text-base">delete</span>
+        {deleting ? (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        ) : (
+          <span className="material-symbols-rounded text-base">delete</span>
+        )}
       </button>
     </div>
   );
@@ -95,6 +100,11 @@ MaterialItem.propTypes = {
     uploadedAt: PropTypes.string.isRequired,
   }).isRequired,
   onDelete: PropTypes.func.isRequired,
+  deleting: PropTypes.bool,
+};
+
+MaterialItem.defaultProps = {
+  deleting: false,
 };
 
 function SectionUploadButton({ onUpload }) {
@@ -191,6 +201,7 @@ export default function CourseManageCard({
   onViewStudents,
   onUpload,
   onDeleteMaterial,
+  deletingMaterialId,
   onNewAssignment,
   onEditAssignment,
 }) {
@@ -281,6 +292,7 @@ export default function CourseManageCard({
                       key={m.id}
                       material={m}
                       onDelete={onDeleteMaterial}
+                      deleting={deletingMaterialId === m.id}
                     />
                   ))}
                 </div>
@@ -357,6 +369,7 @@ CourseManageCard.propTypes = {
   onViewStudents: PropTypes.func,
   onUpload: PropTypes.func,
   onDeleteMaterial: PropTypes.func,
+  deletingMaterialId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onNewAssignment: PropTypes.func,
   onEditAssignment: PropTypes.func,
 };
@@ -364,4 +377,5 @@ CourseManageCard.propTypes = {
 CourseManageCard.defaultProps = {
   materials: [],
   assignments: [],
+  deletingMaterialId: null,
 };

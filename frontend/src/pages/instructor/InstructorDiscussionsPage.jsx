@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import EmptyState from '../../components/shared/EmptyState';
+import ErrorState from '../../components/shared/ErrorState';
 import { courseApi, forumApi } from '../../api';
 import { useAuth } from '../../lib/auth';
+import { getApiErrorState } from '../../lib/apiState';
 
 const AVATAR_STYLES = [
   { background: 'rgba(83, 74, 183, 0.15)', color: '#534ab7' },
@@ -76,6 +78,12 @@ function normalizePost(raw, course) {
   };
 }
 
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
 export default function InstructorDiscussionsPage() {
   const { user } = useAuth();
   const [courses, setCourses] = useState([]);
@@ -86,15 +94,18 @@ export default function InstructorDiscussionsPage() {
   const [replyDraft, setReplyDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [threadsLoading, setThreadsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [replyError, setReplyError] = useState('');
+  const [replySaving, setReplySaving] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState(null);
+  const [deletingReplyId, setDeletingReplyId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadCourses() {
       setLoading(true);
-      setError('');
+      setError(null);
 
       try {
         const res = await courseApi.list();
@@ -108,7 +119,7 @@ export default function InstructorDiscussionsPage() {
         setSelectedCourseId(ALL_COURSES);
       } catch (err) {
         if (!cancelled) {
-          setError(err.response?.data?.message || 'Failed to load instructor courses.');
+          setError(getApiErrorState(err));
         }
       } finally {
         if (!cancelled) {
@@ -134,7 +145,7 @@ export default function InstructorDiscussionsPage() {
       }
 
       setThreadsLoading(true);
-      setError('');
+      setError(null);
 
       try {
         const targetCourses = selectedCourseId === ALL_COURSES
@@ -158,7 +169,7 @@ export default function InstructorDiscussionsPage() {
         if (!cancelled) {
           setPosts([]);
           setSelectedPostId(null);
-          setError(err.response?.data?.message || 'Failed to load discussions.');
+          setError(getApiErrorState(err));
         }
       } finally {
         if (!cancelled) {
@@ -201,6 +212,7 @@ export default function InstructorDiscussionsPage() {
     if (!body || !selectedPost) return;
 
     setReplyError('');
+    setReplySaving(true);
 
     try {
       const res = await forumApi.createReply(selectedPost.courseId, selectedPost.id, { body });
@@ -213,7 +225,9 @@ export default function InstructorDiscussionsPage() {
       )));
       setReplyDraft('');
     } catch (err) {
-      setReplyError(err.response?.data?.message || 'Failed to send reply.');
+      setReplyError(getApiErrorState(err).message);
+    } finally {
+      setReplySaving(false);
     }
   }
 
@@ -221,6 +235,7 @@ export default function InstructorDiscussionsPage() {
     const post = posts.find(item => item.id === postId);
     if (!post) return;
 
+    setDeletingPostId(postId);
     try {
       await forumApi.deletePost(post.courseId, postId);
       const nextPosts = posts.filter(item => item.id !== postId);
@@ -234,7 +249,9 @@ export default function InstructorDiscussionsPage() {
         setSelectedPostId(nextSelected?.id ?? null);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete post.');
+      setError(getApiErrorState(err));
+    } finally {
+      setDeletingPostId(null);
     }
   }
 
@@ -242,6 +259,7 @@ export default function InstructorDiscussionsPage() {
     const post = posts.find(item => item.id === postId);
     if (!post) return;
 
+    setDeletingReplyId(replyId);
     try {
       await forumApi.deleteReply(post.courseId, postId, replyId);
       setPosts(prev => prev.map(item => (
@@ -250,11 +268,19 @@ export default function InstructorDiscussionsPage() {
           : item
       )));
     } catch (err) {
-      setReplyError(err.response?.data?.message || 'Failed to delete reply.');
+      setReplyError(getApiErrorState(err).message);
+    } finally {
+      setDeletingReplyId(null);
     }
   }
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+      </div>
+    );
+  }
 
   return (
     <div className="inbox-shell">
@@ -277,7 +303,15 @@ export default function InstructorDiscussionsPage() {
         </select>
       </div>
 
-      {error && <p className="course-list-empty">{error}</p>}
+      {error && (
+        error.kind === 'upgrade' ? (
+          <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+            This feature requires a membership. <a href="/membership" className="underline">Upgrade</a>
+          </div>
+        ) : (
+          <ErrorState message={error.message} />
+        )
+      )}
 
       <div className="inst-disc-layout">
         <aside className="inst-disc-list-col">
@@ -300,9 +334,11 @@ export default function InstructorDiscussionsPage() {
 
           <div className="inbox-thread-list inst-disc-thread-list">
             {threadsLoading ? (
-              <LoadingSpinner />
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+              </div>
             ) : filteredPosts.length === 0 ? (
-              <p className="course-list-empty">No threads for this filter.</p>
+              <EmptyState icon="forum" title="No discussions yet" />
             ) : (
               filteredPosts.map(post => (
                 <button
@@ -346,8 +382,11 @@ export default function InstructorDiscussionsPage() {
                     event.stopPropagation();
                     handleDeletePost(selectedPost.id);
                   }}
+                  disabled={deletingPostId === selectedPost.id}
                 >
-                  <span className="material-symbols-rounded">delete</span>
+                  {deletingPostId === selectedPost.id ? <ButtonSpinner /> : (
+                    <span className="material-symbols-rounded">delete</span>
+                  )}
                   Remove post
                 </button>
               </div>
@@ -397,9 +436,12 @@ export default function InstructorDiscussionsPage() {
                         type="button"
                         className="discussion-delete-btn"
                         onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
+                        disabled={deletingReplyId === reply.id}
                         aria-label="Delete reply"
                       >
-                        <span className="material-symbols-rounded">delete</span>
+                        {deletingReplyId === reply.id ? <ButtonSpinner /> : (
+                          <span className="material-symbols-rounded">delete</span>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -419,8 +461,13 @@ export default function InstructorDiscussionsPage() {
                     onChange={event => setReplyDraft(event.target.value)}
                   />
                   <div className="inbox-reply-actions">
-                    <button type="button" className="disc-submit-btn" onClick={handleReplySubmit}>
-                      <span className="material-symbols-rounded icon">send</span> Post reply
+                    <button
+                      type="button"
+                      className="disc-submit-btn"
+                      onClick={handleReplySubmit}
+                      disabled={replySaving}
+                    >
+                      {replySaving ? <ButtonSpinner /> : <span className="material-symbols-rounded icon">send</span>} Post reply
                     </button>
                   </div>
                 </div>

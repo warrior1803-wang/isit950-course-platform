@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
+import EmptyState from '../components/shared/EmptyState';
+import ErrorState from '../components/shared/ErrorState';
+import SkeletonCard from '../components/shared/SkeletonCard';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { announcementApi, assignmentApi, courseApi, forumApi } from '../api';
+import { getApiErrorState } from '../lib/apiState';
 import {
   formatDiscussionResetText,
   hasReachedDiscussionLimit,
@@ -207,11 +210,36 @@ function resolveMaterialUrl(url) {
   return `/${url}`;
 }
 
+function TabSkeletonGrid() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <SkeletonCard key={index} />
+      ))}
+    </div>
+  );
+}
+
+function UpgradePromptInline() {
+  return (
+    <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+      This feature requires a membership.{' '}
+      <Link to="/membership" className="underline">Upgrade</Link>
+    </div>
+  );
+}
+
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
 export default function CourseDetail() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [course, setCourse] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
@@ -220,13 +248,18 @@ export default function CourseDetail() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
-  const [courseError, setCourseError] = useState('');
-  const [materialsError, setMaterialsError] = useState('');
-  const [announcementsError, setAnnouncementsError] = useState('');
-  const [assignmentsError, setAssignmentsError] = useState('');
-  const [discussionError, setDiscussionError] = useState('');
-  const [selectedPostError, setSelectedPostError] = useState('');
+  const [courseError, setCourseError] = useState(null);
+  const [materialsError, setMaterialsError] = useState(null);
+  const [announcementsError, setAnnouncementsError] = useState(null);
+  const [assignmentsError, setAssignmentsError] = useState(null);
+  const [discussionError, setDiscussionError] = useState(null);
+  const [selectedPostError, setSelectedPostError] = useState(null);
   const [postingError, setPostingError] = useState('');
+  const [postingReply, setPostingReply] = useState(false);
+  const [creatingPost, setCreatingPost] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState(null);
+  const [deletingReplyId, setDeletingReplyId] = useState(null);
+  const [deletingAnnouncementId, setDeletingAnnouncementId] = useState(null);
   const [discView, setDiscView] = useState('list');
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [replyDraft, setReplyDraft] = useState('');
@@ -275,16 +308,13 @@ export default function CourseDetail() {
     });
   }
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadCourseData() {
+  const loadCourseData = useCallback(async (isCancelled = () => false) => {
       setLoading(true);
-      setCourseError('');
-      setMaterialsError('');
-      setAnnouncementsError('');
-      setAssignmentsError('');
-      setDiscussionError('');
+      setCourseError(null);
+      setMaterialsError(null);
+      setAnnouncementsError(null);
+      setAssignmentsError(null);
+      setDiscussionError(null);
 
       const results = await Promise.allSettled([
         courseApi.get(id),
@@ -293,7 +323,7 @@ export default function CourseDetail() {
         forumApi.listPosts(id),
       ]);
 
-      if (cancelled) return;
+      if (isCancelled()) return;
 
       const [courseRes, materialsRes, assignmentsRes, postsRes] = results;
 
@@ -301,38 +331,41 @@ export default function CourseDetail() {
         setCourse(normalizeCourse(courseRes.value.data?.data ?? courseRes.value.data));
       } else {
         setCourse(null);
-        setCourseError(courseRes.reason?.response?.data?.message || 'Failed to load course.');
+        setCourseError(getApiErrorState(courseRes.reason));
       }
 
       if (materialsRes.status === 'fulfilled') {
         setMaterials((materialsRes.value.data?.data ?? []).map(normalizeMaterial).filter(Boolean));
       } else {
         setMaterials([]);
-        setMaterialsError(materialsRes.reason?.response?.data?.message || 'Materials unavailable.');
+        setMaterialsError(getApiErrorState(materialsRes.reason));
       }
 
       if (assignmentsRes.status === 'fulfilled') {
         setAssignments((assignmentsRes.value.data?.data ?? []).map(normalizeAssignment).filter(Boolean));
       } else {
         setAssignments([]);
-        setAssignmentsError(assignmentsRes.reason?.response?.data?.message || 'Assignments unavailable.');
+        setAssignmentsError(getApiErrorState(assignmentsRes.reason));
       }
 
       if (postsRes.status === 'fulfilled') {
         setPosts((postsRes.value.data?.data ?? []).map(normalizePost).filter(Boolean));
       } else {
         setPosts([]);
-        setDiscussionError(postsRes.reason?.response?.data?.message || 'Discussion unavailable.');
+        setDiscussionError(getApiErrorState(postsRes.reason));
       }
 
       setLoading(false);
-    }
+    }, [id]);
 
-    loadCourseData();
+  useEffect(() => {
+    let cancelled = false;
+
+    loadCourseData(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [loadCourseData]);
 
   useEffect(() => {
     if (activeTab !== 'announcements') return;
@@ -341,16 +374,16 @@ export default function CourseDetail() {
 
     async function loadAnnouncements() {
       setAnnouncementsLoading(true);
-      setAnnouncementsError('');
+      setAnnouncementsError(null);
 
       try {
         const res = await announcementApi.list(id);
         if (cancelled) return;
         setAnnouncements((res.data?.data ?? []).map(normalizeAnnouncement).filter(Boolean));
-      } catch {
+      } catch (err) {
         if (cancelled) return;
         setAnnouncements([]);
-        setAnnouncementsError('Failed to load announcements.');
+        setAnnouncementsError(getApiErrorState(err));
       } finally {
         if (!cancelled) {
           setAnnouncementsLoading(false);
@@ -432,13 +465,13 @@ export default function CourseDetail() {
     async function loadSelectedPost() {
       if (activeTab !== 'discussion' || discView !== 'detail' || !selectedPostId) {
         setSelectedPost(null);
-        setSelectedPostError('');
+        setSelectedPostError(null);
         return;
       }
 
       const fallbackPost = posts.find(post => post.id === selectedPostId) ?? null;
       setSelectedPost(fallbackPost);
-      setSelectedPostError('');
+      setSelectedPostError(null);
 
       try {
         const res = await forumApi.getPost(id, selectedPostId);
@@ -448,7 +481,7 @@ export default function CourseDetail() {
         if (cancelled) return;
         if (!fallbackPost) {
           setSelectedPost(null);
-          setSelectedPostError(err.response?.data?.message || 'Failed to load post.');
+          setSelectedPostError(getApiErrorState(err));
         }
       }
     }
@@ -485,7 +518,15 @@ export default function CourseDetail() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to download file.');
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        const downloadError = new Error(data.message || 'Download failed');
+        downloadError.response = { status: res.status, data };
+        throw downloadError;
       }
 
       const blob = await res.blob();
@@ -498,7 +539,7 @@ export default function CourseDetail() {
       document.body.removeChild(anchor);
       URL.revokeObjectURL(objectUrl);
     } catch (err) {
-      setMaterialsError(err.message || 'Failed to download file.');
+      setMaterialsError(getApiErrorState(err));
     }
   }
 
@@ -506,6 +547,7 @@ export default function CourseDetail() {
     const body = replyDraft.trim();
     if (!body || !selectedPost || discussionLimitReached) return;
     setPostingError('');
+    setPostingReply(true);
 
     try {
       const res = await forumApi.createReply(id, selectedPost.id, { body });
@@ -525,7 +567,9 @@ export default function CourseDetail() {
       setDiscussionMembership(prev => incrementDiscussionUsage(prev));
       setReplyDraft('');
     } catch (err) {
-      setPostingError(err.response?.data?.message || 'Failed to post reply.');
+      setPostingError(getApiErrorState(err).message);
+    } finally {
+      setPostingReply(false);
     }
   }
 
@@ -535,6 +579,7 @@ export default function CourseDetail() {
     const body = newBody.trim();
     if (!title || !body) return;
     setPostingError('');
+    setCreatingPost(true);
 
     try {
       const res = await forumApi.createPost(id, { title, body });
@@ -547,11 +592,14 @@ export default function CourseDetail() {
       setNewBody('');
       setDiscView('detail');
     } catch (err) {
-      setPostingError(err.response?.data?.message || 'Failed to create post.');
+      setPostingError(getApiErrorState(err).message);
+    } finally {
+      setCreatingPost(false);
     }
   }
 
   async function handleDeletePost(postId) {
+    setDeletingPostId(postId);
     try {
       await forumApi.deletePost(id, postId);
       setPosts(prev => prev.filter(post => post.id !== postId));
@@ -561,11 +609,14 @@ export default function CourseDetail() {
         setDiscView('list');
       }
     } catch (err) {
-      setPostingError(err.response?.data?.message || 'Failed to delete post.');
+      setPostingError(getApiErrorState(err).message);
+    } finally {
+      setDeletingPostId(null);
     }
   }
 
   async function handleDeleteReply(postId, replyId) {
+    setDeletingReplyId(replyId);
     try {
       await forumApi.deleteReply(id, postId, replyId);
       setSelectedPost(prev => prev
@@ -577,24 +628,45 @@ export default function CourseDetail() {
           : post
       )));
     } catch (err) {
-      setPostingError(err.response?.data?.message || 'Failed to delete reply.');
+      setPostingError(getApiErrorState(err).message);
+    } finally {
+      setDeletingReplyId(null);
     }
   }
 
   async function handleDeleteAnnouncement(announcementId) {
+    setDeletingAnnouncementId(announcementId);
     try {
       await announcementApi.delete(id, announcementId);
       setAnnouncements(prev => prev.filter(announcement => announcement.id !== announcementId));
     } catch (err) {
-      setAnnouncementsError(err.response?.data?.message || 'Failed to delete announcement.');
+      setAnnouncementsError(getApiErrorState(err));
+    } finally {
+      setDeletingAnnouncementId(null);
     }
   }
 
   const role = String(user?.role || localStorage.getItem('role') || '').toUpperCase();
   const isInstructor = role === 'INSTRUCTOR';
 
-  if (loading) return <LoadingSpinner />;
-  if (!course) return <div>{courseError || 'Course not found.'}</div>;
+  if (loading) {
+    return (
+      <div>
+        <div className="h-48 rounded-xl bg-white/70 animate-pulse mb-4" />
+        <TabSkeletonGrid />
+      </div>
+    );
+  }
+  if (!course) {
+    return courseError?.kind === 'upgrade'
+      ? <UpgradePromptInline />
+      : (
+        <ErrorState
+          message={courseError?.message || 'Content not found'}
+          onRetry={courseError?.kind === 'retryable' ? () => loadCourseData() : null}
+        />
+      );
+  }
 
   return (
     <div
@@ -674,10 +746,17 @@ export default function CourseDetail() {
 
       <div className="detail-body">
         <div className={`detail-tab-panel${activeTab === 'materials' ? ' active' : ''}`}>
-          {materialsError && materials.length === 0 ? (
-            <p className="course-list-empty">{materialsError}</p>
+          {loading ? (
+            <TabSkeletonGrid />
+          ) : materialsError?.kind === 'upgrade' ? (
+            <UpgradePromptInline />
+          ) : materialsError && materials.length === 0 ? (
+            <ErrorState
+              message={materialsError.message}
+              onRetry={materialsError.kind === 'retryable' ? () => loadCourseData() : null}
+            />
           ) : materialSections.length === 0 ? (
-            <p className="course-list-empty">No materials uploaded yet.</p>
+            <EmptyState icon="folder" title="No materials uploaded yet" />
           ) : (
             materialSections.map(section => (
               <div key={section.section}>
@@ -717,11 +796,19 @@ export default function CourseDetail() {
 
         <div className={`detail-tab-panel${activeTab === 'announcements' ? ' active' : ''}`}>
           {announcementsLoading ? (
-            <p className="course-list-empty">Loading announcements...</p>
+            <TabSkeletonGrid />
+          ) : announcementsError?.kind === 'upgrade' ? (
+            <UpgradePromptInline />
           ) : announcementsError ? (
-            <p className="course-list-empty">Failed to load announcements.</p>
+            <ErrorState
+              message={announcementsError.message}
+              onRetry={announcementsError.kind === 'retryable' ? () => {
+                changeTab('materials');
+                window.setTimeout(() => changeTab('announcements'), 0);
+              } : null}
+            />
           ) : announcements.length === 0 ? (
-            <p className="course-list-empty">No announcements yet.</p>
+            <EmptyState icon="campaign" title="No announcements yet" />
           ) : (
             <div className="ann-list">
               {announcements.map(announcement => (
@@ -735,9 +822,12 @@ export default function CourseDetail() {
                           type="button"
                           className="discussion-delete-btn"
                           onClick={() => handleDeleteAnnouncement(announcement.id)}
+                          disabled={deletingAnnouncementId === announcement.id}
                           aria-label="Delete announcement"
                         >
-                          <span className="material-symbols-rounded">delete</span>
+                          {deletingAnnouncementId === announcement.id ? <ButtonSpinner /> : (
+                            <span className="material-symbols-rounded">delete</span>
+                          )}
                         </button>
                       )}
                     </div>
@@ -751,10 +841,17 @@ export default function CourseDetail() {
         </div>
 
         <div className={`detail-tab-panel${activeTab === 'assignments' ? ' active' : ''}`}>
-          {assignmentsError && assignments.length === 0 ? (
-            <p className="course-list-empty">{assignmentsError}</p>
+          {loading ? (
+            <TabSkeletonGrid />
+          ) : assignmentsError?.kind === 'upgrade' ? (
+            <UpgradePromptInline />
+          ) : assignmentsError && assignments.length === 0 ? (
+            <ErrorState
+              message={assignmentsError.message}
+              onRetry={assignmentsError.kind === 'retryable' ? () => loadCourseData() : null}
+            />
           ) : assignments.length === 0 ? (
-            <p className="course-list-empty">No assignments yet.</p>
+            <EmptyState icon="assignment" title="No assignments yet" />
           ) : (
             <div className="material-list">
               {assignments.map(assignment => {
@@ -935,10 +1032,21 @@ export default function CourseDetail() {
                 </button>
               </div>
 
-              {discussionError && posts.length === 0 ? (
-                <p className="course-list-empty">{discussionError}</p>
+              {loading ? (
+                <TabSkeletonGrid />
+              ) : discussionError?.kind === 'upgrade' ? (
+                <UpgradePromptInline />
+              ) : discussionError && posts.length === 0 ? (
+                <ErrorState
+                  message={discussionError.message}
+                  onRetry={discussionError.kind === 'retryable' ? () => loadCourseData() : null}
+                />
               ) : posts.length === 0 ? (
-                <p className="course-list-empty">No posts yet. Be the first to post.</p>
+                <EmptyState
+                  icon="forum"
+                  title="No posts yet"
+                  subtitle="Be the first to start a discussion"
+                />
               ) : (
                 <div className="disc-list-wrap">
                   {posts.map(post => (
@@ -989,9 +1097,12 @@ export default function CourseDetail() {
                               event.stopPropagation();
                               handleDeletePost(post.id);
                             }}
+                            disabled={deletingPostId === post.id}
                             aria-label="Delete post"
                           >
-                            <span className="material-symbols-rounded">delete</span>
+                            {deletingPostId === post.id ? <ButtonSpinner /> : (
+                              <span className="material-symbols-rounded">delete</span>
+                            )}
                           </button>
                         )}
                       </div>
@@ -1026,9 +1137,12 @@ export default function CourseDetail() {
                       type="button"
                       className="discussion-delete-btn"
                       onClick={() => handleDeletePost(selectedPost.id)}
+                      disabled={deletingPostId === selectedPost.id}
                       aria-label="Delete post"
                     >
-                      <span className="material-symbols-rounded">delete</span>
+                      {deletingPostId === selectedPost.id ? <ButtonSpinner /> : (
+                        <span className="material-symbols-rounded">delete</span>
+                      )}
                     </button>
                   )}
                 </div>
@@ -1070,9 +1184,12 @@ export default function CourseDetail() {
                           type="button"
                           className="discussion-delete-btn"
                           onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
+                          disabled={deletingReplyId === reply.id}
                           aria-label="Delete reply"
                         >
-                          <span className="material-symbols-rounded">delete</span>
+                          {deletingReplyId === reply.id ? <ButtonSpinner /> : (
+                            <span className="material-symbols-rounded">delete</span>
+                          )}
                         </button>
                       )}
                     </div>
@@ -1098,10 +1215,10 @@ export default function CourseDetail() {
                         type="button"
                         className="disc-submit-btn"
                         onClick={handleReplySubmit}
-                        disabled={discussionLimitReached}
-                        style={discussionLimitReached ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
+                        disabled={discussionLimitReached || postingReply}
+                        style={discussionLimitReached || postingReply ? { opacity: 0.6, cursor: postingReply ? 'wait' : 'not-allowed' } : undefined}
                       >
-                        <span className="material-symbols-rounded icon">send</span> Post reply
+                        {postingReply ? <ButtonSpinner /> : <span className="material-symbols-rounded icon">send</span>} Post reply
                       </button>
                     </div>
                     {discussionLimitReached && (
@@ -1122,7 +1239,9 @@ export default function CourseDetail() {
           )}
 
           {discView === 'detail' && !selectedPost && selectedPostError && (
-            <p className="course-list-empty">{selectedPostError}</p>
+            selectedPostError.kind === 'upgrade'
+              ? <UpgradePromptInline />
+              : <ErrorState message={selectedPostError.message} />
           )}
 
           {discView === 'new' && (
@@ -1171,10 +1290,10 @@ export default function CourseDetail() {
                     type="button"
                     className="disc-submit-btn"
                     onClick={handleCreatePost}
-                    disabled={!user || discussionLimitReached}
-                    style={!user || discussionLimitReached ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
+                    disabled={!user || discussionLimitReached || creatingPost}
+                    style={!user || discussionLimitReached || creatingPost ? { opacity: 0.6, cursor: creatingPost ? 'wait' : 'not-allowed' } : undefined}
                   >
-                    <span className="material-symbols-rounded icon">send</span> Post
+                    {creatingPost ? <ButtonSpinner /> : <span className="material-symbols-rounded icon">send</span>} Post
                   </button>
                 </div>
                 {!user && <p className="course-list-empty">Log in to post.</p>}
