@@ -1,3 +1,4 @@
+// comment to test backend github actions
 package com.learningplatform.backend.common.entity;
 
 import jakarta.persistence.*;
