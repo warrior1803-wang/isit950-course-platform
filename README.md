@@ -11,6 +11,15 @@ A full-stack web application for course management, forum discussions, and assig
 
 ---
 
+## Live Deployment
+
+| Layer    | Platform | URL |
+|----------|----------|-----|
+| Frontend | Vercel   | https://isit950-course-platform.vercel.app |
+| Backend  | AWS EC2  | *(to be updated by Leon once EC2 is live)* |
+
+---
+
 ## Project Structure
 
 ```
@@ -109,7 +118,7 @@ Relationships managed via JPA annotations. Tables auto-created via `spring.jpa.h
 ### 1. Clone the repository
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/warrior1803-wang/isit950-course-platform.git
 cd isit950-course-platform
 ```
 
@@ -142,7 +151,7 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 jwt.secret=your_super_secret_jwt_key
 jwt.expiration=604800000
 
-# CORS
+# CORS — set to Vercel URL in production
 cors.allowed-origin=${FRONTEND_URL:http://localhost:5173}
 
 # File upload
@@ -150,7 +159,8 @@ spring.servlet.multipart.max-file-size=10MB
 spring.servlet.multipart.max-request-size=10MB
 ```
 
-> ⚠️ Never hardcode localhost URLs — always use the `FRONTEND_URL` environment variable.
+> ⚠️ Never hardcode URLs — always use the `FRONTEND_URL` environment variable.
+> In production (AWS EC2), set `FRONTEND_URL=https://isit950-course-platform.vercel.app`
 
 ```bash
 cd backend
@@ -162,7 +172,7 @@ Backend runs at **http://localhost:8080**.
 
 ---
 
-### 3. Frontend Setup
+### 3. Frontend Setup (Local Development)
 
 ```bash
 cd frontend
@@ -173,6 +183,37 @@ npm run dev
 Frontend runs at **http://localhost:5173** and proxies all `/api` requests to the backend at port 8080.
 
 > Make sure `vite.config.js` proxy target points to `http://localhost:8080`.
+
+#### Environment Variables
+
+Create a `.env.local` file in the `frontend/` directory:
+
+```
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+In production (Vercel), this is set via the Vercel dashboard environment variables — do not commit `.env` files.
+
+---
+
+## CI/CD & Deployment
+
+### Frontend — Vercel (Automatic)
+
+The frontend is deployed automatically on every merge to `main` via Vercel.
+
+| Setting | Value |
+|---|---|
+| Root Directory | `frontend` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Environment Variable | `VITE_API_BASE_URL` → AWS EC2 backend public URL |
+
+No manual deployment steps required — merging a PR to `main` triggers a new build automatically.
+
+### Backend — AWS EC2 (Manual / GitHub Actions)
+
+*(To be documented by Leon once EC2 deployment is configured)*
 
 ---
 
@@ -255,16 +296,26 @@ Frontend runs at **http://localhost:5173** and proxies all `/api` requests to th
 
 ## Frontend Routes
 
-| Path                                         | Page                     | Auth Required |
-|----------------------------------------------|--------------------------|---------------|
-| /login                                       | Login                    | No            |
-| /register                                    | Register                 | No            |
-| /courses                                     | Course List              | Yes           |
-| /courses/:id                                 | Course Detail            | Yes           |
-| /courses/:id/forum                           | Forum                    | Yes           |
-| /courses/:courseId/assignments/:assignmentId | Assignment Submission    | Yes           |
-| /instructor/dashboard                        | Instructor Dashboard     | Instructor    |
-| /submissions/me                              | My Submissions (Student) | Student       |
+| Path                                                      | Page                      | Auth Required |
+|-----------------------------------------------------------|---------------------------|---------------|
+| /login                                                    | Login / Register          | No            |
+| /courses                                                  | My Courses                | Student       |
+| /browsecourses                                            | Browse & Enrol            | Student       |
+| /courses/:id                                              | Course Detail (4 tabs)    | Yes           |
+| /courses/:id/assignments/:asgId/submit                    | Assignment Submission      | Student       |
+| /courses/:id/assignments/:asgId/quiz                      | Auto-mark Quiz            | Student       |
+| /courses/:id/assignments/:asgId/review                    | Assignment Review          | Student       |
+| /assignments                                              | Global Assignments        | Student       |
+| /announcements                                            | Global Announcements      | Student       |
+| /discussions                                              | Global Discussions        | Student       |
+| /profile                                                  | Student Profile           | Student       |
+| /membership                                               | Membership                | Student       |
+| /dashboard                                                | Instructor Dashboard      | Instructor    |
+| /instructor/courses                                       | Course Management         | Instructor    |
+| /instructor/grading                                       | Grading Dashboard         | Instructor    |
+| /instructor/announcements                                 | Announcements Management  | Instructor    |
+| /instructor/analytics                                     | Student Analytics         | Instructor    |
+| /instructor/profile                                       | Instructor Profile        | Instructor    |
 
 ---
 
@@ -281,30 +332,31 @@ Frontend runs at **http://localhost:5173** and proxies all `/api` requests to th
 
 ## Scrum Process
 
-Weekly Sprints (Friday to Thursday), managed via GitHub Projects Team Planning.
+Weekly Sprints (Friday to Thursday), managed via GitHub Projects.
 
-| Sprint   | Dates           | Focus |
-|----------|-----------------|-------|
-| Sprint 1 | Mar 28 – Apr 03 | Design & architecture setup |
-| Sprint 2 | Apr 04 – Apr 10 | Auth + core pages (mock data) |
-| Sprint 3 | Apr 11 – Apr 17 | Core features live + Progress Report due Apr 17 |
-| Sprint 4 | Apr 18 – Apr 24 | Requirement change response |
-| Sprint 5 | Apr 25 – May 01 | Full integration |
-| Sprint 6 | May 02 – May 08 | Testing & polish |
-| Sprint 7 | May 09 – May 15 | Integration tests |
-| Sprint 8 | May 16 – May 22 | Final report writing |
-| Sprint 9 | May 23 – Jun 05 | Final submission (Jun 05 5pm) |
+| Sprint    | Dates           | Focus |
+|-----------|-----------------|-------|
+| Sprint 1  | Mar 27 – Apr 3  | Design & architecture setup |
+| Sprint 2  | Apr 3 – Apr 10  | Auth + core pages (mock data) |
+| Sprint 3  | Apr 10 – Apr 17 | Core features live + 1st submission due Apr 17 |
+| Sprint 4  | Apr 17 – Apr 24 | Bug fixes (Recess week) |
+| Sprint 5  | Apr 24 – May 1  | Requirement change absorption + Forum & Assignment live |
+| Sprint 6  | May 1 – May 7   | Full integration + QA starts |
+| Sprint 7  | May 8 – May 14  | CI/CD + UI polish + integration tests |
+| Sprint 8  | May 15 – May 21 | Bug fixes + report writing |
+| Sprint 9  | May 22 – May 28 | Code freeze + report draft |
+| Sprint 10 | May 29 – Jun 5  | Final QA + submission (Jun 5, 5pm) |
 
 ---
 
 ## Team
 
-| Name | Role | Responsibility |
-|------|------|---------------|
-| Bingyan Wang | Team Lead + Scrum Master | UI/UX design, frontend architecture, report compilation |
-| Xiaoliang Chen | Backend Lead | Java Spring Boot, JPA + Hibernate, Spring Security + JWT |
-| Mingcan Yang | Forum Full Stack | Course Detail UI, Discussion Forum (frontend + backend) |
-| Muhammad Sahim Bhaur | Assignment Full Stack | Assignment module (frontend + backend), testing, README |
+| Name | GitHub | Role | Responsibility |
+|------|--------|------|---------------|
+| Bingyan Wang | warrior1803-wang | Team Lead + Scrum Master | UI/UX design, frontend architecture, report compilation |
+| Xiaoliang Chen (Leon) | Leon-Chen03 | Backend Lead | Java Spring Boot, JPA + Hibernate, Spring Security + JWT |
+| Mingcan Yang | MingcanYang | Forum Full Stack | Course Detail UI, Discussion Forum (frontend + backend), Membership |
+| Muhammad Sahim Bhaur (Sahim) | MuhammadSahimBhaur | QA + Full Stack | Profile pages, QA testing, integration tests, README, CI/CD docs |
 
 ---
 
