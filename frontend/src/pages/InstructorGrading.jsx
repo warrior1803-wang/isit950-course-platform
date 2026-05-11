@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { useParams } from "react-router-dom";
+import EmptyState from "../components/shared/EmptyState";
+import ErrorState from "../components/shared/ErrorState";
+import SkeletonCard from "../components/shared/SkeletonCard";
 import api from "../api/axios";
+import { getApiErrorState } from "../lib/apiState";
 
 const styles = {
   instPageHeader: {
@@ -277,6 +281,22 @@ function Icon({ children, style }) {
   );
 }
 
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
+function SubmissionSkeletonList() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <SkeletonCard key={index} />
+      ))}
+    </div>
+  );
+}
+
 function initialsFor(name = "") {
   return (
     name
@@ -422,9 +442,12 @@ export default function InstructorGrading() {
   const [feedback, setFeedback] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
   const [savingGrade, setSavingGrade] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
+  const [submissionsLoading, setSubmissionsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const activeCourseId = routeCourseId || routeId || selectedCourseId;
   const activeAsgId = routeAsgId || routeAssignmentId || selectedAsgId;
@@ -436,10 +459,10 @@ export default function InstructorGrading() {
     (assignment) => String(assignment.id) === String(selectedAsgId),
   );
 
-  const filtered = submissions.filter((s) => {
+  const filtered = useMemo(() => submissions.filter((s) => {
     if (filter === "all") return true;
     return s.status === filter;
-  });
+  }), [filter, submissions]);
 
   const counts = useMemo(
     () => ({
@@ -454,14 +477,14 @@ export default function InstructorGrading() {
     let isMounted = true;
 
     async function loadCourses() {
-      setError("");
+      setError(null);
       try {
         const response = await api.get("/courses");
         if (!isMounted) return;
         const nextCourses = response.data?.data ?? [];
         setCourses(nextCourses);
         setSelectedCourseId((current) => current ?? nextCourses[0]?.id ?? null);
-      } catch {
+      } catch (err) {
         if (!isMounted) return;
         setCourses([]);
         setAssignments([]);
@@ -470,7 +493,8 @@ export default function InstructorGrading() {
         setSelectedAsgId(null);
         setSelectedSub(null);
         setSubDetail(null);
-        setError("Failed to load data. Please try again.");
+        setError(getApiErrorState(err));
+        setSubmissionsLoading(false);
       }
     }
 
@@ -479,7 +503,7 @@ export default function InstructorGrading() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     if (!selectedCourseId) return;
@@ -487,7 +511,8 @@ export default function InstructorGrading() {
     let isMounted = true;
 
     async function loadAssignments() {
-      setError("");
+      setError(null);
+      setSubmissionsLoading(true);
       try {
         const response = await api.get(
           `/courses/${selectedCourseId}/assignments`,
@@ -502,17 +527,18 @@ export default function InstructorGrading() {
           setSubmissions([]);
           setSelectedSub(null);
           setSubDetail(null);
-          setError("Failed to load data. Please try again.");
+          setSubmissionsLoading(false);
           return;
         }
-      } catch {
+      } catch (err) {
         if (!isMounted) return;
         setAssignments([]);
         setSelectedAsgId(null);
         setSubmissions([]);
         setSelectedSub(null);
         setSubDetail(null);
-        setError("Failed to load data. Please try again.");
+        setError(getApiErrorState(err));
+        setSubmissionsLoading(false);
       }
     }
 
@@ -529,7 +555,8 @@ export default function InstructorGrading() {
     let isMounted = true;
 
     async function loadSubmissions() {
-      setError("");
+      setError(null);
+      setSubmissionsLoading(true);
       try {
         const response = await api.get(
           `/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions`,
@@ -541,12 +568,14 @@ export default function InstructorGrading() {
         setSubmissions(nextSubmissions);
         setSelectedSub(nextSubmissions[0] ?? null);
         setSubDetail(null);
-      } catch {
+      } catch (err) {
         if (!isMounted) return;
         setSubmissions([]);
         setSelectedSub(null);
         setSubDetail(null);
-        setError("Failed to load data. Please try again.");
+        setError(getApiErrorState(err));
+      } finally {
+        if (isMounted) setSubmissionsLoading(false);
       }
     }
 
@@ -566,7 +595,7 @@ export default function InstructorGrading() {
     let isMounted = true;
 
     async function loadDetail() {
-      setError("");
+      setError(null);
       try {
         const response = await api.get(
           `/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}`,
@@ -583,10 +612,10 @@ export default function InstructorGrading() {
         setOverrideReason(detail.overrideReason ?? "");
         setSaveMessage("");
         setSaveError("");
-      } catch {
+      } catch (err) {
         if (!isMounted) return;
         setSubDetail(null);
-        setError("Failed to load data. Please try again.");
+        setError(getApiErrorState(err));
       }
     }
 
@@ -623,20 +652,38 @@ export default function InstructorGrading() {
       !subDetail?.fileName
     )
       return;
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `/api/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}/file`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = subDetail.fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+    setDownloading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `/api/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}/file`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const downloadError = new Error(data.message || "Download failed");
+        downloadError.response = { status: res.status, data };
+        throw downloadError;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = subDetail.fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(getApiErrorState(err));
+    } finally {
+      setDownloading(false);
+    }
   };
 
   function handleClear() {
@@ -797,18 +844,18 @@ export default function InstructorGrading() {
       </div>
 
       {error && (
-        <div
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 8,
-            padding: "8px 14px",
-            fontSize: 12,
-            color: "#991b1b",
-            marginBottom: 16,
-          }}
-        >
-          {error}
+        <div style={{ marginBottom: 16 }}>
+          {error.kind === "upgrade" ? (
+            <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+              This feature requires a membership.{" "}
+              <a href="/membership" className="underline">Upgrade</a>
+            </div>
+          ) : (
+            <ErrorState
+              message={error.message}
+              onRetry={error.kind === "retryable" ? () => setReloadKey((value) => value + 1) : null}
+            />
+          )}
         </div>
       )}
 
@@ -836,7 +883,11 @@ export default function InstructorGrading() {
           </div>
 
           <div className="submission-list" style={styles.submissionList}>
-            {manualSubmissions.map((submission, index) => (
+            {submissionsLoading ? (
+              <SubmissionSkeletonList />
+            ) : filtered.length === 0 ? (
+              <EmptyState icon="grading" title="No submissions to review" />
+            ) : manualSubmissions.map((submission, index) => (
               <SubmissionItem
                 key={submission.id}
                 selected={selectedSub?.id === submission.id}
@@ -848,7 +899,7 @@ export default function InstructorGrading() {
               />
             ))}
 
-            {autoSubmissions.length > 0 && (
+            {!submissionsLoading && autoSubmissions.length > 0 && (
               <div
                 style={{
                   padding: "8px 14px",
@@ -868,7 +919,7 @@ export default function InstructorGrading() {
               </div>
             )}
 
-            {autoSubmissions.map((submission, index) => (
+            {!submissionsLoading && autoSubmissions.map((submission, index) => (
               <SubmissionItem
                 key={submission.id}
                 selected={selectedSub?.id === submission.id}
@@ -940,8 +991,9 @@ export default function InstructorGrading() {
                     style={styles.gradeDownloadBtn}
                     type="button"
                     onClick={handleDownload}
+                    disabled={downloading}
                   >
-                    <Icon style={{ fontSize: 16 }}>download</Icon> Download
+                    {downloading ? <ButtonSpinner /> : <Icon style={{ fontSize: 16 }}>download</Icon>} Download
                   </button>
                 </div>
                 <div
@@ -1018,8 +1070,8 @@ export default function InstructorGrading() {
                       ...(savingGrade ? { opacity: 0.7, cursor: "wait" } : {}),
                     }}
                   >
-                    <Icon>check_circle</Icon>{" "}
-                    {savingGrade ? "Saving..." : "Submit grade"}
+                {savingGrade ? <ButtonSpinner /> : <Icon>check_circle</Icon>}{" "}
+                {savingGrade ? "Saving..." : "Submit grade"}
                   </button>
                 </div>
               </div>
@@ -1315,7 +1367,7 @@ function AutoGradePanel({
                 ...(savingGrade ? { opacity: 0.7, cursor: "wait" } : {}),
               }}
             >
-              <Icon>check_circle</Icon>{" "}
+              {savingGrade ? <ButtonSpinner /> : <Icon>check_circle</Icon>}{" "}
               {savingGrade ? "Saving..." : "Submit override"}
             </button>
           </div>

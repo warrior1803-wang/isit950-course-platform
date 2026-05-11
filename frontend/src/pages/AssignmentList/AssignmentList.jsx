@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import EmptyState from '../../components/shared/EmptyState.jsx';
 import { AssignmentItem, SectionLabel } from './AssignmentItem.jsx';
 import { formatDue, formatDueWithTime, formatSubmittedAt } from './assignmentUtils.js';
 
@@ -8,12 +9,25 @@ function AssignmentList({ sections }) {
   const navigate = useNavigate();
   const { dueSoon, inProgress, submitted, graded } = sections;
   const hasSubmittedSection = submitted.length > 0 || graded.length > 0;
+  const hasAnyAssignments =
+    dueSoon.length > 0 ||
+    inProgress.length > 0 ||
+    submitted.length > 0 ||
+    graded.length > 0;
 
   return (
     <div className="max-w-[780px]">
       <div className="text-[22px] text-[#2e2028] mb-1">Assignments</div>
       <div className="text-[13px] text-[#9c8a8e] mb-2">All pending and upcoming assignments across your courses</div>
 
+      {!hasAnyAssignments ? (
+        <EmptyState
+          icon="task"
+          title="No assignments due"
+          subtitle="You're all caught up"
+        />
+      ) : (
+        <>
       {/* ── Due soon ── */}
       <SectionLabel>Due soon</SectionLabel>
       <div className="flex flex-col gap-2">
@@ -100,6 +114,8 @@ function AssignmentList({ sections }) {
               />
             ))}
           </div>
+        </>
+      )}
         </>
       )}
     </div>

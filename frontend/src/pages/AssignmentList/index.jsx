@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import ErrorState from '../../components/shared/ErrorState.jsx';
 import { assignmentApi, courseApi } from '../../api';
 import { classifyAssignments } from './assignmentUtils.js';
 import AssignmentList from './AssignmentList.jsx';
+import { getApiErrorState } from '../../lib/apiState.js';
 
 function normalizeAssignment(course, raw) {
   const submission = raw.submissionStatus || raw.submission || null;
@@ -28,13 +30,10 @@ function normalizeAssignment(course, raw) {
 
 export default function AssignmentListPage() {
   const [sections, setSections] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadAssignments() {
-      setError('');
+  const loadAssignments = useCallback(async (isCancelled = () => false) => {
+      setError(null);
 
       try {
         const courseRes = await courseApi.list();
@@ -49,7 +48,7 @@ export default function AssignmentListPage() {
           courses.map(course => assignmentApi.list(course.id))
         );
 
-        if (cancelled) return;
+        if (isCancelled()) return;
 
         const allAssignments = assignmentResults.flatMap((result, index) => {
           if (result.status !== 'fulfilled') return [];
@@ -61,25 +60,29 @@ export default function AssignmentListPage() {
 
         const hasFailures = assignmentResults.some(result => result.status === 'rejected');
         if (hasFailures && allAssignments.length === 0) {
-          setError('Failed to load assignments.');
+          setError({ kind: 'retryable', message: 'Something went wrong — please try again' });
         }
       } catch (err) {
-        if (cancelled) return;
-        setError(err.response?.data?.message || 'Failed to load assignments.');
+        if (isCancelled()) return;
+        setError(getApiErrorState(err));
         setSections(classifyAssignments([]));
       }
-    }
+    }, []);
 
-    loadAssignments();
+  useEffect(() => {
+    let cancelled = false;
+    loadAssignments(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAssignments]);
 
   if (!sections) {
     return (
       <div className="max-w-[780px]">
-        <div className="h-7 w-40 bg-[#e8dfd8] rounded-lg" />
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+        </div>
       </div>
     );
   }
@@ -88,9 +91,16 @@ export default function AssignmentListPage() {
     return (
       <div className="max-w-[780px]">
         <div className="text-[22px] text-[#2e2028] mb-1">Assignments</div>
-        <div className="text-[13px] text-[#d85a30] bg-[rgba(216,90,48,0.08)] border border-[rgba(216,90,48,0.2)] rounded-xl px-4 py-3">
-          {error}
-        </div>
+        {error.kind === 'upgrade' ? (
+          <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+            This feature requires a membership. <a href="/membership" className="underline">Upgrade</a>
+          </div>
+        ) : (
+          <ErrorState
+            message={error.message}
+            onRetry={error.kind === 'retryable' ? () => loadAssignments() : null}
+          />
+        )}
       </div>
     );
   }

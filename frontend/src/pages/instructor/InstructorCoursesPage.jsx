@@ -4,7 +4,10 @@ import CourseManageCard from '../../components/instructor/CourseManageCard';
 import AssignmentModal from '../../components/instructor/AssignmentModal';
 import CourseModal from '../../components/instructor/CourseModal';
 import UploadMaterialModal from '../../components/instructor/UploadMaterialModal';
+import EmptyState from '../../components/shared/EmptyState';
+import ErrorState from '../../components/shared/ErrorState';
 import api from '../../api/axios';
+import { getApiErrorState } from '../../lib/apiState';
 
 function formatMaterial(material) {
   return {
@@ -39,6 +42,7 @@ export default function InstructorCoursesPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deletingMaterialId, setDeletingMaterialId] = useState(null);
 
   const [modal, setModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', course: {...} }
   const [uploadModal, setUploadModal] = useState(null); // null | { courseId, section }
@@ -99,7 +103,7 @@ export default function InstructorCoursesPage() {
         fetchAssignmentsForCourses(nextCourses),
       ]);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to load courses');
+      setError(getApiErrorState(err));
     } finally {
       setLoading(false);
     }
@@ -189,11 +193,14 @@ export default function InstructorCoursesPage() {
 
   async function handleDeleteMaterial(courseId, materialId) {
     if (!window.confirm('Delete this material? This cannot be undone.')) return;
+    setDeletingMaterialId(materialId);
     try {
       await api.delete(`/courses/${courseId}/materials/${materialId}`);
-    } catch {
-      alert('Failed to delete material.');
+    } catch (err) {
+      setError(getApiErrorState(err));
       return;
+    } finally {
+      setDeletingMaterialId(null);
     }
     setMaterials(prev => ({
       ...prev,
@@ -222,19 +229,29 @@ export default function InstructorCoursesPage() {
 
       {/* Error state */}
       {error && (
-        <div className="text-sm text-[#d85a30] bg-[#d85a30]/8 border border-[#d85a30]/20 rounded-xl p-4 mb-4">
-          Failed to load courses: {error}.{' '}
-          <button onClick={fetchCourses} className="underline">Retry</button>
+        <div className="mb-4">
+          {error.kind === 'upgrade' ? (
+            <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+              This feature requires a membership. <a href="/membership" className="underline">Upgrade</a>
+            </div>
+          ) : (
+            <ErrorState
+              message={error.message}
+              onRetry={error.kind === 'retryable' ? fetchCourses : null}
+            />
+          )}
         </div>
       )}
 
-      {/* Loading skeletons */}
+      {/* Loading state */}
       {loading && (
-        <>
-          <div className="bg-input-bg rounded-2xl border border-border p-5 mb-4 animate-pulse h-[100px]" />
-          <div className="bg-input-bg rounded-2xl border border-border p-5 mb-4 animate-pulse h-[100px]" />
-          <div className="bg-input-bg rounded-2xl border border-border p-5 mb-4 animate-pulse h-[100px]" />
-        </>
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+        </div>
+      )}
+
+      {!loading && !error && courses.length === 0 && (
+        <EmptyState icon="library_books" title="No courses created yet" />
       )}
 
       {/* Course cards */}
@@ -258,6 +275,7 @@ export default function InstructorCoursesPage() {
           assignments={assignments[course.id] || []}
           onUpload={section => setUploadModal({ courseId: course.id, section })}
           onDeleteMaterial={materialId => handleDeleteMaterial(course.id, materialId)}
+          deletingMaterialId={deletingMaterialId}
           onViewStudents={() => navigate(`/instructor/courses/${course.id}/students`)}
           onNewAssignment={() => setAssignmentModal({ mode: 'create', courseId: course.id })}
           onEditAssignment={assignment => openEditAssignment(course.id, assignment)}

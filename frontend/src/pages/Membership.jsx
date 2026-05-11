@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import ErrorState from '../components/shared/ErrorState';
 import { membershipApi } from '../api';
+import { getApiErrorState } from '../lib/apiState';
 
 function nextMondayLabel() {
   const d = new Date();
@@ -15,6 +17,7 @@ export default function Membership() {
   const [selectedPlan, setSelectedPlan] = useState('monthly');
   const [modalOpen, setModalOpen] = useState(false);
   const [upgraded, setUpgraded] = useState(false);
+  const [error, setError] = useState(null);
 
   const [paying, setPaying] = useState(false);
 
@@ -27,7 +30,7 @@ export default function Membership() {
   useEffect(() => {
     membershipApi.get()
       .then(res => setMem(res.data))
-      .catch(() => {})
+      .catch(err => setError(getApiErrorState(err)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -49,7 +52,9 @@ export default function Membership() {
   }
 
   async function processPayment() {
+    if (paying) return;
     setPaying(true);
+    setError(null);
     await new Promise(r => setTimeout(r, 800));
     try {
       await membershipApi.upgrade({
@@ -58,12 +63,20 @@ export default function Membership() {
       });
       setUpgraded(true);
       setModalOpen(false);
+    } catch (err) {
+      setError(getApiErrorState(err));
     } finally {
       setPaying(false);
     }
   }
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -71,6 +84,18 @@ export default function Membership() {
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
         Manage your plan and track your usage
       </div>
+
+      {error && (
+        <div style={{ marginBottom: 16 }}>
+          {error.kind === 'upgrade' ? (
+            <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+              This feature requires a membership. <a href="/membership" className="underline">Upgrade</a>
+            </div>
+          ) : (
+            <ErrorState message={error.message} />
+          )}
+        </div>
+      )}
 
       {/* Status hero */}
       <div className={`mem-status-hero ${isPremium ? 'member' : 'free'}`}>
@@ -152,7 +177,7 @@ export default function Membership() {
               </ul>
             </div>
           </div>
-          <button className="mem-upgrade-btn" onClick={() => setModalOpen(true)}>
+          <button className="mem-upgrade-btn" onClick={() => setModalOpen(true)} disabled={paying}>
             <span>⭐</span> Upgrade Now
           </button>
         </div>
@@ -253,6 +278,9 @@ export default function Membership() {
               </div>
               <p className="pay-secure-note">🔒 This is a simulated payment — no real charge will be made</p>
               <button className="mem-upgrade-btn" style={{ marginTop: 4 }} onClick={processPayment} disabled={paying}>
+                {paying && (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                )}
                 {paying ? 'Processing…' : 'Pay Now'}
               </button>
             </div>

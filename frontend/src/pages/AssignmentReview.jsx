@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import LoadingSpinner from "../components/shared/LoadingSpinner";
+import ErrorState from "../components/shared/ErrorState";
 import api from "../api/axios";
 import { assignmentApi } from "../api";
+import { getApiErrorState } from "../lib/apiState";
 
 async function fetchSubmission(courseId, assignmentId) {
   const response = await api.get(
@@ -40,6 +41,7 @@ export default function AssignmentReview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +73,7 @@ export default function AssignmentReview() {
           setSubmission(null);
         } else {
           setSubmission(null);
-          setError("Failed to load submission. Please try again.");
+          setError(getApiErrorState(submissionResult.reason).message);
         }
       } catch (err) {
         if (!cancelled) {
@@ -79,7 +81,7 @@ export default function AssignmentReview() {
             setSubmission(null);
           } else {
             setSubmission(null);
-            setError("Failed to load submission. Please try again.");
+            setError(getApiErrorState(err).message);
           }
         }
       } finally {
@@ -99,6 +101,7 @@ export default function AssignmentReview() {
     if (!submission?.fileUrl) return;
 
     setDownloadError("");
+    setDownloading(true);
 
     try {
       const response = await api.get(downloadUrlFor(submission.fileUrl), {
@@ -116,12 +119,20 @@ export default function AssignmentReview() {
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(blobUrl);
-    } catch {
-      setDownloadError("Failed to download file. Please try again.");
+    } catch (err) {
+      setDownloadError(getApiErrorState(err).message);
+    } finally {
+      setDownloading(false);
     }
   }
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+      </div>
+    );
+  }
 
   const assignmentTitle = assignment?.title || `Assignment ${assignmentId}`;
   const isGraded = submission?.status === "graded";
@@ -129,9 +140,7 @@ export default function AssignmentReview() {
   if (error) {
     return (
       <div>
-        <p className="course-list-empty">
-          Failed to load submission. Please try again.
-        </p>
+        <ErrorState message={error} />
         <Link
           to={`/courses/${courseId}`}
           className="review-download-btn"
@@ -271,13 +280,18 @@ export default function AssignmentReview() {
               type="button"
               className="review-download-btn"
               onClick={handleDownload}
+              disabled={downloading}
             >
-              <span
-                className="material-symbols-rounded"
-                style={{ fontSize: 16 }}
-              >
-                download
-              </span>
+              {downloading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <span
+                  className="material-symbols-rounded"
+                  style={{ fontSize: 16 }}
+                >
+                  download
+                </span>
+              )}
               Download
             </button>
           </div>

@@ -14,6 +14,12 @@ function getInitials(name = '') {
   );
 }
 
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
 export default function InstructorProfilePage() {
   const { user } = useAuth();
 
@@ -341,6 +347,7 @@ export default function InstructorProfilePage() {
                     Cancel
                   </button>
                   <button type="submit" className="pei-save-btn" disabled={savingName}>
+                    {savingName && <ButtonSpinner />}
                     {savingName ? 'Saving…' : 'Save changes'}
                   </button>
                 </div>
@@ -426,6 +433,7 @@ export default function InstructorProfilePage() {
                     Cancel
                   </button>
                   <button type="submit" className="pei-save-btn" disabled={savingPassword}>
+                    {savingPassword && <ButtonSpinner />}
                     {savingPassword ? 'Saving…' : 'Update password'}
                   </button>
                 </div>

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import Modal from '../../components/shared/Modal';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import EmptyState from '../../components/shared/EmptyState';
+import ErrorState from '../../components/shared/ErrorState';
 import { announcementApi, courseApi } from '../../api';
 import { useAuth } from '../../lib/auth';
+import { getApiErrorState } from '../../lib/apiState';
 
 const ALL_COURSES = 'ALL';
 const DRAFT_STORAGE_KEY = 'ccp.instructor.announcementDrafts';
@@ -99,19 +101,13 @@ function getErrorMessage(error, fallback) {
   return error?.response?.data?.message || error?.response?.data?.error || error?.message || fallback;
 }
 
-function EmptyState({ title, body }) {
+function ButtonSpinner() {
   return (
-    <div className="inst-ann-empty">
-      <div className="inst-ann-empty-icon">
-        <span className="material-symbols-rounded icon">campaign</span>
-      </div>
-      <h3 className="inst-ann-empty-title">{title}</h3>
-      <p className="inst-ann-empty-body">{body}</p>
-    </div>
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
   );
 }
 
-function AnnouncementCard({ item, kind, onEdit, onDelete, onPublish }) {
+function AnnouncementCard({ item, kind, onEdit, onDelete, onPublish, busy }) {
   return (
     <article className="inst-ann-item">
       <div className="inst-ann-header">
@@ -122,9 +118,10 @@ function AnnouncementCard({ item, kind, onEdit, onDelete, onPublish }) {
             <button
               type="button"
               onClick={onPublish}
+              disabled={busy}
               className="btn-outline inst-ann-publish-btn"
             >
-              Publish
+              {busy ? <ButtonSpinner /> : 'Publish'}
             </button>
           )}
           <button
@@ -138,10 +135,11 @@ function AnnouncementCard({ item, kind, onEdit, onDelete, onPublish }) {
           <button
             type="button"
             onClick={onDelete}
+            disabled={busy}
             className="inst-mgmt-btn"
             aria-label={`Delete ${item.title}`}
           >
-            <span className="material-symbols-rounded icon">delete_outline</span>
+            {busy ? <ButtonSpinner /> : <span className="material-symbols-rounded icon">delete_outline</span>}
           </button>
         </div>
       </div>
@@ -178,9 +176,10 @@ export default function InstructorAnnouncementsPage() {
   const [drafts, setDrafts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [toast, setToast] = useState('');
   const [modal, setModal] = useState(null);
+  const [busyItemId, setBusyItemId] = useState(null);
 
   const courseMap = useMemo(
     () => new Map(courses.map(course => [Number(course.id), course])),
@@ -200,7 +199,7 @@ export default function InstructorAnnouncementsPage() {
 
     async function loadPage() {
       setLoading(true);
-      setError('');
+      setError(null);
       try {
         const res = await courseApi.list();
         if (cancelled) return;
@@ -208,7 +207,7 @@ export default function InstructorAnnouncementsPage() {
         setCourses(nextCourses);
       } catch (err) {
         if (!cancelled) {
-          setError(getErrorMessage(err, 'Failed to load instructor courses.'));
+          setError(getApiErrorState(err));
           setCourses([]);
         }
       } finally {
@@ -248,7 +247,7 @@ export default function InstructorAnnouncementsPage() {
 
     async function loadAnnouncements() {
       setRefreshing(true);
-      setError('');
+      setError(null);
       try {
         const responses = await Promise.all(courses.map(course => announcementApi.list(course.id)));
         if (cancelled) return;
@@ -262,7 +261,7 @@ export default function InstructorAnnouncementsPage() {
         setPublished(nextPublished);
       } catch (err) {
         if (!cancelled) {
-          setError(getErrorMessage(err, 'Failed to load announcements.'));
+          setError(getApiErrorState(err));
           setPublished([]);
         }
       } finally {
@@ -453,11 +452,14 @@ export default function InstructorAnnouncementsPage() {
 
   async function handleDeletePublished(item) {
     if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
+    setBusyItemId(`published-${item.courseId}-${item.id}`);
     try {
       await announcementApi.delete(item.courseId, item.id);
       await reloadPublishedAnnouncements();
     } catch (err) {
       setToast(getErrorMessage(err, 'Failed to delete announcement.'));
+    } finally {
+      setBusyItemId(null);
     }
   }
 
@@ -467,6 +469,7 @@ export default function InstructorAnnouncementsPage() {
   }
 
   async function handlePublishDraft(item) {
+    setBusyItemId(`draft-${item.id}`);
     try {
       await handlePublish(
         {
@@ -479,10 +482,18 @@ export default function InstructorAnnouncementsPage() {
       setToast('Draft published.');
     } catch (err) {
       setToast(getErrorMessage(err, 'Failed to publish draft.'));
+    } finally {
+      setBusyItemId(null);
     }
   }
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -524,9 +535,13 @@ export default function InstructorAnnouncementsPage() {
         </div>
 
         {error && (
-          <div className="inst-ann-error">
-            {error}
-          </div>
+          error.kind === 'upgrade' ? (
+            <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+              This feature requires a membership. <a href="/membership" className="underline">Upgrade</a>
+            </div>
+          ) : (
+            <ErrorState message={error.message} />
+          )
         )}
 
         <section className="inst-ann-section">
@@ -538,8 +553,8 @@ export default function InstructorAnnouncementsPage() {
           <div className="inst-ann-list">
             {filteredPublished.length === 0 ? (
               <EmptyState
-                title="No published announcements"
-                body="Published announcements will appear here once you post them to one of your courses."
+                icon="notifications"
+                title="No announcements created yet"
               />
             ) : (
               filteredPublished.map(item => (
@@ -549,6 +564,7 @@ export default function InstructorAnnouncementsPage() {
                   kind="published"
                   onEdit={() => openEditPublished(item)}
                   onDelete={() => handleDeletePublished(item)}
+                  busy={busyItemId === `published-${item.courseId}-${item.id}`}
                 />
               ))
             )}
@@ -561,8 +577,9 @@ export default function InstructorAnnouncementsPage() {
           <div className="inst-ann-list">
             {filteredDrafts.length === 0 ? (
               <EmptyState
+                icon="notifications"
                 title="No drafts saved"
-                body="Use the modal to save unfinished announcements and publish them when the content is ready."
+                subtitle="Use the modal to save unfinished announcements and publish them when the content is ready."
               />
             ) : (
               filteredDrafts.map(item => (
@@ -573,6 +590,7 @@ export default function InstructorAnnouncementsPage() {
                   onEdit={() => openEditDraft(item)}
                   onDelete={() => handleDeleteDraft(item)}
                   onPublish={() => handlePublishDraft(item)}
+                  busy={busyItemId === `draft-${item.id}`}
                 />
               ))
             )}
@@ -595,12 +613,12 @@ export default function InstructorAnnouncementsPage() {
             {modal.itemType !== 'published' && (
               <button
                 type="button"
-                disabled={modal.saving}
-                onClick={() => handleModalSave('draft')}
-                className="btn-outline"
-              >
-                Save as draft
-              </button>
+              disabled={modal.saving}
+              onClick={() => handleModalSave('draft')}
+              className="btn-outline"
+            >
+                {modal.saving ? <ButtonSpinner /> : 'Save as draft'}
+            </button>
             )}
             <button
               type="button"
@@ -608,9 +626,11 @@ export default function InstructorAnnouncementsPage() {
               onClick={() => handleModalSave('publish')}
               className="btn-primary"
             >
-              <span className="material-symbols-rounded icon">
-                {modal.itemType === 'published' ? 'save' : 'send'}
-              </span>
+              {modal.saving ? <ButtonSpinner /> : (
+                <span className="material-symbols-rounded icon">
+                  {modal.itemType === 'published' ? 'save' : 'send'}
+                </span>
+              )}
               {modal.itemType === 'published'
                 ? 'Save changes'
                 : modal.mode === 'edit'

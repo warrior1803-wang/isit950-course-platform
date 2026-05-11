@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
+import EmptyState from '../components/shared/EmptyState';
+import ErrorState from '../components/shared/ErrorState';
 import { courseApi, forumApi } from '../api';
 import { useAuth } from '../lib/auth';
+import { getApiErrorState } from '../lib/apiState';
 import {
   formatDiscussionResetText,
   hasReachedDiscussionLimit,
@@ -35,19 +37,23 @@ function normalizePost(raw) {
   };
 }
 
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
 export default function Forum() {
   const { user } = useAuth();
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [deletingPostId, setDeletingPostId] = useState(null);
   const [discussionMembership, setDiscussionMembership] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadForum() {
+  const loadForum = useCallback(async (isCancelled = () => false) => {
       setLoading(true);
-      setError('');
+      setError(null);
 
       try {
         const courseRes = await courseApi.list();
@@ -61,7 +67,7 @@ export default function Forum() {
           courses.map(course => forumApi.listPosts(course.id)),
         );
 
-        if (cancelled) return;
+        if (isCancelled()) return;
 
         const nextSections = courses
           .map((course, index) => {
@@ -80,22 +86,24 @@ export default function Forum() {
         setSections(nextSections);
 
         if (results.every(result => result.status === 'rejected')) {
-          setError('Failed to load discussion activity.');
+          setError({ kind: 'retryable', message: 'Something went wrong — please try again' });
         }
       } catch (err) {
-        if (cancelled) return;
+        if (isCancelled()) return;
         setSections([]);
-        setError(err.response?.data?.message || 'Failed to load discussion activity.');
+        setError(getApiErrorState(err));
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!isCancelled()) setLoading(false);
       }
-    }
+    }, []);
 
-    loadForum();
+  useEffect(() => {
+    let cancelled = false;
+    loadForum(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadForum]);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +135,7 @@ export default function Forum() {
     : '';
 
   async function handleDeletePost(courseId, postId) {
+    setDeletingPostId(postId);
     try {
       await forumApi.deletePost(courseId, postId);
       setSections(prev => prev
@@ -138,11 +147,19 @@ export default function Forum() {
         }))
         .filter(section => section.posts.length > 0));
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete discussion post.');
+      setError(getApiErrorState(err));
+    } finally {
+      setDeletingPostId(null);
     }
   }
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -162,9 +179,18 @@ export default function Forum() {
       )}
 
       {error ? (
-        <p className="course-list-empty">{error}</p>
+        error.kind === 'upgrade' ? (
+          <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
+            This feature requires a membership. <Link to="/membership" className="underline">Upgrade</Link>
+          </div>
+        ) : (
+          <ErrorState
+            message={error.message}
+            onRetry={error.kind === 'retryable' ? () => loadForum() : null}
+          />
+        )
       ) : sections.length === 0 ? (
-        <p className="course-list-empty">No discussion activity yet.</p>
+        <EmptyState icon="forum" title="No discussions yet" />
       ) : (
         sections.map(({ course, posts }) => (
           <div key={course.id}>
@@ -211,9 +237,12 @@ export default function Forum() {
                             event.stopPropagation();
                             handleDeletePost(course.id, post.id);
                           }}
+                          disabled={deletingPostId === post.id}
                           aria-label="Delete post"
                         >
-                          <span className="material-symbols-rounded">delete</span>
+                          {deletingPostId === post.id ? <ButtonSpinner /> : (
+                            <span className="material-symbols-rounded">delete</span>
+                          )}
                         </button>
                       )}
                     </div>

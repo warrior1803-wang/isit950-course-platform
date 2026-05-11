@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import ErrorState from "../components/shared/ErrorState";
 import { assignmentApi } from "../api";
+import { getApiErrorState, isUpgradeRequired } from "../lib/apiState";
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -96,11 +98,7 @@ export default function AssignmentSubmission() {
         setAssignment(nextAssignment);
       } else {
         setAssignment(null);
-        setError(
-          assignmentResult.reason?.response?.data?.message ||
-            assignmentResult.reason?.response?.data?.error ||
-            "Failed to load assignment.",
-        );
+        setError(getApiErrorState(assignmentResult.reason).message);
         setLoading(false);
         return;
       }
@@ -117,11 +115,7 @@ export default function AssignmentSubmission() {
       } else if (submissionResult.reason?.response?.status === 404) {
         setSubmission(null);
       } else {
-        setError(
-          submissionResult.reason?.response?.data?.message ||
-            submissionResult.reason?.response?.data?.error ||
-            "Failed to load your submission.",
-        );
+        setError(getApiErrorState(submissionResult.reason).message);
       }
 
       setLoading(false);
@@ -179,14 +173,10 @@ export default function AssignmentSubmission() {
       clearFile();
       navigate(`/courses/${courseId}/assignments/${asgId}/review`);
     } catch (err) {
-      if (err.response?.status === 403) {
+      if (isUpgradeRequired(err)) {
         setShowUpgradePrompt(true);
       } else {
-        setSubmitError(
-          err.response?.data?.message ||
-            err.response?.data?.error ||
-            "Failed to submit assignment.",
-        );
+        setSubmitError(getApiErrorState(err).message);
       }
     } finally {
       setSubmitting(false);
@@ -277,7 +267,9 @@ export default function AssignmentSubmission() {
     return (
       <div className="submit-layout">
         <div className="submit-main">
-          <div className="asgn-card">Loading assignment...</div>
+          <div className="flex justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
+          </div>
         </div>
       </div>
     );
@@ -287,7 +279,7 @@ export default function AssignmentSubmission() {
     return (
       <div className="submit-layout">
         <div className="submit-main">
-          <div className="asgn-card">{error || "Assignment not found."}</div>
+          <ErrorState message={error || "Content not found"} />
         </div>
       </div>
     );
@@ -344,6 +336,9 @@ export default function AssignmentSubmission() {
                 disabled={!pickedFile || submitting}
               >
                 <span className="material-symbols-rounded icon">send</span>
+                {submitting && (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                )}
                 {submitting ? "Submitting..." : "Submit assignment"}
               </button>
             </>

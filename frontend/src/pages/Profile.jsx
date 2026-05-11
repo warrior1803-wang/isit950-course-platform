@@ -7,6 +7,12 @@ function getInitials(name = '') {
   return name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
 }
 
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
 export default function Profile() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -300,6 +306,7 @@ export default function Profile() {
                     Cancel
                   </button>
                   <button type="submit" className="pei-save-btn" disabled={savingName}>
+                    {savingName && <ButtonSpinner />}
                     {savingName ? 'Saving…' : 'Save changes'}
                   </button>
                 </div>
@@ -410,6 +417,7 @@ export default function Profile() {
                     Cancel
                   </button>
                   <button className="pei-save-btn" onClick={saveCollab} disabled={collabSaving} type="button">
+                    {collabSaving && <ButtonSpinner />}
                     {collabSaving ? 'Saving…' : 'Save changes'}
                   </button>
                 </div>
@@ -518,6 +526,7 @@ export default function Profile() {
                     Cancel
                   </button>
                   <button type="submit" className="pei-save-btn" disabled={savingPassword}>
+                    {savingPassword && <ButtonSpinner />}
                     {savingPassword ? 'Saving…' : 'Update password'}
                   </button>
                 </div>

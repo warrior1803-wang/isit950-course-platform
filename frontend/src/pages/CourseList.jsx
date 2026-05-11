@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
+import EmptyState from '../components/shared/EmptyState';
+import ErrorState from '../components/shared/ErrorState';
+import SkeletonCard from '../components/shared/SkeletonCard';
 import { courseApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import PropTypes from "prop-types";
+import { getApiErrorState } from '../lib/apiState';
 
 function isInProgress(course) {
   if (!course?.semester?.endDate) return true;
@@ -44,40 +47,41 @@ function matchesSearch(course, q) {
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
+
+  const loadCourses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await courseApi.list();
+      const apiCourses = res.data?.data ?? [];
+      setCourses(
+        apiCourses.map(course => ({
+          id: course.id,
+          code: course.code,
+          name: course.name,
+          description: course.description,
+          schedule: course.schedule,
+          location: course.location,
+          createdAt: course.createdAt,
+          coverImageUrl: course.coverImageUrl ?? null,
+          instructor: { name: course.instructorName ?? 'Instructor' },
+        })),
+      );
+    } catch (err) {
+      setError(getApiErrorState(err));
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    setLoading(true);
-    setError('');
-    courseApi
-      .list()
-      .then(res => {
-        const apiCourses = res.data?.data ?? [];
-        setCourses(
-          apiCourses.map(course => ({
-            id: course.id,
-            code: course.code,
-            name: course.name,
-            description: course.description,
-            schedule: course.schedule,
-            location: course.location,
-            createdAt: course.createdAt,
-            coverImageUrl: course.coverImageUrl ?? null,
-            instructor: { name: course.instructorName ?? 'Instructor' },
-          })),
-        );
-      })
-      .catch(err => {
-        setError(err.response?.data?.message || 'Failed to load courses.');
-        setCourses([]);
-      })
-      .finally(() => setLoading(false));
-  }, [authLoading]);
+    if (!authLoading) loadCourses();
+  }, [authLoading, loadCourses]);
 
   const counts = useMemo(() => {
     const total = courses.length;
@@ -98,7 +102,17 @@ export default function CourseList() {
   );
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div>
+        <h1 className="page-title">My Courses</h1>
+        <p className="page-sub">University of Wollongong · Autumn Session 2026</p>
+        <div className="course-grid mt-6">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <SkeletonCard key={index} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -106,7 +120,12 @@ export default function CourseList() {
       <h1 className="page-title">My Courses</h1>
       <p className="page-sub">University of Wollongong · Autumn Session 2026</p>
 
-      {error && <p className="course-list-empty">{error}</p>}
+      {error && (
+        <ErrorState
+          message={error.message}
+          onRetry={error.kind === 'retryable' ? loadCourses : null}
+        />
+      )}
 
       <div className="tabs" role="tablist" aria-label="Filter courses">
         <button
@@ -182,14 +201,24 @@ CourseListToolbar.propTypes = {
 
 function CourseGrid({ courses, activeTab, search, enrolledCourseIds }) {
   if (courses.length === 0) {
-    const emptyMsg = search.trim()
-      ? 'No courses match your search.'
-      : activeTab === 'all'
-        ? 'No courses available.'
-        : activeTab === 'in_progress'
-          ? 'No courses in progress.'
-          : 'No courses completed.';
-    return <p className="course-list-empty">{emptyMsg}</p>;
+    if (search.trim()) {
+      return <EmptyState icon="search" title="No courses match your search" />;
+    }
+    if (activeTab === 'all') {
+      return (
+        <EmptyState
+          icon="school"
+          title="You haven't enrolled in any courses yet"
+          subtitle="Browse courses to get started"
+        />
+      );
+    }
+    return (
+      <EmptyState
+        icon="school"
+        title={activeTab === 'in_progress' ? 'No courses in progress' : 'No courses completed'}
+      />
+    );
   }
 
   return (

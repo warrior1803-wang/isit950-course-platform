@@ -7,6 +7,12 @@ const inputClass =
 const textareaClass =
   'w-full px-[14px] pt-2.5 rounded-[10px] border border-border bg-input-bg text-text-dark text-[13px] font-serif outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 focus:bg-white transition-colors duration-150 resize-none';
 
+function ButtonSpinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+  );
+}
+
 function Field({ label, error, children }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -542,9 +548,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
             disabled={disabled}
           >
             {isSubmitting ? (
-              <span className="material-symbols-rounded text-base animate-spin">
-                progress_activity
-              </span>
+              <ButtonSpinner />
             ) : (
               <>
                 <span className="material-symbols-rounded text-base">
