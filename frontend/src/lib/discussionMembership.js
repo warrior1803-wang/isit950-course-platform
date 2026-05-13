@@ -64,14 +64,16 @@ export function formatDiscussionResetText(resetsAt) {
   const parsed = new Date(resetsAt);
   if (Number.isNaN(parsed.getTime())) return 'Weekly limits refresh automatically';
 
-  const weekday = parsed.toLocaleDateString('en-AU', { weekday: 'long' });
-  const day = parsed.toLocaleDateString('en-AU', { day: 'numeric' });
-  const month = parsed.toLocaleDateString('en-AU', { month: 'short' });
+  const options = { timeZone: 'UTC' };
+  const weekday = parsed.toLocaleDateString('en-AU', { weekday: 'long', ...options });
+  const day = parsed.toLocaleDateString('en-AU', { day: 'numeric', ...options });
+  const month = parsed.toLocaleDateString('en-AU', { month: 'short', ...options });
   const time = parsed.toLocaleTimeString('en-AU', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
+    ...options,
   }).replace(' ', '');
 
-  return `⏱ Limits reset ${weekday} ${day} ${month} at ${time} AEST`;
+  return `⏱ Limits reset ${weekday} ${day} ${month} at ${time} UTC`;
 }

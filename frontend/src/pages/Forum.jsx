@@ -31,7 +31,7 @@ function normalizePost(raw) {
     authorRole: String(raw.author?.role || raw.authorRole || '').toLowerCase(),
     author: {
       id: raw.author?.id || raw.authorId || null,
-      name: raw.author?.name || raw.authorName || 'User',
+      name: raw.author?.name || raw.authorName || 'Unknown user',
     },
     replies: Array.isArray(raw.replies) ? raw.replies : [],
   };
@@ -63,6 +63,7 @@ export default function Forum() {
           name: course.name,
         }));
 
+        // TODO(Sprint 8): add thread-list pagination here once the backend supports ?page=0&size=20.
         const results = await Promise.allSettled(
           courses.map(course => forumApi.listPosts(course.id)),
         );
@@ -183,14 +184,14 @@ export default function Forum() {
           <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
             This feature requires a membership. <Link to="/membership" className="underline">Upgrade</Link>
           </div>
-        ) : (
+      ) : (
           <ErrorState
             message={error.message}
             onRetry={error.kind === 'retryable' ? () => loadForum() : null}
           />
         )
       ) : sections.length === 0 ? (
-        <EmptyState icon="forum" title="No discussions yet" />
+        <p className="course-list-empty">No posts yet — be the first to start a discussion</p>
       ) : (
         sections.map(({ course, posts }) => (
           <div key={course.id}>

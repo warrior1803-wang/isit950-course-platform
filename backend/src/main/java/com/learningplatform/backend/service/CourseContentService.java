@@ -157,7 +157,9 @@ public class CourseContentService {
         post.setBody(body);
 
         PostResponse response = toPostResponse(postRepository.save(post));
-        return attachDiscussionUsage(response, postingStatus);
+        MembershipService.DiscussionPostingStatus updatedPostingStatus =
+                membershipService.registerDiscussionContribution(context.user());
+        return attachDiscussionUsage(response, updatedPostingStatus);
     }
 
     public ReplyResponse createReply(Long courseId, Long postId, ReplyRequest request, String userEmail) {
@@ -185,7 +187,9 @@ public class CourseContentService {
         reply.setBody(body);
 
         ReplyResponse response = toReplyResponse(replyRepository.save(reply));
-        return attachDiscussionUsage(response, postingStatus);
+        MembershipService.DiscussionPostingStatus updatedPostingStatus =
+                membershipService.registerDiscussionContribution(user);
+        return attachDiscussionUsage(response, updatedPostingStatus);
     }
 
     public void deletePost(Long courseId, Long postId, String userEmail) {
@@ -372,7 +376,7 @@ public class CourseContentService {
         if (postingStatus.limit() == null) {
             return response;
         }
-        response.setWeeklyPostsUsed(postingStatus.used() + 1);
+        response.setWeeklyPostsUsed(postingStatus.used());
         response.setWeeklyPostsLimit(postingStatus.limit());
         return response;
     }
@@ -384,7 +388,7 @@ public class CourseContentService {
         if (postingStatus.limit() == null) {
             return response;
         }
-        response.setWeeklyPostsUsed(postingStatus.used() + 1);
+        response.setWeeklyPostsUsed(postingStatus.used());
         response.setWeeklyPostsLimit(postingStatus.limit());
         return response;
     }

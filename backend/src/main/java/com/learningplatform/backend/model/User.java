@@ -65,6 +65,12 @@ public class User {
     @Column(name = "membership_plan")
     private String membershipPlan;
 
+    @Column(name = "discussion_week_start")
+    private LocalDateTime discussionWeekStart;
+
+    @Column(name = "weekly_discussion_posts_used")
+    private Integer weeklyDiscussionPostsUsed;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

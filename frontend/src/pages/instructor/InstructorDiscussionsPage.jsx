@@ -28,7 +28,7 @@ function formatDateShort(iso) {
 }
 
 function getInitials(name) {
-  const parts = String(name || 'User')
+  const parts = String(name || 'Unknown user')
     .trim()
     .split(/\s+/)
     .filter(Boolean);
@@ -42,7 +42,7 @@ function getAvatarStyle(seed) {
 }
 
 function normalizeReply(raw) {
-  const authorName = raw.author?.name || 'User';
+  const authorName = raw.author?.name || 'Unknown user';
   return {
     id: raw.id,
     body: raw.body || '',
@@ -58,7 +58,7 @@ function normalizeReply(raw) {
 }
 
 function normalizePost(raw, course) {
-  const authorName = raw.author?.name || 'User';
+  const authorName = raw.author?.name || 'Unknown user';
   return {
     id: raw.id,
     courseId: course.id,
@@ -151,6 +151,7 @@ export default function InstructorDiscussionsPage() {
         const targetCourses = selectedCourseId === ALL_COURSES
           ? courses
           : courses.filter(course => course.id === Number(selectedCourseId));
+        // TODO(Sprint 8): add thread-list pagination here once the backend supports ?page=0&size=20.
         const responses = await Promise.all(targetCourses.map(course => forumApi.listPosts(course.id)));
         if (cancelled) return;
 
@@ -338,7 +339,9 @@ export default function InstructorDiscussionsPage() {
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ddd0d4] border-t-[#b693a9]" />
               </div>
             ) : filteredPosts.length === 0 ? (
-              <EmptyState icon="forum" title="No discussions yet" />
+              <p className="course-list-empty">
+                {posts.length === 0 ? 'No posts yet — be the first to start a discussion' : 'No threads for this filter.'}
+              </p>
             ) : (
               filteredPosts.map(post => (
                 <button
@@ -408,45 +411,53 @@ export default function InstructorDiscussionsPage() {
               </div>
               <div className="disc-post-body">{selectedPost.body}</div>
 
-              <div className="disc-replies-heading" style={{ marginTop: 20 }}>
-                {selectedPost.replies?.length ?? 0} replies
-              </div>
-              <div className="inbox-replies">
-                {(selectedPost.replies ?? []).map(reply => (
-                  <div key={reply.id} className="disc-reply-item inbox-reply-item">
-                    <div className="disc-avatar disc-reply-avatar" style={reply.avatarStyle}>
-                      {reply.initials}
-                    </div>
-                    <div className="disc-info">
-                      <div className="disc-reply-meta">
-                        <div className="inst-disc-reply-head">
-                          <div>
-                            <span className="disc-reply-author">{reply.author?.name}</span>
-                            <span className={`discussion-role-badge ${reply.authorRole === 'instructor' ? 'inst' : 'student'}`}>
-                              {reply.authorRole === 'instructor' ? 'Instructor' : 'Student'}
-                            </span>
+              {(selectedPost.replies?.length ?? 0) === 0 ? (
+                <div className="disc-replies-heading" style={{ marginTop: 20 }}>
+                  No replies yet
+                </div>
+              ) : (
+                <>
+                  <div className="disc-replies-heading" style={{ marginTop: 20 }}>
+                    {selectedPost.replies?.length ?? 0} replies
+                  </div>
+                  <div className="inbox-replies">
+                    {(selectedPost.replies ?? []).map(reply => (
+                      <div key={reply.id} className="disc-reply-item inbox-reply-item">
+                        <div className="disc-avatar disc-reply-avatar" style={reply.avatarStyle}>
+                          {reply.initials}
+                        </div>
+                        <div className="disc-info">
+                          <div className="disc-reply-meta">
+                            <div className="inst-disc-reply-head">
+                              <div>
+                                <span className="disc-reply-author">{reply.author?.name}</span>
+                                <span className={`discussion-role-badge ${reply.authorRole === 'instructor' ? 'inst' : 'student'}`}>
+                                  {reply.authorRole === 'instructor' ? 'Instructor' : 'Student'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
+                          <div className="disc-reply-body">{reply.body}</div>
+                        </div>
+                        <div className="discussion-reply-side">
+                          <div className="disc-reply-date">{formatDateShort(reply.createdAt)}</div>
+                          <button
+                            type="button"
+                            className="discussion-delete-btn"
+                            onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
+                            disabled={deletingReplyId === reply.id}
+                            aria-label="Delete reply"
+                          >
+                            {deletingReplyId === reply.id ? <ButtonSpinner /> : (
+                              <span className="material-symbols-rounded">delete</span>
+                            )}
+                          </button>
                         </div>
                       </div>
-                      <div className="disc-reply-body">{reply.body}</div>
-                    </div>
-                    <div className="discussion-reply-side">
-                      <div className="disc-reply-date">{formatDateShort(reply.createdAt)}</div>
-                      <button
-                        type="button"
-                        className="discussion-delete-btn"
-                        onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
-                        disabled={deletingReplyId === reply.id}
-                        aria-label="Delete reply"
-                      >
-                        {deletingReplyId === reply.id ? <ButtonSpinner /> : (
-                          <span className="material-symbols-rounded">delete</span>
-                        )}
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
 
               <div className="disc-reply-box inst-disc-reply-box">
                 <div className="disc-avatar disc-reply-avatar inst-reply-author-avatar" style={currentInstructorAvatarStyle}>

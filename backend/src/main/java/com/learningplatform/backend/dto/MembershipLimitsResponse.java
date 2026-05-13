@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -23,6 +23,6 @@ public class MembershipLimitsResponse {
         private int used;
         private Integer limit;
         private Integer remaining;
-        private LocalDateTime resetsAt;
+        private OffsetDateTime resetsAt;
     }
 }

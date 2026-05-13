@@ -6,28 +6,53 @@ import com.learningplatform.backend.dto.MembershipLimitsResponse;
 import com.learningplatform.backend.dto.MembershipResponse;
 import com.learningplatform.backend.dto.MembershipUpgradeRequest;
 import com.learningplatform.backend.dto.MembershipUpgradeResponse;
-import com.learningplatform.backend.model.Reply;
 import com.learningplatform.backend.model.User;
 import com.learningplatform.backend.model.enums.UserRole;
 import com.learningplatform.backend.repository.PostRepository;
 import com.learningplatform.backend.repository.ReplyRepository;
 import com.learningplatform.backend.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
 
 @Service
-@RequiredArgsConstructor
 public class MembershipService {
 
     public static final int WEEKLY_POST_LIMIT = 10;
+
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ReplyRepository replyRepository;
+    private final Clock clock;
+
+    @Autowired
+    public MembershipService(
+            UserRepository userRepository,
+            PostRepository postRepository,
+            ReplyRepository replyRepository
+    ) {
+        this(userRepository, postRepository, replyRepository, Clock.systemUTC());
+    }
+
+    MembershipService(
+            UserRepository userRepository,
+            PostRepository postRepository,
+            ReplyRepository replyRepository,
+            Clock clock
+    ) {
+        this.userRepository = userRepository;
+        this.postRepository = postRepository;
+        this.replyRepository = replyRepository;
+        this.clock = clock;
+    }
 
     public MembershipResponse getMembership(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
@@ -38,8 +63,8 @@ public class MembershipService {
         }
 
         String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
-
         boolean isMember = "MEMBER".equals(type);
+        int weeklyPostsUsed = refreshDiscussionUsageWindow(user).used();
 
         return new MembershipResponse(
                 type,
@@ -51,7 +76,7 @@ public class MembershipService {
                         isMember
                 ),
                 new MembershipResponse.Usage(
-                        getWeeklyDiscussionUsage(user).used(),
+                        weeklyPostsUsed,
                         isMember ? null : WEEKLY_POST_LIMIT,
                         0,
                         isMember ? null : 2
@@ -68,7 +93,7 @@ public class MembershipService {
             throw new BusinessException("Only students can upgrade membership");
         }
 
-        LocalDateTime since = LocalDateTime.now();
+        LocalDateTime since = LocalDateTime.now(clock);
         LocalDateTime expiresAt;
 
         if ("MONTHLY".equals(request.getPlan())) {
@@ -97,6 +122,7 @@ public class MembershipService {
         );
     }
 
+    @Transactional
     public MembershipLimitsResponse getMembershipLimits(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -108,13 +134,9 @@ public class MembershipService {
         String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
         boolean isMember = "MEMBER".equals(type);
 
-        int weeklyPostsUsed = getWeeklyDiscussionUsage(user).used();
+        int weeklyPostsUsed = refreshDiscussionUsageWindow(user).used();
         int resubmissionsUsed = 0;
-
-        LocalDateTime resetsAt = LocalDateTime.now()
-                .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
-                .toLocalDate()
-                .atStartOfDay();
+        OffsetDateTime resetsAt = nextMondayStartUtc();
 
         if (isMember) {
             return new MembershipLimitsResponse(
@@ -133,14 +155,13 @@ public class MembershipService {
             );
         }
 
-        int postLimit = 10;
         int resubmissionLimit = 2;
 
         return new MembershipLimitsResponse(
                 new MembershipLimitsResponse.LimitItem(
                         weeklyPostsUsed,
                         WEEKLY_POST_LIMIT,
-                        Math.max(postLimit - weeklyPostsUsed, 0),
+                        Math.max(WEEKLY_POST_LIMIT - weeklyPostsUsed, 0),
                         resetsAt
                 ),
                 new MembershipLimitsResponse.LimitItem(
@@ -152,6 +173,7 @@ public class MembershipService {
         );
     }
 
+    @Transactional
     public DiscussionPostingStatus getDiscussionPostingStatus(User user) {
         if (user.getRole() == UserRole.INSTRUCTOR) {
             return new DiscussionPostingStatus(false, 0, null);
@@ -159,23 +181,70 @@ public class MembershipService {
 
         String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
         boolean isMember = "MEMBER".equals(type);
-        int used = getWeeklyDiscussionUsage(user).used();
+        int used = refreshDiscussionUsageWindow(user).used();
         return new DiscussionPostingStatus(isMember, used, isMember ? null : WEEKLY_POST_LIMIT);
     }
 
-    private WeeklyDiscussionUsage getWeeklyDiscussionUsage(User user) {
-        LocalDateTime weekStart = currentWeekStart();
+    @Transactional
+    public DiscussionPostingStatus registerDiscussionContribution(User user) {
+        DiscussionPostingStatus postingStatus = getDiscussionPostingStatus(user);
+        if (postingStatus.member() || postingStatus.limit() == null) {
+            return postingStatus;
+        }
+
+        int nextUsed = postingStatus.used() + 1;
+        user.setWeeklyDiscussionPostsUsed(nextUsed);
+        userRepository.save(user);
+        return new DiscussionPostingStatus(false, nextUsed, postingStatus.limit());
+    }
+
+    private WeeklyDiscussionUsage refreshDiscussionUsageWindow(User user) {
+        LocalDateTime currentWeekStart = currentWeekStartUtc();
+        LocalDateTime storedWeekStart = user.getDiscussionWeekStart();
+
+        if (storedWeekStart == null) {
+            int currentUsage = countCurrentWeekUsage(user, currentWeekStart);
+            user.setDiscussionWeekStart(currentWeekStart);
+            user.setWeeklyDiscussionPostsUsed(currentUsage);
+            userRepository.save(user);
+            return new WeeklyDiscussionUsage(currentUsage);
+        }
+
+        if (!storedWeekStart.equals(currentWeekStart)) {
+            user.setDiscussionWeekStart(currentWeekStart);
+            user.setWeeklyDiscussionPostsUsed(0);
+            userRepository.save(user);
+            return new WeeklyDiscussionUsage(0);
+        }
+
+        int used = user.getWeeklyDiscussionPostsUsed() == null ? 0 : user.getWeeklyDiscussionPostsUsed();
+        return new WeeklyDiscussionUsage(used);
+    }
+
+    private int countCurrentWeekUsage(User user, LocalDateTime weekStart) {
         LocalDateTime weekEnd = weekStart.plusWeeks(1);
         long postCount = postRepository.countByAuthorAndCreatedAtBetween(user, weekStart, weekEnd);
         long replyCount = replyRepository.countByAuthorAndCreatedAtBetween(user, weekStart, weekEnd);
-        return new WeeklyDiscussionUsage(Math.toIntExact(postCount + replyCount));
+        return Math.toIntExact(postCount + replyCount);
     }
 
-    private LocalDateTime currentWeekStart() {
-        return LocalDateTime.now()
+    private LocalDateTime currentWeekStartUtc() {
+        LocalDate currentUtcDate = OffsetDateTime.now(clock)
+                .withOffsetSameInstant(ZoneOffset.UTC)
+                .toLocalDate();
+        return currentUtcDate
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                .toLocalDate()
                 .atStartOfDay();
+    }
+
+    private OffsetDateTime nextMondayStartUtc() {
+        LocalDate currentUtcDate = OffsetDateTime.now(clock)
+                .withOffsetSameInstant(ZoneOffset.UTC)
+                .toLocalDate();
+        return currentUtcDate
+                .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
+                .atStartOfDay()
+                .atOffset(ZoneOffset.UTC);
     }
 
     public record DiscussionPostingStatus(boolean member, int used, Integer limit) {
