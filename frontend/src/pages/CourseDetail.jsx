@@ -182,7 +182,7 @@ function normalizeReply(raw) {
     authorRole: String(raw.authorRole || raw.author?.role || '').toLowerCase(),
     author: {
       id: raw.author?.id || raw.authorId || null,
-      name: raw.author?.name || raw.authorName || 'User',
+      name: raw.author?.name || raw.authorName || 'Unknown user',
     },
   };
 }
@@ -197,7 +197,7 @@ function normalizePost(raw) {
     authorRole: String(raw.authorRole || raw.author?.role || '').toLowerCase(),
     author: {
       id: raw.author?.id || raw.authorId || null,
-      name: raw.author?.name || raw.authorName || 'User',
+      name: raw.author?.name || raw.authorName || 'Unknown user',
     },
     replies: Array.isArray(raw.replies) ? raw.replies.map(normalizeReply).filter(Boolean) : [],
   };
@@ -316,6 +316,7 @@ export default function CourseDetail() {
       setAssignmentsError(null);
       setDiscussionError(null);
 
+      // TODO(Sprint 8): add thread-list pagination here once the backend supports ?page=0&size=20.
       const results = await Promise.allSettled([
         courseApi.get(id),
         api.get(`/courses/${id}/materials`),
@@ -1042,11 +1043,7 @@ export default function CourseDetail() {
                   onRetry={discussionError.kind === 'retryable' ? () => loadCourseData() : null}
                 />
               ) : posts.length === 0 ? (
-                <EmptyState
-                  icon="forum"
-                  title="No posts yet"
-                  subtitle="Be the first to start a discussion"
-                />
+                <p className="course-list-empty">No posts yet — be the first to start a discussion</p>
               ) : (
                 <div className="disc-list-wrap">
                   {posts.map(post => (
@@ -1161,41 +1158,47 @@ export default function CourseDetail() {
                 <div className="disc-post-body">{selectedPost.body}</div>
               </div>
 
-              <div className="disc-replies-heading">{selectedPost.replies?.length ?? 0} replies</div>
-              <div>
-                {(selectedPost.replies ?? []).map(reply => (
-                  <div key={reply.id} className="disc-reply-item discussion-student-reply">
-                    <div className="disc-avatar" style={avatarStyleFor(reply.author?.name, reply.authorRole)}>
-                      {initialsFor(reply.author?.name)}
-                    </div>
-                    <div className="disc-info">
-                      <div className="disc-reply-meta">
-                        <div className="disc-reply-author">{reply.author?.name}</div>
-                        <div className={`discussion-role-badge ${reply.authorRole === 'instructor' ? 'inst' : 'student'}`}>
-                          {reply.authorRole === 'instructor' ? 'Instructor' : 'Student'}
+              {(selectedPost.replies?.length ?? 0) === 0 ? (
+                <div className="disc-replies-heading">No replies yet</div>
+              ) : (
+                <>
+                  <div className="disc-replies-heading">{selectedPost.replies?.length ?? 0} replies</div>
+                  <div>
+                    {(selectedPost.replies ?? []).map(reply => (
+                      <div key={reply.id} className="disc-reply-item discussion-student-reply">
+                        <div className="disc-avatar" style={avatarStyleFor(reply.author?.name, reply.authorRole)}>
+                          {initialsFor(reply.author?.name)}
+                        </div>
+                        <div className="disc-info">
+                          <div className="disc-reply-meta">
+                            <div className="disc-reply-author">{reply.author?.name}</div>
+                            <div className={`discussion-role-badge ${reply.authorRole === 'instructor' ? 'inst' : 'student'}`}>
+                              {reply.authorRole === 'instructor' ? 'Instructor' : 'Student'}
+                            </div>
+                          </div>
+                          <div className="disc-reply-body">{reply.body}</div>
+                        </div>
+                        <div className="discussion-reply-side">
+                          <div className="disc-reply-date">{formatDateShort(reply.createdAt)}</div>
+                          {canDeleteDiscussionItem(reply.author?.id) && (
+                            <button
+                              type="button"
+                              className="discussion-delete-btn"
+                              onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
+                              disabled={deletingReplyId === reply.id}
+                              aria-label="Delete reply"
+                            >
+                              {deletingReplyId === reply.id ? <ButtonSpinner /> : (
+                                <span className="material-symbols-rounded">delete</span>
+                              )}
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="disc-reply-body">{reply.body}</div>
-                    </div>
-                    <div className="discussion-reply-side">
-                      <div className="disc-reply-date">{formatDateShort(reply.createdAt)}</div>
-                      {canDeleteDiscussionItem(reply.author?.id) && (
-                        <button
-                          type="button"
-                          className="discussion-delete-btn"
-                          onClick={() => handleDeleteReply(selectedPost.id, reply.id)}
-                          disabled={deletingReplyId === reply.id}
-                          aria-label="Delete reply"
-                        >
-                          {deletingReplyId === reply.id ? <ButtonSpinner /> : (
-                            <span className="material-symbols-rounded">delete</span>
-                          )}
-                        </button>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
 
               {user ? (
                 <div className="disc-reply-box">
