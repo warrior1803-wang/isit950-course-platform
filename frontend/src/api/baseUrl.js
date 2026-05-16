@@ -1,4 +1,10 @@
-const rawApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').trim();
+const rawApiBaseUrl = normalizeConfiguredBaseUrl(import.meta.env.VITE_API_BASE_URL || '/api');
+
+function normalizeConfiguredBaseUrl(value) {
+  const trimmedValue = String(value || '/api').trim();
+  const urlMatch = trimmedValue.match(/https?:\/\/[^\s]+/i);
+  return urlMatch ? urlMatch[0] : trimmedValue;
+}
 
 function trimTrailingSlash(value) {
   return value.replace(/\/+$/, '');
