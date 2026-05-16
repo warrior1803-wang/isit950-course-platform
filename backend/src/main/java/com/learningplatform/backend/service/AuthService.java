@@ -45,6 +45,7 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
+        user.setWeeklyDiscussionPostsUsed(0);
 
         User savedUser = userRepository.save(user);
 
