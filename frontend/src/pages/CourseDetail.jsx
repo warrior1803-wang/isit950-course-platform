@@ -5,6 +5,7 @@ import ErrorState from '../components/shared/ErrorState';
 import SkeletonCard from '../components/shared/SkeletonCard';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { buildBackendUrl } from '../api/baseUrl';
 import { announcementApi, assignmentApi, courseApi, forumApi } from '../api';
 import { getApiErrorState } from '../lib/apiState';
 import {
@@ -206,8 +207,7 @@ function normalizePost(raw) {
 function resolveMaterialUrl(url) {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/')) return url;
-  return `/${url}`;
+  return buildBackendUrl(url);
 }
 
 function TabSkeletonGrid() {

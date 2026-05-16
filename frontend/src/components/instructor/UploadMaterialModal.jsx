@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
+import { buildApiUrl } from '../../api/baseUrl';
 
 const VALID_EXTS = ['pdf', 'docx', 'zip', 'png', 'jpg', 'jpeg'];
 
@@ -92,7 +93,7 @@ export default function UploadMaterialModal({ courseId, initialSection, onClose,
       formData.append('file', file);
       formData.append('section', section.trim());
 
-      const res = await fetch(`/api/courses/${courseId}/materials`, {
+      const res = await fetch(buildApiUrl(`/courses/${courseId}/materials`), {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: formData,

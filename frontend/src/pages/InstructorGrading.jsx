@@ -5,6 +5,7 @@ import EmptyState from "../components/shared/EmptyState";
 import ErrorState from "../components/shared/ErrorState";
 import SkeletonCard from "../components/shared/SkeletonCard";
 import api from "../api/axios";
+import { buildApiUrl } from "../api/baseUrl";
 import { getApiErrorState } from "../lib/apiState";
 
 const styles = {
@@ -656,7 +657,7 @@ export default function InstructorGrading() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `/api/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}/file`,
+        buildApiUrl(`/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}/file`),
         {
           headers: { Authorization: `Bearer ${token}` },
         },
