@@ -5,15 +5,15 @@ spring:
   application:
     name: backend
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/backend_db_flyway_v2
-    username: mac
-    password:
-
 #  datasource:
-#    url: jdbc:postgresql://localhost:5432/backend_db
-#    username: backend_user
-#    password: Backend123!
+#    url: jdbc:postgresql://localhost:5432/backend_db_flyway_v2
+#    username: mac
+#    password:
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/backend_db
+    username: backend_user
+    password: Backend123!
 
   jpa:
     hibernate:
