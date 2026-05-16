@@ -1,19 +1,14 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
     name: backend
 
-#  datasource:
-#    url: jdbc:postgresql://localhost:5432/backend_db_flyway_v2
-#    username: mac
-#    password:
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/backend_db
-    username: backend_user
-    password: Backend123!
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/backend_db}
+    username: ${DB_USERNAME:backend_user}
+    password: ${DB_PASSWORD:Backend123!}
 
   jpa:
     hibernate:
@@ -33,7 +28,6 @@ app:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
   upload:
     dir: ${UPLOAD_DIR:uploads}
-
 
 jwt:
   secret: ${JWT_SECRET:bXktc3VwZXItc2VjcmV0LWtleS1mb3Itand0LXRva2VuLW15LXN1cGVyLXNlY3JldC1rZXk=}
