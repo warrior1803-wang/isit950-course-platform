@@ -86,7 +86,7 @@ export default function Forum() {
 
         setSections(nextSections);
 
-        if (results.every(result => result.status === 'rejected')) {
+        if (courses.length > 0 && results.every(result => result.status === 'rejected')) {
           setError({ kind: 'retryable', message: 'Something went wrong — please try again' });
         }
       } catch (err) {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { assignmentApi, authApi, courseApi, membershipApi } from '../../api';
+import { assignmentApi, authApi, courseApi } from '../../api';
 import { useAuth } from '../../lib/auth';
 
 const COURSE_THUMBS = [
@@ -80,7 +80,6 @@ export default function InstructorDashboardPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState([]);
-  const [memberCount, setMemberCount] = useState(0);
   const [pendingItems, setPendingItems] = useState([]);
   const [instructorName, setInstructorName] = useState('');
 
@@ -91,10 +90,9 @@ export default function InstructorDashboardPage() {
       setLoading(true);
 
       try {
-        const [meRes, courseRes, membershipStatsRes] = await Promise.all([
+        const [meRes, courseRes] = await Promise.all([
           authApi.me().catch(() => ({ data: { data: null } })),
           courseApi.list(),
-          membershipApi.getStats().catch(() => ({ data: { data: null } })),
         ]);
         if (cancelled) return;
 
@@ -103,16 +101,6 @@ export default function InstructorDashboardPage() {
 
         const nextCourses = getApiData(courseRes);
         setCourses(nextCourses);
-
-        const membershipStats = getApiData(membershipStatsRes);
-        setMemberCount(
-          Number(
-            membershipStats?.activeMembers
-            ?? membershipStats?.memberCount
-            ?? membershipStats?.totalMembers
-            ?? 0,
-          ),
-        );
 
         if (nextCourses.length === 0) {
           setPendingItems([]);
@@ -172,6 +160,7 @@ export default function InstructorDashboardPage() {
     const totalCourses = courses.length;
     const totalStudents = courses.reduce((sum, course) => sum + (course.enrolmentCount ?? 0), 0);
     const totalPending = courses.reduce((sum, course) => sum + (course.pendingCount ?? 0), 0);
+    const totalAssignments = courses.reduce((sum, course) => sum + (course.assignmentCount ?? 0), 0);
 
     return [
       {
@@ -205,17 +194,17 @@ export default function InstructorDashboardPage() {
         subStyle: { color: '#d85a30' },
       },
       {
-        key: 'members',
-        icon: 'workspace_premium',
+        key: 'assignments',
+        icon: 'assignment',
         iconColor: '#1d9e75',
         iconBg: 'rgba(29, 158, 117, 0.1)',
-        value: memberCount,
-        label: 'Active members',
+        value: totalAssignments,
+        label: 'Assignments',
         sub: 'Across all courses',
         subStyle: { color: '#1d9e75' },
       },
     ];
-  }, [courses, memberCount]);
+  }, [courses]);
 
   return (
     <>
