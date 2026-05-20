@@ -5,6 +5,7 @@ import EmptyState from "../components/shared/EmptyState";
 import ErrorState from "../components/shared/ErrorState";
 import SkeletonCard from "../components/shared/SkeletonCard";
 import api from "../api/axios";
+import { buildApiUrl } from "../api/baseUrl";
 import { getApiErrorState } from "../lib/apiState";
 
 const styles = {
@@ -484,6 +485,14 @@ export default function InstructorGrading() {
         const nextCourses = response.data?.data ?? [];
         setCourses(nextCourses);
         setSelectedCourseId((current) => current ?? nextCourses[0]?.id ?? null);
+        if (nextCourses.length === 0) {
+          setAssignments([]);
+          setSubmissions([]);
+          setSelectedAsgId(null);
+          setSelectedSub(null);
+          setSubDetail(null);
+          setSubmissionsLoading(false);
+        }
       } catch (err) {
         if (!isMounted) return;
         setCourses([]);
@@ -506,7 +515,15 @@ export default function InstructorGrading() {
   }, [reloadKey]);
 
   useEffect(() => {
-    if (!selectedCourseId) return;
+    if (!selectedCourseId) {
+      setAssignments([]);
+      setSubmissions([]);
+      setSelectedAsgId(null);
+      setSelectedSub(null);
+      setSubDetail(null);
+      setSubmissionsLoading(false);
+      return;
+    }
 
     let isMounted = true;
 
@@ -550,7 +567,13 @@ export default function InstructorGrading() {
   }, [selectedCourseId]);
 
   useEffect(() => {
-    if (!selectedCourseId || !selectedAsgId) return;
+    if (!selectedCourseId || !selectedAsgId) {
+      setSubmissions([]);
+      setSelectedSub(null);
+      setSubDetail(null);
+      setSubmissionsLoading(false);
+      return;
+    }
 
     let isMounted = true;
 
@@ -656,7 +679,7 @@ export default function InstructorGrading() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `/api/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}/file`,
+        buildApiUrl(`/courses/${selectedCourseId}/assignments/${selectedAsgId}/submissions/${selectedSub.id}/file`),
         {
           headers: { Authorization: `Bearer ${token}` },
         },

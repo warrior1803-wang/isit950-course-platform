@@ -77,5 +77,4 @@ export const membershipApi = {
   getCurrent: () => api.get('/membership'),
   upgrade: (data) => api.post('/membership/upgrade', data),
   getLimits: () => api.get('/membership/limits'),
-  getStats: () => api.get('/admin/membership/stats'),
 };

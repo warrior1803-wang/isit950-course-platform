@@ -68,11 +68,16 @@ public class User {
     @Column(name = "discussion_week_start")
     private LocalDateTime discussionWeekStart;
 
-    @Column(name = "weekly_discussion_posts_used")
-    private Integer weeklyDiscussionPostsUsed;
+    @Column(name = "weekly_discussion_posts_used", nullable = false)
+    private Integer weeklyDiscussionPostsUsed = 0;
 
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.weeklyDiscussionPostsUsed == null) {
+            this.weeklyDiscussionPostsUsed = 0;
+        }
     }
 }
