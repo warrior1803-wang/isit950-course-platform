@@ -37,6 +37,9 @@ public class Assignment {
     @Column(name = "max_score")
     private Integer maxScore;
 
+    @Column(name = "file_size_limit_mb")
+    private Integer fileSizeLimitMb;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

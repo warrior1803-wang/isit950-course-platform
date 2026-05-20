@@ -1,4 +1,4 @@
-package com.learningplatform.backend.dto.submission;
+package com.learningplatform.backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
