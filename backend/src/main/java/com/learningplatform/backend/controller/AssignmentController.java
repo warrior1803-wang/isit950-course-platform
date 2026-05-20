@@ -5,6 +5,7 @@ import com.learningplatform.backend.common.response.ApiResponse;
 import com.learningplatform.backend.dto.AssignmentDetailResponse;
 import com.learningplatform.backend.dto.AutoSubmissionResponse;
 import com.learningplatform.backend.dto.AutoSubmitRequest;
+import com.learningplatform.backend.dto.CreateAssignmentRequest;
 import com.learningplatform.backend.dto.DeleteMessageResponse;
 import com.learningplatform.backend.dto.FileSubmissionResponse;
 import com.learningplatform.backend.dto.GradeSubmissionRequest;
@@ -12,9 +13,9 @@ import com.learningplatform.backend.dto.InstructorSubmissionDetailResponse;
 import com.learningplatform.backend.dto.MySubmissionResponse;
 import com.learningplatform.backend.dto.ResubmissionLimitResponse;
 import com.learningplatform.backend.dto.UpdateAssignmentRequest;
-import com.learningplatform.backend.dto.assignment.AssignmentCreateResponse;
-import com.learningplatform.backend.dto.assignment.CreateAssignmentRequest;
+import com.learningplatform.backend.dto.AssignmentCreateResponse;
 import com.learningplatform.backend.service.AssignmentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,7 +38,7 @@ public class AssignmentController {
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<ApiResponse<AssignmentCreateResponse>> createAssignment(
             @PathVariable Long courseId,
-            @RequestBody CreateAssignmentRequest request,
+            @Valid @RequestBody CreateAssignmentRequest request,
             Authentication authentication
     ) {
         AssignmentCreateResponse response = assignmentService.createAssignment(
@@ -173,12 +174,12 @@ public class AssignmentController {
 
     @GetMapping("/{assignmentId}/submissions")
     @PreAuthorize("hasRole('INSTRUCTOR')")
-    public ResponseEntity<List<com.learningplatform.backend.dto.submission.InstructorSubmissionListResponse>> getAssignmentSubmissions(
+    public ResponseEntity<List<com.learningplatform.backend.dto.InstructorSubmissionListResponse>> getAssignmentSubmissions(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId,
             Authentication authentication
     ) {
-        List<com.learningplatform.backend.dto.submission.InstructorSubmissionListResponse> response = assignmentService.getAssignmentSubmissions(
+        List<com.learningplatform.backend.dto.InstructorSubmissionListResponse> response = assignmentService.getAssignmentSubmissions(
                 courseId,
                 assignmentId,
                 authentication.getName()
