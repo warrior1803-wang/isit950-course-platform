@@ -31,11 +31,21 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function acceptFile(file) {
-  const maxBytes = 50 * 1024 * 1024;
+function getFileSizeLimitMb(assignment) {
+  return assignment?.fileSizeLimitMb ?? 10;
+}
+
+function acceptFile(file, fileSizeLimitMb) {
+  const maxBytes = fileSizeLimitMb * 1024 * 1024;
   const ext = file.name.split(".").pop()?.toLowerCase();
-  if (ext !== "pdf" && ext !== "docx") return false;
-  return file.size <= maxBytes;
+  if (ext !== "pdf" && ext !== "docx") return { accepted: false };
+  if (file.size > maxBytes) {
+    return {
+      accepted: false,
+      error: `File exceeds the ${fileSizeLimitMb}MB limit for this assignment`,
+    };
+  }
+  return { accepted: true };
 }
 
 function UpgradePrompt() {
@@ -148,10 +158,14 @@ export default function AssignmentSubmission() {
     submission?.resubmissionsLimit ?? assignment?.resubmissionsLimit ?? 0;
 
   function pickFile(file) {
-    if (!file || !acceptFile(file)) {
+    const fileSizeLimitMb = getFileSizeLimitMb(assignment);
+    const result = file ? acceptFile(file, fileSizeLimitMb) : { accepted: false };
+    if (!file || !result.accepted) {
       setPickedFile(null);
+      setSubmitError(result.error || "");
       return;
     }
+    setSubmitError("");
     setPickedFile(file);
   }
 

@@ -1,4 +1,4 @@
-package com.learningplatform.backend.dto.assignment;
+package com.learningplatform.backend.dto;
 
 import com.learningplatform.backend.model.enums.AssignmentType;
 import lombok.AllArgsConstructor;
@@ -14,6 +14,7 @@ public class AssignmentCreateResponse {
     private String title;
     private LocalDateTime dueDate;
     private Integer maxScore;
+    private Integer fileSizeLimitMb;
     private AssignmentType type;
     private int questionCount;
     private LocalDateTime createdAt;

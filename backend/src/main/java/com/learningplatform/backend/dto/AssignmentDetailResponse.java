@@ -19,6 +19,7 @@ public class AssignmentDetailResponse {
     private String description;
     private LocalDateTime dueDate;
     private Integer maxScore;
+    private Integer fileSizeLimitMb;
     private LocalDateTime createdAt;
     private AssignmentType type;
     private Integer questionCount;

@@ -2,17 +2,18 @@ package com.learningplatform.backend.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learningplatform.backend.common.exception.BusinessException;
 import com.learningplatform.backend.common.exception.ResubmissionLimitException;
+import com.learningplatform.backend.dto.AssignmentCreateResponse;
 import com.learningplatform.backend.dto.AssignmentDetailResponse;
 import com.learningplatform.backend.dto.AutoSubmissionResponse;
 import com.learningplatform.backend.dto.AutoSubmitRequest;
+import com.learningplatform.backend.dto.CreateAssignmentRequest;
 import com.learningplatform.backend.dto.FileSubmissionResponse;
 import com.learningplatform.backend.dto.GradeSubmissionRequest;
 import com.learningplatform.backend.dto.InstructorSubmissionDetailResponse;
 import com.learningplatform.backend.dto.MySubmissionResponse;
 import com.learningplatform.backend.dto.UpdateAssignmentRequest;
-import com.learningplatform.backend.dto.assignment.AssignmentCreateResponse;
-import com.learningplatform.backend.dto.assignment.CreateAssignmentRequest;
 import com.learningplatform.backend.model.Assignment;
 import com.learningplatform.backend.model.AssignmentQuestion;
 import com.learningplatform.backend.model.Course;
@@ -82,6 +83,7 @@ public class AssignmentService {
         assignment.setDescription(request.getDescription());
         assignment.setDueDate(request.getDueDate());
         assignment.setMaxScore(request.getMaxScore());
+        assignment.setFileSizeLimitMb(request.getFileSizeLimitMb());
         assignment.setType(type);
 
         if (type == AssignmentType.AUTO) {
@@ -114,6 +116,7 @@ public class AssignmentService {
                 saved.getTitle(),
                 saved.getDueDate(),
                 saved.getMaxScore(),
+                saved.getFileSizeLimitMb(),
                 saved.getType(),
                 saved.getQuestions() == null ? 0 : saved.getQuestions().size(),
                 saved.getCreatedAt()
@@ -142,7 +145,6 @@ public class AssignmentService {
 
         if (isStudent) {
             // Sprint 5 当前先放行。
-            // 如果后面要更严格，可以在这里检查学生是否 enrolled in this course。
         }
 
         if (assignment.getType() == AssignmentType.FILE) {
@@ -229,8 +231,6 @@ public class AssignmentService {
             }
 
             Assignment saved = assignmentRepository.save(assignment);
-
-            // PUT response always returns Instructor view
             return buildAssignmentDetailResponse(saved, true);
         }
 
@@ -244,6 +244,7 @@ public class AssignmentService {
                 assignment.getDescription(),
                 assignment.getDueDate(),
                 assignment.getMaxScore(),
+                assignment.getFileSizeLimitMb(),
                 assignment.getCreatedAt(),
                 assignment.getType(),
                 null,
@@ -280,6 +281,7 @@ public class AssignmentService {
                 assignment.getDescription(),
                 assignment.getDueDate(),
                 assignment.getMaxScore(),
+                assignment.getFileSizeLimitMb(),
                 assignment.getCreatedAt(),
                 assignment.getType(),
                 questionResponses.size(),
@@ -316,6 +318,10 @@ public class AssignmentService {
 
         if (request.getMaxScore() == null || request.getMaxScore() <= 0) {
             throw new RuntimeException("Max score must be greater than 0");
+        }
+
+        if (request.getFileSizeLimitMb() != null && request.getFileSizeLimitMb() <= 0) {
+            throw new RuntimeException("File size limit must be greater than 0");
         }
 
         if (type == AssignmentType.AUTO) {
@@ -436,6 +442,7 @@ public class AssignmentService {
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
             throw new RuntimeException("You are not allowed to delete this assignment");
         }
+
         submissionRepository.deleteByAssignment(assignment);
         assignmentRepository.delete(assignment);
     }
@@ -455,6 +462,20 @@ public class AssignmentService {
 
         if (assignment.getType() != AssignmentType.FILE) {
             throw new RuntimeException("This assignment does not accept file submissions");
+        }
+
+        Integer fileSizeLimitMb = assignment.getFileSizeLimitMb();
+
+        if (fileSizeLimitMb != null) {
+            long maxBytes = (long) fileSizeLimitMb * 1024 * 1024;
+
+            if (file.getSize() > maxBytes) {
+                throw new BusinessException(
+                        "File exceeds the "
+                                + fileSizeLimitMb
+                                + "MB limit for this assignment"
+                );
+            }
         }
 
         enforceResubmissionLimit(assignment, student);
@@ -519,14 +540,11 @@ public class AssignmentService {
             String correctAnswer;
 
             if (question.getType() == QuestionType.MCQ) {
-
                 correctAnswer =
                         question.getCorrectOption() == null
                                 ? null
                                 : question.getCorrectOption().toString();
-
             } else {
-
                 correctAnswer = question.getCorrectAnswer();
             }
 
@@ -662,7 +680,7 @@ public class AssignmentService {
         );
     }
 
-    public List<com.learningplatform.backend.dto.submission.InstructorSubmissionListResponse> getAssignmentSubmissions(
+    public List<com.learningplatform.backend.dto.InstructorSubmissionListResponse> getAssignmentSubmissions(
             Long courseId,
             Long assignmentId,
             String instructorEmail
@@ -679,7 +697,7 @@ public class AssignmentService {
 
         List<Submission> submissions = submissionRepository.findByAssignmentOrderBySubmittedAtDesc(assignment);
 
-        List<com.learningplatform.backend.dto.submission.InstructorSubmissionListResponse> responses = new ArrayList<>();
+        List<com.learningplatform.backend.dto.InstructorSubmissionListResponse> responses = new ArrayList<>();
 
         for (Submission submission : submissions) {
             boolean autoGraded = assignment.getType() == AssignmentType.AUTO
@@ -689,9 +707,9 @@ public class AssignmentService {
                     ? "graded"
                     : "pending";
 
-            responses.add(new com.learningplatform.backend.dto.submission.InstructorSubmissionListResponse(
+            responses.add(new com.learningplatform.backend.dto.InstructorSubmissionListResponse(
                     submission.getId(),
-                    new com.learningplatform.backend.dto.submission.InstructorSubmissionListResponse.StudentInfo(
+                    new com.learningplatform.backend.dto.InstructorSubmissionListResponse.StudentInfo(
                             submission.getStudent().getId(),
                             submission.getStudent().getName()
                     ),
@@ -746,13 +764,10 @@ public class AssignmentService {
                 autoGraded,
                 submission.getScore(),
                 assignment.getMaxScore(),
-
                 submission.getFilename(),
                 null,
                 submission.getFeedback(),
-
                 breakdown,
-
                 submission.getOverriddenScore(),
                 submission.getOverriddenBy(),
                 submission.getOverrideReason()
@@ -839,11 +854,18 @@ public class AssignmentService {
                 .findByIdAndAssignment(submissionId, assignment)
                 .orElseThrow(() -> new RuntimeException("Submission not found"));
 
-        // FILE assignment manual grading
+        Integer maxScore = assignment.getMaxScore();
+
         if (assignment.getType() == AssignmentType.FILE) {
 
             if (request.getScore() == null) {
                 throw new RuntimeException("Score is required");
+            }
+
+            if (request.getScore() > maxScore) {
+                throw new BusinessException(
+                        "Score cannot exceed the assignment maximum of " + maxScore
+                );
             }
 
             submission.setScore(request.getScore());
@@ -860,11 +882,16 @@ public class AssignmentService {
             );
         }
 
-        // AUTO assignment override
         if (assignment.getType() == AssignmentType.AUTO) {
 
             if (request.getOverriddenScore() == null) {
                 throw new RuntimeException("Overridden score is required");
+            }
+
+            if (request.getOverriddenScore() > maxScore) {
+                throw new BusinessException(
+                        "Score cannot exceed the assignment maximum of " + maxScore
+                );
             }
 
             submission.setOverriddenScore(request.getOverriddenScore());
