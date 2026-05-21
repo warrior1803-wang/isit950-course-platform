@@ -17,6 +17,7 @@ public class AssignmentListResponse {
     private LocalDateTime openDate;
     private LocalDateTime dueDate;
     private Integer maxScore;
+    private Integer fileSizeLimitMb;
     private AssignmentType type;
     private SubmissionSummaryResponse submissionStatus;
 }

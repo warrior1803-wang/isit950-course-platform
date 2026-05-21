@@ -44,19 +44,29 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
   const [isLoading, setIsLoading] = useState(false);
 
   function set(key, value) {
-    setFields(prev => ({ ...prev, [key]: value }));
+    const nextFields = { ...fields, [key]: value };
+    setFields(nextFields);
+    if (errors[key]) {
+      setErrors(validate(nextFields));
+    }
   }
 
-  function validate() {
+  function validate(nextFields = fields) {
     const errs = {};
-    if (!fields.title.trim()) errs.title = 'This field is required';
-    if (!fields.code.trim()) {
+    if (!nextFields.title.trim()) {
+      errs.title = 'This field is required';
+    }
+    if (!nextFields.code.trim()) {
       errs.code = 'This field is required';
-    } else if (fields.code.trim().length > 10) {
+    } else if (nextFields.code.trim().length > 10) {
       errs.code = 'Max 10 characters';
     }
-    if (!fields.session.trim()) errs.session = 'This field is required';
-    if (!fields.description.trim()) errs.description = 'This field is required';
+    if (!nextFields.session.trim()) {
+      errs.session = 'This field is required';
+    }
+    if (!nextFields.description.trim()) {
+      errs.description = 'This field is required';
+    }
     return errs;
   }
 

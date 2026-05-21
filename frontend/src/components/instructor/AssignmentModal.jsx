@@ -99,11 +99,15 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
     dueDate: '',
     maxScore: '',
     type: 'FILE',
-    fileSizeLimitMb: '50',
+    fileSizeLimitMb: '10',
     questions: [createQuestion(0)],
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const titleLengthMessage = 'Title must be 200 characters or fewer';
+  const descriptionLengthMessage = 'Description must be 1000 characters or fewer';
+  const questionLengthMessage = 'Question must be 500 characters or fewer';
+  const optionLengthMessage = 'Option must be 200 characters or fewer';
   const totalPoints = fields.questions.reduce(
     (sum, question) => sum + (Number(question.points) || 0),
     0,
@@ -118,15 +122,33 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
       dueDate: toDateTimeLocal(initialData.dueDate),
       maxScore: initialData.maxScore ?? '',
       type: nextType,
-      fileSizeLimitMb: '50',
+      fileSizeLimitMb: initialData.fileSizeLimitMb ?? '10',
       questions: Array.isArray(initialData.questions) && initialData.questions.length > 0
         ? initialData.questions.map(normalizeQuestion)
         : [createQuestion(0)],
     });
   }, [initialData]);
 
+  function setLengthError(key, message, hasError) {
+    setErrors(prev => {
+      if (hasError) {
+        return { ...prev, [key]: message };
+      }
+      if (prev[key] !== message) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
   function setField(key, value) {
     setFields(prev => ({ ...prev, [key]: value }));
+    if (key === 'title') {
+      setLengthError('title', titleLengthMessage, value.length > 200);
+    }
+    if (key === 'description') {
+      setLengthError('description', descriptionLengthMessage, value.length > 1000);
+    }
   }
 
   function setType(type) {
@@ -144,6 +166,12 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
         i === index ? { ...question, ...patch } : question
       )),
     }));
+    if (patch.text !== undefined) {
+      setLengthError(`q-${index}-text`, questionLengthMessage, patch.text.length > 500);
+    }
+    if (patch.correctAnswer !== undefined) {
+      setLengthError(`q-${index}-answer`, optionLengthMessage, patch.correctAnswer.length > 200);
+    }
   }
 
   function updateOption(questionIndex, optionIndex, value) {
@@ -157,6 +185,14 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
         };
       }),
     }));
+    const nextOptions = fields.questions[questionIndex].options.map((option, j) => (
+      j === optionIndex ? value : option
+    ));
+    setLengthError(
+      `q-${questionIndex}-options`,
+      optionLengthMessage,
+      nextOptions.some(option => option.length > 200),
+    );
   }
 
   function addQuestion() {
@@ -197,8 +233,16 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
 
   function validate() {
     const nextErrors = {};
-    if (!fields.title.trim()) nextErrors.title = 'This field is required';
-    if (!fields.description.trim()) nextErrors.description = 'This field is required';
+    if (!fields.title.trim()) {
+      nextErrors.title = 'This field is required';
+    } else if (fields.title.length > 200) {
+      nextErrors.title = titleLengthMessage;
+    }
+    if (!fields.description.trim()) {
+      nextErrors.description = 'This field is required';
+    } else if (fields.description.length > 1000) {
+      nextErrors.description = descriptionLengthMessage;
+    }
     if (!fields.dueDate || !toIsoDate(fields.dueDate)) nextErrors.dueDate = 'Choose a valid due date';
     if (fields.type === 'FILE' && (!fields.maxScore || Number(fields.maxScore) < 1)) {
       nextErrors.maxScore = 'Enter at least 1 mark';
@@ -211,14 +255,22 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
         nextErrors.questions = 'Add at least one question';
       }
       fields.questions.forEach((question, index) => {
-        if (!question.text.trim()) nextErrors[`q-${index}-text`] = 'Required';
+        if (!question.text.trim()) {
+          nextErrors[`q-${index}-text`] = 'Required';
+        } else if (question.text.length > 500) {
+          nextErrors[`q-${index}-text`] = questionLengthMessage;
+        }
         if (!question.points || Number(question.points) < 1) nextErrors[`q-${index}-points`] = 'Min 1';
         if (question.type === 'MCQ') {
           if (question.options.some(option => !option.trim())) {
             nextErrors[`q-${index}-options`] = 'All options need text';
+          } else if (question.options.some(option => option.length > 200)) {
+            nextErrors[`q-${index}-options`] = optionLengthMessage;
           }
         } else if (!question.correctAnswer.trim()) {
           nextErrors[`q-${index}-answer`] = 'Required';
+        } else if (question.correctAnswer.length > 200) {
+          nextErrors[`q-${index}-answer`] = optionLengthMessage;
         }
       });
     }
@@ -243,6 +295,8 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
       };
       if (fields.type === 'AUTO') {
         payload.questions = fields.questions.map(buildQuestionPayload);
+      } else {
+        payload.fileSizeLimitMb = Number(fields.fileSizeLimitMb);
       }
       await onSubmit(payload);
     } finally {
@@ -252,6 +306,12 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
 
   const isCreate = mode === 'create';
   const disabled = isSubmitting || isLoadingDetail;
+  const hasLengthError = Object.values(errors).some(error => [
+    titleLengthMessage,
+    descriptionLengthMessage,
+    questionLengthMessage,
+    optionLengthMessage,
+  ].includes(error));
 
   return (
     <div
@@ -361,7 +421,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
               </div>
 
               {fields.type === 'FILE' ? (
-                <Field label="File size limit" error={errors.fileSizeLimitMb}>
+                <Field label="File Size Limit (MB)" error={errors.fileSizeLimitMb}>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -432,16 +492,16 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                             Points: {errors[`q-${index}-points`]}
                           </span>
                         )}
-                        <div>
-                          <div className="qe-field-label">Question text</div>
-                          <textarea
-                            className="qe-text-input"
-                            rows={2}
-                            placeholder="Enter question..."
-                            value={question.text}
-                            onChange={e => updateQuestion(index, { text: e.target.value })}
-                            disabled={disabled}
-                          />
+                          <div>
+                            <div className="qe-field-label">Question text</div>
+                            <textarea
+                              className="qe-text-input"
+                              rows={2}
+                              placeholder="Enter question..."
+                              value={question.text}
+                              onChange={e => updateQuestion(index, { text: e.target.value })}
+                              disabled={disabled}
+                            />
                           {errors[`q-${index}-text`] && (
                             <span className="text-[11px] text-[#d85a30] mt-0.5">
                               {errors[`q-${index}-text`]}
@@ -461,14 +521,14 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                                   onChange={() => updateQuestion(index, { correctOption: optionIndex })}
                                   disabled={disabled}
                                   aria-label={`Mark option ${optionIndex + 1} correct`}
-                                />
-                                <input
-                                  className="qe-option-input"
-                                  placeholder={`Option ${optionIndex + 1}`}
-                                  value={option}
-                                  onChange={e => updateOption(index, optionIndex, e.target.value)}
-                                  disabled={disabled}
-                                />
+                                  />
+                                  <input
+                                    className="qe-option-input"
+                                    placeholder={`Option ${optionIndex + 1}`}
+                                    value={option}
+                                    onChange={e => updateOption(index, optionIndex, e.target.value)}
+                                    disabled={disabled}
+                                  />
                                 <button
                                   type="button"
                                   className="qe-remove"
@@ -498,8 +558,8 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                             )}
                           </div>
                         ) : (
-                          <div>
-                            <div className="qe-field-label">Correct answer</div>
+                            <div>
+                              <div className="qe-field-label">Correct answer</div>
                               <input
                                 className="qe-text-input"
                                 placeholder={question.type === 'FILLIN'
@@ -541,12 +601,12 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
             disabled={disabled}
           >
             Cancel
-          </button>
-          <button
-            className="bg-btn text-light rounded-[10px] h-10 px-4 text-[13px] flex items-center gap-1.5 font-serif cursor-pointer hover:opacity-90 disabled:opacity-50 transition-opacity duration-150"
-            onClick={handleSubmit}
-            disabled={disabled}
-          >
+            </button>
+            <button
+              className="bg-btn text-light rounded-[10px] h-10 px-4 text-[13px] flex items-center gap-1.5 font-serif cursor-pointer hover:opacity-90 disabled:opacity-50 transition-opacity duration-150"
+              onClick={handleSubmit}
+              disabled={disabled || hasLengthError}
+            >
             {isSubmitting ? (
               <ButtonSpinner />
             ) : (
