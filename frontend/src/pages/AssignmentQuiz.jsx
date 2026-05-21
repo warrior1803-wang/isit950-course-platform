@@ -52,7 +52,8 @@ function buildResult(submission, assignment) {
   breakdown.forEach(item => {
     perQuestion[String(item.questionId)] = {
       correct: Boolean(item.correct),
-      points: item.points ?? 0,
+      pointsAwarded: item.pointsAwarded ?? 0,
+      maxPoints: item.maxPoints ?? 0,
     };
   });
 
@@ -216,7 +217,7 @@ export default function AssignmentQuiz() {
                   <td>{item.questionText ?? question?.text ?? `Question ${index + 1}`}</td>
                   <td>{item.studentAnswer ?? '—'}</td>
                   <td>{item.correctAnswer ?? '—'}</td>
-                  <td>{item.points ?? 0}</td>
+                  <td>{item.pointsAwarded ?? 0} / {item.maxPoints ?? question?.points ?? 0}</td>
                 </tr>
               );
             })}
@@ -229,14 +230,17 @@ export default function AssignmentQuiz() {
   function renderQuestion(question, index) {
     const questionResult = result?.perQuestion?.[String(question.id)];
     const selectedAnswer = answers[question.id];
-    const earnedPoints = questionResult?.points ?? questionResult?.earned ?? 0;
+    const earnedPoints = questionResult?.pointsAwarded ?? questionResult?.earned ?? 0;
+    const questionMaxPoints = questionResult?.maxPoints ?? question.points ?? 0;
 
     return (
       <div key={question.id} className="quiz-question-card">
         <div className="quiz-question-header">
           <div className="quiz-question-num">Question {index + 1}</div>
           <div className="quiz-question-points">
-            {submitted && questionResult ? `+${earnedPoints} pts` : `${question.points} pts`}
+            {submitted && questionResult
+              ? `+${earnedPoints} / ${questionMaxPoints} pts`
+              : `${question.points} pts`}
           </div>
         </div>
         <div className="quiz-question-text">{question.text}</div>
