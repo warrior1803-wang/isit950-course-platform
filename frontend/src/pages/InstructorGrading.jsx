@@ -805,6 +805,15 @@ export default function InstructorGrading() {
   const manualSubmissions = filtered.filter((item) => item.type !== "AUTO");
   const autoSubmissions = filtered.filter((item) => item.type === "AUTO");
   const isAuto = subDetail?.type === "AUTO";
+  const scoreNumber = score === "" ? null : Number(score);
+  const scoreValidationError =
+    score === "" || !subDetail || Number.isNaN(scoreNumber)
+      ? ""
+      : scoreNumber < 0
+        ? "Score cannot be negative"
+        : scoreNumber > Number(subDetail.maxScore)
+          ? `Score cannot exceed ${subDetail.maxScore}`
+          : "";
   const detailTitle = subDetail
     ? `${subDetail.assignmentTitle || selectedSub?.assignmentTitle || selectedAssignment?.title || "Assignment"} — ${subDetail.studentName}`
     : "Select a submission";
@@ -1035,11 +1044,16 @@ export default function InstructorGrading() {
                       type="number"
                       placeholder="0–10"
                       min="0"
-                      max="10"
+                      max={subDetail.maxScore}
                       value={score}
                       onChange={(event) => setScore(event.target.value)}
                       style={styles.fieldInput}
                     />
+                    {scoreValidationError && (
+                      <div style={{ marginTop: 6, fontSize: 12, color: "#b91c1c" }}>
+                        {scoreValidationError}
+                      </div>
+                    )}
                   </div>
                   <div className="field">
                     <label>Max score</label>
@@ -1085,12 +1099,12 @@ export default function InstructorGrading() {
                   </button>
                   <button
                     className="btn-primary"
-                    disabled={savingGrade}
+                    disabled={savingGrade || Boolean(scoreValidationError)}
                     type="button"
                     onClick={() => handleSaveGrade()}
                     style={{
                       ...styles.btnPrimary,
-                      ...(savingGrade ? { opacity: 0.7, cursor: "wait" } : {}),
+                      ...(savingGrade || scoreValidationError ? { opacity: 0.7, cursor: "wait" } : {}),
                     }}
                   >
                 {savingGrade ? <ButtonSpinner /> : <Icon>check_circle</Icon>}{" "}

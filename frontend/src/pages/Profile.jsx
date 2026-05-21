@@ -171,7 +171,7 @@ export default function Profile() {
     e.preventDefault();
     setPasswordError(null);
     setSuccessMessage(null);
-    if (!password || password.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
+    if (!password || password.length < 8) { setPasswordError('Minimum 8 characters'); return; }
     if (password !== confirmPassword) { setPasswordError('Passwords do not match.'); return; }
     setSavingPassword(true);
     try {
@@ -487,7 +487,7 @@ export default function Profile() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     disabled={savingPassword}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     autoComplete="new-password"
                     autoFocus
                   />
