@@ -33,21 +33,54 @@ function ButtonSpinner() {
   );
 }
 
+const FIELD_LIMITS = {
+  title: 100,
+  code: 15,
+  session: 20,
+  description: 500,
+};
+
+const LENGTH_MESSAGES = {
+  title: 'Course name must be 100 characters or fewer',
+  code: 'Course code must be 15 characters or fewer',
+  session: 'Session must be 20 characters or fewer',
+  description: 'Description must be 500 characters or fewer',
+};
+
 export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
-  const [fields, setFields] = useState({
+  const initialFields = {
     title: initialData?.title || '',
     code: initialData?.code || '',
     session: initialData?.session || '',
     description: initialData?.description || '',
-  });
-  const [errors, setErrors] = useState({});
+  };
+  const [fields, setFields] = useState(initialFields);
+  const [errors, setErrors] = useState(() => validate(initialFields));
   const [isLoading, setIsLoading] = useState(false);
+
+  function setLengthError(key, value) {
+    const message = LENGTH_MESSAGES[key];
+    const limit = FIELD_LIMITS[key];
+
+    setErrors(prev => {
+      const hasError = value.length > limit;
+      if (hasError) {
+        return { ...prev, [key]: message };
+      }
+      if (prev[key] !== message) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
 
   function set(key, value) {
     const nextFields = { ...fields, [key]: value };
     setFields(nextFields);
     if (errors[key]) {
       setErrors(validate(nextFields));
+    } else if (Object.prototype.hasOwnProperty.call(FIELD_LIMITS, key)) {
+      setLengthError(key, value);
     }
   }
 
@@ -55,17 +88,23 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
     const errs = {};
     if (!nextFields.title.trim()) {
       errs.title = 'This field is required';
+    } else if (nextFields.title.length > FIELD_LIMITS.title) {
+      errs.title = LENGTH_MESSAGES.title;
     }
     if (!nextFields.code.trim()) {
       errs.code = 'This field is required';
-    } else if (nextFields.code.trim().length > 10) {
-      errs.code = 'Max 10 characters';
+    } else if (nextFields.code.length > FIELD_LIMITS.code) {
+      errs.code = LENGTH_MESSAGES.code;
     }
     if (!nextFields.session.trim()) {
       errs.session = 'This field is required';
+    } else if (nextFields.session.length > FIELD_LIMITS.session) {
+      errs.session = LENGTH_MESSAGES.session;
     }
     if (!nextFields.description.trim()) {
       errs.description = 'This field is required';
+    } else if (nextFields.description.length > FIELD_LIMITS.description) {
+      errs.description = LENGTH_MESSAGES.description;
     }
     return errs;
   }
@@ -86,6 +125,9 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
   }
 
   const isCreate = mode === 'create';
+  const hasLengthError = Object.entries(FIELD_LIMITS).some(
+    ([key, limit]) => fields[key].length > limit,
+  );
 
   return (
     /* Backdrop */
@@ -121,6 +163,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
               placeholder="e.g. Advanced Software Engineering"
               value={fields.title}
               onChange={e => set('title', e.target.value)}
+              maxLength={FIELD_LIMITS.title}
             />
           </FieldWrapper>
 
@@ -132,7 +175,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
                 placeholder="e.g. ISIT999"
                 value={fields.code}
                 onChange={e => set('code', e.target.value)}
-                maxLength={15}
+                maxLength={FIELD_LIMITS.code}
               />
             </FieldWrapper>
             <FieldWrapper label="Session" error={errors.session}>
@@ -141,6 +184,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
                 placeholder="e.g. Autumn 2026"
                 value={fields.session}
                 onChange={e => set('session', e.target.value)}
+                maxLength={FIELD_LIMITS.session}
               />
             </FieldWrapper>
           </div>
@@ -153,6 +197,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
               placeholder="Brief course overview…"
               value={fields.description}
               onChange={e => set('description', e.target.value)}
+              maxLength={FIELD_LIMITS.description}
             />
           </FieldWrapper>
         </div>
@@ -169,7 +214,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
           <button
             className="bg-btn text-light rounded-[10px] h-10 px-4 text-[13px] flex items-center gap-1.5 font-serif cursor-pointer hover:opacity-90 disabled:opacity-50 transition-opacity duration-150"
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isLoading || hasLengthError}
           >
             {isLoading ? (
               <ButtonSpinner />
