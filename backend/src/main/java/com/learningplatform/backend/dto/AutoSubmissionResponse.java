@@ -18,6 +18,8 @@ public class AutoSubmissionResponse {
     private Boolean autoGraded;
     private Integer score;
     private Integer maxScore;
+    private Long resubmissionsUsed;
+    private Integer resubmissionsLimit;
     private List<BreakdownItem> breakdown;
 
     @Getter

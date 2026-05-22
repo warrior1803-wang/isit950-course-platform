@@ -99,7 +99,11 @@ export default function AssignmentQuiz() {
       if (assignmentResult.status === 'fulfilled') {
         const nextAssignment = assignmentResult.value.data?.data;
         setAssignment(nextAssignment);
-        setResubmissionsLimit(nextAssignment?.resubmissionsLimit ?? 0);
+        setResubmissionsLimit(
+          Object.prototype.hasOwnProperty.call(nextAssignment || {}, 'resubmissionsLimit')
+            ? nextAssignment.resubmissionsLimit
+            : 0,
+        );
       } else {
         setAssignment(null);
         setError(getApiErrorState(assignmentResult.reason).message);
@@ -111,9 +115,11 @@ export default function AssignmentQuiz() {
         const submission = submissionResult.value.data;
         setResubmissionsUsed(submission?.resubmissionsUsed ?? 0);
         setResubmissionsLimit(
-          submission?.resubmissionsLimit ??
-            assignmentResult.value.data?.data?.resubmissionsLimit ??
-            0,
+          Object.prototype.hasOwnProperty.call(submission || {}, 'resubmissionsLimit')
+            ? submission.resubmissionsLimit
+            : Object.prototype.hasOwnProperty.call(assignmentResult.value.data?.data || {}, 'resubmissionsLimit')
+              ? assignmentResult.value.data.data.resubmissionsLimit
+              : 0,
         );
 
         if (submission?.status === 'graded') {
@@ -144,18 +150,21 @@ export default function AssignmentQuiz() {
 
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
   const progressPercent = questions.length ? (answeredCount / questions.length) * 100 : 0;
+  const isOverdue = Boolean(assignment?.dueDate && new Date(assignment.dueDate) < new Date());
   const safeResubmissionsUsed = resubmissionsUsed ?? 0;
-  const safeResubmissionsLimit = resubmissionsLimit ?? 0;
-  const resubmissionsRemaining = Math.max(safeResubmissionsLimit - safeResubmissionsUsed, 0);
-  const limitReached = submitted && resubmissionsRemaining === 0;
+  const unlimitedResubmissions = resubmissionsLimit == null;
+  const resubmissionsRemaining = unlimitedResubmissions
+    ? null
+    : Math.max(resubmissionsLimit - safeResubmissionsUsed, 0);
+  const limitReached = submitted && !unlimitedResubmissions && resubmissionsRemaining === 0;
 
   function updateAnswer(questionId, value) {
-    if (submitted || loading) return;
+    if (submitted || loading || isOverdue) return;
     setAnswers(current => ({ ...current, [questionId]: value }));
   }
 
   async function submitQuiz() {
-    if (!allAnswered || submitted || submitting) return;
+    if (!allAnswered || submitted || submitting || isOverdue) return;
     setSubmitting(true);
     setSubmitError('');
     setShowUpgradePrompt(false);
@@ -168,7 +177,11 @@ export default function AssignmentQuiz() {
       setResubmissionsUsed(current =>
         response.data?.resubmissionsUsed ?? (preparingResubmission ? current + 1 : current),
       );
-      setResubmissionsLimit(current => response.data?.resubmissionsLimit ?? current);
+      setResubmissionsLimit(current =>
+        Object.prototype.hasOwnProperty.call(response.data || {}, 'resubmissionsLimit')
+          ? response.data.resubmissionsLimit
+          : current,
+      );
     } catch (err) {
       if (isUpgradeRequired(err)) {
         setShowUpgradePrompt(true);
@@ -181,7 +194,7 @@ export default function AssignmentQuiz() {
   }
 
   function resubmitQuiz() {
-    if (resubmissionsRemaining <= 0) {
+    if (isOverdue || (!unlimitedResubmissions && resubmissionsRemaining <= 0)) {
       return;
     }
     setAnswers({});
@@ -386,7 +399,7 @@ export default function AssignmentQuiz() {
           {showUpgradePrompt && <UpgradePrompt />}
 
           {!submitted ? (
-            <button type="button" className="submit-btn" onClick={submitQuiz} disabled={!allAnswered || submitting}>
+            <button type="button" className="submit-btn" onClick={submitQuiz} disabled={!allAnswered || submitting || isOverdue}>
               <span className="material-symbols-rounded icon">send</span>
               {submitting && (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -395,16 +408,22 @@ export default function AssignmentQuiz() {
             </button>
           ) : (
             <div className="resubmit-card">
-              {limitReached ? (
+              {isOverdue ? (
+                <div className="resubmit-heading">Resubmissions closed after the deadline</div>
+              ) : limitReached ? (
                 <UpgradePrompt />
               ) : (
                 <>
                   <div className="resubmit-heading">
-                    {resubmissionsRemaining} resubmission remaining (Free plan)
+                    {unlimitedResubmissions
+                      ? 'Unlimited resubmissions before the deadline'
+                      : `${resubmissionsRemaining} resubmission${resubmissionsRemaining === 1 ? '' : 's'} remaining (Free plan)`}
                   </div>
-                  <Link to="/membership" className="membership-link">
-                    Upgrade to Member for unlimited resubmissions
-                  </Link>
+                  {!unlimitedResubmissions && (
+                    <Link to="/membership" className="membership-link">
+                      Upgrade to Member for unlimited resubmissions
+                    </Link>
+                  )}
                   <button type="button" className="submit-btn resubmit-quiz-btn" onClick={resubmitQuiz}>
                     <span className="material-symbols-rounded icon">refresh</span>
                     Resubmit quiz
@@ -444,7 +463,9 @@ export default function AssignmentQuiz() {
             </div>
             <div className="info-row">
               <span className="info-row-label">Resubmissions</span>
-              <span className="info-row-val">{resubmissionsRemaining} remaining</span>
+              <span className="info-row-val">
+                {unlimitedResubmissions ? 'Unlimited' : `${resubmissionsRemaining} remaining`}
+              </span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Result</span>
