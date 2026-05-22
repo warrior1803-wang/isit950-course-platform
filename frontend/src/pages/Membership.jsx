@@ -17,8 +17,8 @@ export default function Membership() {
   const [selectedPlan, setSelectedPlan] = useState('monthly');
   const [modalOpen, setModalOpen] = useState(false);
   const [upgraded, setUpgraded] = useState(false);
-  const [error, setError] = useState(null);
-
+  const [loadError, setLoadError] = useState(null);
+  const [upgradeError, setUpgradeError] = useState(null);
   const [paying, setPaying] = useState(false);
 
   // payment form state
@@ -27,11 +27,23 @@ export default function Membership() {
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
 
+  async function loadMembership() {
+    setLoading(true);
+    setLoadError(null);
+
+    try {
+      const res = await membershipApi.get();
+      setMem(res.data);
+    } catch {
+      setMem(null);
+      setLoadError('Could not load membership status. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
-    membershipApi.get()
-      .then(res => setMem(res.data))
-      .catch(err => setError(getApiErrorState(err)))
-      .finally(() => setLoading(false));
+    loadMembership();
   }, []);
 
   const isPremium = upgraded || (mem && mem.type !== 'FREE');
@@ -54,7 +66,7 @@ export default function Membership() {
   async function processPayment() {
     if (paying) return;
     setPaying(true);
-    setError(null);
+    setUpgradeError(null);
     await new Promise(r => setTimeout(r, 800));
     try {
       await membershipApi.upgrade({
@@ -64,7 +76,7 @@ export default function Membership() {
       setUpgraded(true);
       setModalOpen(false);
     } catch (err) {
-      setError(getApiErrorState(err));
+      setUpgradeError(getApiErrorState(err));
     } finally {
       setPaying(false);
     }
@@ -78,6 +90,18 @@ export default function Membership() {
     );
   }
 
+  if (loadError) {
+    return (
+      <>
+        <div className="page-title" style={{ marginBottom: 4 }}>Membership</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+          Manage your plan and track your usage
+        </div>
+        <ErrorState message={loadError} onRetry={loadMembership} retryLabel="Retry" />
+      </>
+    );
+  }
+
   return (
     <>
       <div className="page-title" style={{ marginBottom: 4 }}>Membership</div>
@@ -85,14 +109,14 @@ export default function Membership() {
         Manage your plan and track your usage
       </div>
 
-      {error && (
+      {upgradeError && (
         <div style={{ marginBottom: 16 }}>
-          {error.kind === 'upgrade' ? (
+          {upgradeError.kind === 'upgrade' ? (
             <div className="text-[13px] text-[#8b6914] bg-[#fef9c3] border border-[#fde047] rounded-xl px-4 py-3">
               This feature requires a membership. <a href="/membership" className="underline">Upgrade</a>
             </div>
           ) : (
-            <ErrorState message={error.message} />
+            <ErrorState message={upgradeError.message} />
           )}
         </div>
       )}
