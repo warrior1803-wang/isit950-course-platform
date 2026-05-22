@@ -153,6 +153,23 @@ export default function AssignmentReview() {
     String(assignment?.type || "").toUpperCase() === "AUTO" ||
     submission?.autoGraded === true;
   const breakdown = Array.isArray(submission?.breakdown) ? submission.breakdown : null;
+  const isOverdue = Boolean(assignment?.dueDate && new Date(assignment.dueDate) < new Date());
+  const resubmissionsUsed = submission?.resubmissionsUsed ?? 0;
+  const resubmissionsLimit = Object.prototype.hasOwnProperty.call(submission || {}, "resubmissionsLimit")
+    ? submission.resubmissionsLimit
+    : Object.prototype.hasOwnProperty.call(assignment || {}, "resubmissionsLimit")
+      ? assignment.resubmissionsLimit
+      : 0;
+  const unlimitedResubmissions =
+    submission?.unlimitedResubmissions === true ||
+    assignment?.unlimitedResubmissions === true;
+  const resubmissionsRemaining = unlimitedResubmissions
+    ? null
+    : Math.max(resubmissionsLimit - resubmissionsUsed, 0);
+  const canResubmit =
+    !isAutoAssignment &&
+    !isOverdue &&
+    (unlimitedResubmissions || resubmissionsRemaining > 0);
 
   if (error) {
     return (
@@ -477,9 +494,38 @@ export default function AssignmentReview() {
                   : "Not yet graded"}
               </span>
             </div>
+            <div className="info-row">
+              <span className="info-row-label">Resubmissions</span>
+              <span className="info-row-val">
+                {unlimitedResubmissions
+                  ? `${resubmissionsUsed} / ∞`
+                  : `${resubmissionsUsed} / ${resubmissionsLimit}`}
+              </span>
+            </div>
           </div>
 
           <div style={{ marginTop: 12 }}>
+            {canResubmit && (
+              <Link
+                to={`/courses/${courseId}/assignments/${assignmentId}/submit`}
+                className="review-download-btn"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  textDecoration: "none",
+                  padding: "10px 12px",
+                  marginBottom: 10,
+                }}
+              >
+                <span
+                  className="material-symbols-rounded"
+                  style={{ fontSize: 16 }}
+                >
+                  refresh
+                </span>
+                Resubmit assignment
+              </Link>
+            )}
             <Link
               to={`/courses/${courseId}`}
               className="review-download-btn"

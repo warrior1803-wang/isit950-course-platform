@@ -31,6 +31,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -148,10 +149,10 @@ public class AssignmentService {
         }
 
         if (assignment.getType() == AssignmentType.FILE) {
-            return buildFileAssignmentDetailResponse(assignment);
+            return buildFileAssignmentDetailResponse(assignment, currentUser);
         }
 
-        return buildAssignmentDetailResponse(assignment, isInstructor);
+        return buildAssignmentDetailResponse(assignment, isInstructor, currentUser);
     }
 
     @Transactional
@@ -199,7 +200,7 @@ public class AssignmentService {
             }
 
             Assignment saved = assignmentRepository.save(assignment);
-            return buildFileAssignmentDetailResponse(saved);
+            return buildFileAssignmentDetailResponse(saved, null);
         }
 
         if (assignment.getType() == AssignmentType.AUTO) {
@@ -231,13 +232,15 @@ public class AssignmentService {
             }
 
             Assignment saved = assignmentRepository.save(assignment);
-            return buildAssignmentDetailResponse(saved, true);
+            return buildAssignmentDetailResponse(saved, true, null);
         }
 
         throw new RuntimeException("Unsupported assignment type");
     }
 
-    private AssignmentDetailResponse buildFileAssignmentDetailResponse(Assignment assignment) {
+    private AssignmentDetailResponse buildFileAssignmentDetailResponse(Assignment assignment, User viewer) {
+        ResubmissionState resubmissionState = buildResubmissionPolicy(viewer);
+
         return new AssignmentDetailResponse(
                 assignment.getId(),
                 assignment.getTitle(),
@@ -248,15 +251,19 @@ public class AssignmentService {
                 assignment.getCreatedAt(),
                 assignment.getType(),
                 null,
+                resubmissionState.limit(),
+                resubmissionState.unlimited(),
                 null
         );
     }
 
     private AssignmentDetailResponse buildAssignmentDetailResponse(
             Assignment assignment,
-            boolean includeCorrectAnswers
+            boolean includeCorrectAnswers,
+            User viewer
     ) {
         List<AssignmentDetailResponse.QuestionResponse> questionResponses = new ArrayList<>();
+        ResubmissionState resubmissionState = buildResubmissionPolicy(viewer);
 
         for (AssignmentQuestion q : assignment.getQuestions()) {
             List<String> options = parseOptions(q.getOptionsJson());
@@ -285,6 +292,8 @@ public class AssignmentService {
                 assignment.getCreatedAt(),
                 assignment.getType(),
                 questionResponses.size(),
+                resubmissionState.limit(),
+                resubmissionState.unlimited(),
                 questionResponses
         );
     }
@@ -487,12 +496,16 @@ public class AssignmentService {
         submission.setStatus(SubmissionStatus.SUBMITTED);
 
         Submission saved = submissionRepository.save(submission);
+        ResubmissionState resubmissionState = buildResubmissionState(assignment, student);
 
         return new FileSubmissionResponse(
                 saved.getId(),
                 saved.getFilename(),
                 saved.getSubmittedAt(),
-                "submitted"
+                "submitted",
+                resubmissionState.used(),
+                resubmissionState.limit(),
+                resubmissionState.unlimited()
         );
     }
 
@@ -573,6 +586,7 @@ public class AssignmentService {
         }
 
         Submission saved = submissionRepository.save(submission);
+        ResubmissionState resubmissionState = buildResubmissionState(assignment, student);
 
         return new AutoSubmissionResponse(
                 saved.getId(),
@@ -581,6 +595,9 @@ public class AssignmentService {
                 true,
                 totalScore,
                 assignment.getMaxScore(),
+                resubmissionState.used(),
+                resubmissionState.limit(),
+                resubmissionState.unlimited(),
                 breakdown
         );
     }
@@ -619,11 +636,43 @@ public class AssignmentService {
     }
 
     private void enforceResubmissionLimit(Assignment assignment, User student) {
-        long submissionCount = submissionRepository.countByAssignmentAndStudent(assignment, student);
+        ResubmissionState resubmissionState = buildResubmissionState(assignment, student);
 
-        if (submissionCount >= 2) {
+        if (resubmissionState.used() != null
+                && resubmissionState.used() > 0
+                && assignment.getDueDate() != null
+                && LocalDateTime.now().isAfter(assignment.getDueDate())) {
+            throw new BusinessException("Assignment resubmissions are closed after the deadline");
+        }
+
+        if (!Boolean.TRUE.equals(resubmissionState.unlimited())
+                && resubmissionState.used() >= resubmissionState.limit()) {
             throw new ResubmissionLimitException();
         }
+    }
+
+    private ResubmissionState buildResubmissionState(Assignment assignment, User student) {
+        if (student == null || student.getRole() != UserRole.STUDENT) {
+            return new ResubmissionState(null, null, null);
+        }
+
+        long submissionCount = submissionRepository.countByAssignmentAndStudent(assignment, student);
+        long resubmissionsUsed = Math.max(submissionCount - 1, 0);
+        boolean unlimited = "MEMBER".equals(student.getMembershipType());
+
+        return new ResubmissionState(resubmissionsUsed, unlimited ? null : 2, unlimited);
+    }
+
+    private ResubmissionState buildResubmissionPolicy(User student) {
+        if (student == null || student.getRole() != UserRole.STUDENT) {
+            return new ResubmissionState(null, null, null);
+        }
+
+        boolean unlimited = "MEMBER".equals(student.getMembershipType());
+        return new ResubmissionState(null, unlimited ? null : 2, unlimited);
+    }
+
+    private record ResubmissionState(Long used, Integer limit, Boolean unlimited) {
     }
 
     public MySubmissionResponse getMySubmission(
@@ -645,7 +694,7 @@ public class AssignmentService {
             return null;
         }
 
-        long used = submissionRepository.countByAssignmentAndStudent(assignment, student);
+        ResubmissionState resubmissionState = buildResubmissionState(assignment, student);
 
         boolean autoGraded = assignment.getType() == AssignmentType.AUTO
                 && submission.getStatus() == SubmissionStatus.GRADED;
@@ -675,8 +724,9 @@ public class AssignmentService {
                 submission.getStatus().name().toLowerCase(),
                 autoGraded,
                 breakdown,
-                used,
-                2
+                resubmissionState.used(),
+                resubmissionState.limit(),
+                resubmissionState.unlimited()
         );
     }
 

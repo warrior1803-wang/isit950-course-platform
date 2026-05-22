@@ -13,4 +13,7 @@ public class FileSubmissionResponse {
     private String filename;
     private LocalDateTime submittedAt;
     private String status;
+    private Long resubmissionsUsed;
+    private Integer resubmissionsLimit;
+    private Boolean unlimitedResubmissions;
 }

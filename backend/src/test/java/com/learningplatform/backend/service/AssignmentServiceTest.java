@@ -1,6 +1,7 @@
 package com.learningplatform.backend.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learningplatform.backend.common.exception.BusinessException;
 import com.learningplatform.backend.common.exception.ResubmissionLimitException;
 import com.learningplatform.backend.dto.AssignmentDetailResponse;
 import com.learningplatform.backend.dto.FileSubmissionResponse;
@@ -143,7 +144,7 @@ class AssignmentServiceTest {
         User student = student();
         Assignment assignment = fileAssignment();
 
-        SubmissionRepository submissionRepository = submissionRepositoryFor(2L, null, null);
+        SubmissionRepository submissionRepository = submissionRepositoryFor(3L, null, null);
 
         AssignmentService service = new AssignmentService(
                 assignmentRepositoryFor(assignment),
@@ -158,24 +159,136 @@ class AssignmentServiceTest {
         );
     }
 
+    @Test
+    void freeStudentResponseIncludesFiniteResubmissionPolicy() {
+        User student = student("FREE");
+        Assignment assignment = fileAssignment(LocalDateTime.now().plusDays(1));
+        SubmissionRepository submissionRepository = submissionRepositoryFor(
+                null,
+                sub -> sub,
+                2L,
+                3L
+        );
+
+        AssignmentService service = new AssignmentService(
+                assignmentRepositoryFor(assignment),
+                stub(CourseRepository.class),
+                userRepositoryFor(student),
+                objectMapper,
+                submissionRepository
+        );
+
+        FileSubmissionResponse response = service.submitFileAssignment(
+                1L, 10L, fakeFile("resubmission.pdf", 512), "student@example.com"
+        );
+
+        assertEquals(2L, response.getResubmissionsUsed());
+        assertEquals(2, response.getResubmissionsLimit());
+        assertEquals(Boolean.FALSE, response.getUnlimitedResubmissions());
+    }
+
+    @Test
+    void memberResponseIncludesUnlimitedResubmissionPolicy() {
+        User student = student("MEMBER");
+        Assignment assignment = fileAssignment(LocalDateTime.now().plusDays(1));
+        SubmissionRepository submissionRepository = submissionRepositoryFor(
+                null,
+                sub -> sub,
+                10L,
+                11L
+        );
+
+        AssignmentService service = new AssignmentService(
+                assignmentRepositoryFor(assignment),
+                stub(CourseRepository.class),
+                userRepositoryFor(student),
+                objectMapper,
+                submissionRepository
+        );
+
+        FileSubmissionResponse response = service.submitFileAssignment(
+                1L, 10L, fakeFile("member.pdf", 512), "student@example.com"
+        );
+
+        assertEquals(10L, response.getResubmissionsUsed());
+        assertNull(response.getResubmissionsLimit());
+        assertEquals(Boolean.TRUE, response.getUnlimitedResubmissions());
+    }
+
+    @Test
+    void rejectsResubmissionAfterDeadline() {
+        User student = student("MEMBER");
+        Assignment assignment = fileAssignment(LocalDateTime.now().minusMinutes(1));
+        SubmissionRepository submissionRepository = submissionRepositoryFor(2L, null, null);
+
+        AssignmentService service = new AssignmentService(
+                assignmentRepositoryFor(assignment),
+                stub(CourseRepository.class),
+                userRepositoryFor(student),
+                objectMapper,
+                submissionRepository
+        );
+
+        assertThrows(BusinessException.class, () ->
+                service.submitFileAssignment(1L, 10L, fakeFile("late.pdf", 512), "student@example.com")
+        );
+    }
+
+    @Test
+    void allowsFirstSubmissionAfterDeadline() {
+        User student = student("FREE");
+        Assignment assignment = fileAssignment(LocalDateTime.now().minusMinutes(1));
+        SubmissionRepository submissionRepository = submissionRepositoryFor(
+                null,
+                sub -> sub,
+                0L,
+                1L
+        );
+
+        AssignmentService service = new AssignmentService(
+                assignmentRepositoryFor(assignment),
+                stub(CourseRepository.class),
+                userRepositoryFor(student),
+                objectMapper,
+                submissionRepository
+        );
+
+        FileSubmissionResponse response = service.submitFileAssignment(
+                1L, 10L, fakeFile("first-late.pdf", 512), "student@example.com"
+        );
+
+        assertEquals(0L, response.getResubmissionsUsed());
+        assertEquals(2, response.getResubmissionsLimit());
+        assertEquals(Boolean.FALSE, response.getUnlimitedResubmissions());
+    }
+
     // --- factories ---
 
     private User student() {
+        return student("FREE");
+    }
+
+    private User student(String membershipType) {
         User user = new User();
         user.setId(1L);
         user.setEmail("student@example.com");
         user.setRole(UserRole.STUDENT);
-        user.setMembershipType("FREE");
+        user.setMembershipType(membershipType);
         return user;
     }
 
     private Assignment fileAssignment() {
+        return fileAssignment(null);
+    }
+
+    private Assignment fileAssignment(LocalDateTime dueDate) {
         Assignment assignment = new Assignment();
         assignment.setId(10L);
         assignment.setTitle("Essay");
         assignment.setMaxScore(100);
         assignment.setType(AssignmentType.FILE);
         assignment.setCreatedAt(LocalDateTime.now());
+        assignment.setDueDate(dueDate);
         return assignment;
     }
 
@@ -233,11 +346,20 @@ class AssignmentServiceTest {
     }
 
     private SubmissionRepository submissionRepositoryFor(long count, Submission existing, SaveFn saveFn) {
+        return submissionRepositoryFor(existing, saveFn, count);
+    }
+
+    private SubmissionRepository submissionRepositoryFor(Submission existing, SaveFn saveFn, long... counts) {
+        AtomicLong countIndex = new AtomicLong();
+
         return (SubmissionRepository) Proxy.newProxyInstance(
                 SubmissionRepository.class.getClassLoader(),
                 new Class[]{SubmissionRepository.class},
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "countByAssignmentAndStudent" -> count;
+                    case "countByAssignmentAndStudent" -> {
+                        int index = (int) Math.min(countIndex.getAndIncrement(), counts.length - 1L);
+                        yield counts[index];
+                    }
                     case "findTopByAssignmentAndStudentOrderBySubmittedAtDesc" ->
                             existing == null ? Optional.empty() : Optional.of(existing);
                     case "save" -> saveFn != null
