@@ -9,7 +9,6 @@ import { buildBackendUrl } from '../api/baseUrl';
 import { announcementApi, assignmentApi, courseApi, forumApi } from '../api';
 import { getApiErrorState } from '../lib/apiState';
 import {
-  formatDiscussionResetText,
   hasReachedDiscussionLimit,
   incrementDiscussionUsage,
   loadDiscussionMembershipState,
@@ -497,9 +496,6 @@ export default function CourseDetail() {
   const discussionLimitReached = hasReachedDiscussionLimit(discussionMembership);
   const discussionUsageText = discussionMembership && !discussionMembership.isMember
     ? `${discussionMembership.weeklyPostsUsed ?? 0} of ${discussionMembership.weeklyPostsLimit ?? 10} posts used this week — ${discussionMembership.remaining ?? 0} remaining`
-    : '';
-  const discussionResetText = discussionMembership && !discussionMembership.isMember
-    ? formatDiscussionResetText(discussionMembership.resetsAt)
     : '';
 
   function canDeleteDiscussionItem(authorId) {
