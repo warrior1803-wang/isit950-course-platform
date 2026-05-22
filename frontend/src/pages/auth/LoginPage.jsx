@@ -13,7 +13,7 @@ const PILLS = ['Discussion forums', 'Assignment management', 'Course materials',
 // ── tiny helpers ─────────────────────────────────────────────────────────────
 
 /** Labelled input field for the auth forms. */
-function Field({ label, error, inputRef, small = false, children }) {
+function Field({ label, error, small = false, children }) {
   return (
     <div style={{ marginBottom: small ? 10 : 15 }}>
       <label
