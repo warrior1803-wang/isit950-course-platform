@@ -50,6 +50,7 @@ class AssignmentServiceTest {
 
         assertEquals(2L, response.getResubmissionsUsed());
         assertEquals(2, response.getResubmissionsLimit());
+        assertEquals(Boolean.FALSE, response.getUnlimitedResubmissions());
     }
 
     @Test
@@ -63,18 +64,33 @@ class AssignmentServiceTest {
 
         assertEquals(10L, response.getResubmissionsUsed());
         assertNull(response.getResubmissionsLimit());
+        assertEquals(Boolean.TRUE, response.getUnlimitedResubmissions());
     }
 
     @Test
     void rejectsResubmissionAfterDeadline() {
         User student = student("MEMBER");
         Assignment assignment = fileAssignment(LocalDateTime.now().minusMinutes(1));
-        AssignmentService service = service(student, assignment, 0L);
+        AssignmentService service = service(student, assignment, 2L);
 
         assertThrows(
                 BusinessException.class,
                 () -> service.submitFileAssignment(10L, 20L, file(), student.getEmail())
         );
+    }
+
+    @Test
+    void allowsFirstSubmissionAfterDeadline() {
+        User student = student("FREE");
+        Assignment assignment = fileAssignment(LocalDateTime.now().minusMinutes(1));
+        AssignmentService service = service(student, assignment, 0L, 1L);
+
+        FileSubmissionResponse response =
+                service.submitFileAssignment(10L, 20L, file(), student.getEmail());
+
+        assertEquals(0L, response.getResubmissionsUsed());
+        assertEquals(2, response.getResubmissionsLimit());
+        assertEquals(Boolean.FALSE, response.getUnlimitedResubmissions());
     }
 
     private AssignmentService service(User student, Assignment assignment, long... submissionCounts) {

@@ -23,4 +23,5 @@ public class MySubmissionResponse {
     private List<AutoSubmissionResponse.BreakdownItem> breakdown;
     private Long resubmissionsUsed;
     private Integer resubmissionsLimit;
+    private Boolean unlimitedResubmissions;
 }

@@ -20,6 +20,7 @@ public class AutoSubmissionResponse {
     private Integer maxScore;
     private Long resubmissionsUsed;
     private Integer resubmissionsLimit;
+    private Boolean unlimitedResubmissions;
     private List<BreakdownItem> breakdown;
 
     @Getter

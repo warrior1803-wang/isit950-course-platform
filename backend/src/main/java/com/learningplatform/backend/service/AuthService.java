@@ -90,9 +90,9 @@ public class AuthService {
 
         AuthUserResponse.MembershipResponse membership =
                 new AuthUserResponse.MembershipResponse(
-                        "FREE",
-                        null,
-                        null
+                        user.getMembershipType() == null ? "FREE" : user.getMembershipType(),
+                        user.getMembershipSince(),
+                        user.getMembershipExpiresAt()
                 );
 
         return new AuthUserResponse(

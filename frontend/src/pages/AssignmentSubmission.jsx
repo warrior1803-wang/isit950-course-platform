@@ -153,13 +153,16 @@ export default function AssignmentSubmission() {
     : Object.prototype.hasOwnProperty.call(assignment || {}, "resubmissionsLimit")
       ? assignment.resubmissionsLimit
       : 0;
-  const unlimitedResubmissions = resubmissionsLimit == null;
+  const unlimitedResubmissions =
+    submission?.unlimitedResubmissions === true ||
+    assignment?.unlimitedResubmissions === true;
   const resubmissionsRemaining = unlimitedResubmissions
     ? null
     : Math.max(resubmissionsLimit - resubmissionsUsed, 0);
   const resubmissionLimitReached =
     submitted && !unlimitedResubmissions && resubmissionsRemaining === 0;
-  const canSubmit = !isOverdue && (!submitted || !resubmissionLimitReached);
+  const canSubmit =
+    !submitted || (!isOverdue && !resubmissionLimitReached);
 
   function pickFile(file) {
     const fileSizeLimitMb = getFileSizeLimitMb(assignment);
@@ -187,9 +190,16 @@ export default function AssignmentSubmission() {
     try {
       const formData = new FormData();
       formData.append("file", pickedFile);
-      await assignmentApi.submitFile(courseId, asgId, formData);
+      const response = await assignmentApi.submitFile(courseId, asgId, formData);
+      const savedSubmission = response.data;
+      setSubmission({
+        ...savedSubmission,
+        score: submission?.score ?? null,
+        maxScore: submission?.maxScore ?? assignment?.maxScore ?? null,
+        feedback: submission?.feedback ?? null,
+      });
       clearFile();
-      navigate(`/courses/${courseId}/assignments/${asgId}/review`);
+      navigate(`/courses/${courseId}/assignments/${asgId}/review`, { replace: true });
     } catch (err) {
       if (isUpgradeRequired(err)) {
         setShowUpgradePrompt(true);
@@ -460,7 +470,7 @@ export default function AssignmentSubmission() {
               <span className="info-row-label">Resubmissions</span>
               <span className="info-row-val">
                 {unlimitedResubmissions
-                  ? "Unlimited"
+                  ? `${submitted ? resubmissionsUsed : 0} / ∞`
                   : submitted
                     ? `${resubmissionsUsed} / ${resubmissionsLimit}`
                     : `0 / ${resubmissionsLimit}`}

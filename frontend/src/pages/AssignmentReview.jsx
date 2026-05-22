@@ -143,7 +143,9 @@ export default function AssignmentReview() {
     : Object.prototype.hasOwnProperty.call(assignment || {}, "resubmissionsLimit")
       ? assignment.resubmissionsLimit
       : 0;
-  const unlimitedResubmissions = resubmissionsLimit == null;
+  const unlimitedResubmissions =
+    submission?.unlimitedResubmissions === true ||
+    assignment?.unlimitedResubmissions === true;
   const resubmissionsRemaining = unlimitedResubmissions
     ? null
     : Math.max(resubmissionsLimit - resubmissionsUsed, 0);
@@ -403,7 +405,7 @@ export default function AssignmentReview() {
               <span className="info-row-label">Resubmissions</span>
               <span className="info-row-val">
                 {unlimitedResubmissions
-                  ? "Unlimited"
+                  ? `${resubmissionsUsed} / ∞`
                   : `${resubmissionsUsed} / ${resubmissionsLimit}`}
               </span>
             </div>

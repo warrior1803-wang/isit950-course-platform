@@ -15,4 +15,5 @@ public class FileSubmissionResponse {
     private String status;
     private Long resubmissionsUsed;
     private Integer resubmissionsLimit;
+    private Boolean unlimitedResubmissions;
 }
