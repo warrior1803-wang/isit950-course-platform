@@ -23,9 +23,18 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
 
+/**
+ * Handles membership upgrades, usage limits,
+ * and membership-based platform restrictions.
+ *
+ * <p>The service manages premium discussion privileges,
+ * resubmission allowances, and weekly usage tracking.</p>
+ */
 @Service
 public class MembershipService {
 
+    // Free-tier students are restricted to a limited number
+    // of weekly discussion contributions.
     public static final int WEEKLY_POST_LIMIT = 10;
 
     private final UserRepository userRepository;
@@ -54,7 +63,11 @@ public class MembershipService {
         this.clock = clock;
     }
 
+    /**
+     * Returns the authenticated student's current membership status.
+     */
     public MembershipResponse getMembership(String userEmail) {
+
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -62,8 +75,13 @@ public class MembershipService {
             throw new BusinessException("Only students can access membership");
         }
 
-        String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
+        // Student accounts default to FREE membership until upgraded.
+        String type = user.getMembershipType() == null
+                ? "FREE"
+                : user.getMembershipType();
+
         boolean isMember = "MEMBER".equals(type);
+
         int weeklyPostsUsed = refreshDiscussionUsageWindow(user).used();
 
         return new MembershipResponse(
@@ -84,8 +102,15 @@ public class MembershipService {
         );
     }
 
+    /**
+     * Applies a membership upgrade plan for the student account.
+     */
     @Transactional
-    public MembershipUpgradeResponse upgradeMembership(String userEmail, MembershipUpgradeRequest request) {
+    public MembershipUpgradeResponse upgradeMembership(
+            String userEmail,
+            MembershipUpgradeRequest request
+    ) {
+
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -96,10 +121,13 @@ public class MembershipService {
         LocalDateTime since = LocalDateTime.now(clock);
         LocalDateTime expiresAt;
 
+        // Membership duration depends on the selected billing plan.
         if ("MONTHLY".equals(request.getPlan())) {
             expiresAt = since.plusMonths(1);
+
         } else if ("ANNUAL".equals(request.getPlan())) {
             expiresAt = since.plusYears(1);
+
         } else {
             throw new BusinessException("Plan must be MONTHLY or ANNUAL");
         }
@@ -122,8 +150,12 @@ public class MembershipService {
         );
     }
 
+    /**
+     * Returns remaining usage limits associated with the student's membership tier.
+     */
     @Transactional
     public MembershipLimitsResponse getMembershipLimits(String userEmail) {
+
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -131,14 +163,20 @@ public class MembershipService {
             throw new BusinessException("Only students can access membership limits");
         }
 
-        String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
+        String type = user.getMembershipType() == null
+                ? "FREE"
+                : user.getMembershipType();
+
         boolean isMember = "MEMBER".equals(type);
 
         int weeklyPostsUsed = refreshDiscussionUsageWindow(user).used();
+
         int resubmissionsUsed = 0;
+
         OffsetDateTime resetsAt = nextMondayStartUtc();
 
         if (isMember) {
+
             return new MembershipLimitsResponse(
                     new MembershipLimitsResponse.LimitItem(
                             weeklyPostsUsed,
@@ -173,81 +211,159 @@ public class MembershipService {
         );
     }
 
+    /**
+     * Determines whether the student can continue posting discussion content.
+     */
     @Transactional
     public DiscussionPostingStatus getDiscussionPostingStatus(User user) {
+
+        // Instructor accounts are excluded from student discussion limits.
         if (user.getRole() == UserRole.INSTRUCTOR) {
             return new DiscussionPostingStatus(false, 0, null);
         }
 
-        String type = user.getMembershipType() == null ? "FREE" : user.getMembershipType();
+        String type = user.getMembershipType() == null
+                ? "FREE"
+                : user.getMembershipType();
+
         boolean isMember = "MEMBER".equals(type);
+
         int used = refreshDiscussionUsageWindow(user).used();
-        return new DiscussionPostingStatus(isMember, used, isMember ? null : WEEKLY_POST_LIMIT);
+
+        return new DiscussionPostingStatus(
+                isMember,
+                used,
+                isMember ? null : WEEKLY_POST_LIMIT
+        );
     }
 
+    /**
+     * Updates weekly discussion usage after a successful contribution.
+     */
     @Transactional
     public DiscussionPostingStatus registerDiscussionContribution(User user) {
-        DiscussionPostingStatus postingStatus = getDiscussionPostingStatus(user);
+
+        DiscussionPostingStatus postingStatus =
+                getDiscussionPostingStatus(user);
+
         if (postingStatus.member() || postingStatus.limit() == null) {
             return postingStatus;
         }
 
         int nextUsed = postingStatus.used() + 1;
+
         user.setWeeklyDiscussionPostsUsed(nextUsed);
+
         userRepository.save(user);
-        return new DiscussionPostingStatus(false, nextUsed, postingStatus.limit());
+
+        return new DiscussionPostingStatus(
+                false,
+                nextUsed,
+                postingStatus.limit()
+        );
     }
 
+    /**
+     * Synchronises weekly discussion counters with the current UTC week window.
+     *
+     * <p>The counter resets automatically at the beginning of each new week.</p>
+     */
     private WeeklyDiscussionUsage refreshDiscussionUsageWindow(User user) {
+
         LocalDateTime currentWeekStart = currentWeekStartUtc();
+
         LocalDateTime storedWeekStart = user.getDiscussionWeekStart();
 
         if (storedWeekStart == null) {
-            int currentUsage = countCurrentWeekUsage(user, currentWeekStart);
+
+            int currentUsage =
+                    countCurrentWeekUsage(user, currentWeekStart);
+
             user.setDiscussionWeekStart(currentWeekStart);
             user.setWeeklyDiscussionPostsUsed(currentUsage);
+
             userRepository.save(user);
+
             return new WeeklyDiscussionUsage(currentUsage);
         }
 
+        // Weekly usage resets when a new UTC discussion window begins.
         if (!storedWeekStart.equals(currentWeekStart)) {
+
             user.setDiscussionWeekStart(currentWeekStart);
             user.setWeeklyDiscussionPostsUsed(0);
+
             userRepository.save(user);
+
             return new WeeklyDiscussionUsage(0);
         }
 
-        int used = user.getWeeklyDiscussionPostsUsed() == null ? 0 : user.getWeeklyDiscussionPostsUsed();
+        int used = user.getWeeklyDiscussionPostsUsed() == null
+                ? 0
+                : user.getWeeklyDiscussionPostsUsed();
+
         return new WeeklyDiscussionUsage(used);
     }
 
-    private int countCurrentWeekUsage(User user, LocalDateTime weekStart) {
+    /**
+     * Counts discussion activity created during the current weekly window.
+     */
+    private int countCurrentWeekUsage(
+            User user,
+            LocalDateTime weekStart
+    ) {
+
         LocalDateTime weekEnd = weekStart.plusWeeks(1);
-        long postCount = postRepository.countByAuthorAndCreatedAtBetween(user, weekStart, weekEnd);
-        long replyCount = replyRepository.countByAuthorAndCreatedAtBetween(user, weekStart, weekEnd);
+
+        long postCount =
+                postRepository.countByAuthorAndCreatedAtBetween(
+                        user,
+                        weekStart,
+                        weekEnd
+                );
+
+        long replyCount =
+                replyRepository.countByAuthorAndCreatedAtBetween(
+                        user,
+                        weekStart,
+                        weekEnd
+                );
+
         return Math.toIntExact(postCount + replyCount);
     }
 
+    /**
+     * Uses UTC boundaries to keep discussion reset behaviour
+     * consistent across different user time zones.
+     */
     private LocalDateTime currentWeekStartUtc() {
+
         LocalDate currentUtcDate = OffsetDateTime.now(clock)
                 .withOffsetSameInstant(ZoneOffset.UTC)
                 .toLocalDate();
+
         return currentUtcDate
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .atStartOfDay();
     }
 
     private OffsetDateTime nextMondayStartUtc() {
+
         LocalDate currentUtcDate = OffsetDateTime.now(clock)
                 .withOffsetSameInstant(ZoneOffset.UTC)
                 .toLocalDate();
+
         return currentUtcDate
                 .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
                 .atStartOfDay()
                 .atOffset(ZoneOffset.UTC);
     }
 
-    public record DiscussionPostingStatus(boolean member, int used, Integer limit) {
+    public record DiscussionPostingStatus(
+            boolean member,
+            int used,
+            Integer limit
+    ) {
     }
 
     private record WeeklyDiscussionUsage(int used) {

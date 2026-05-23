@@ -35,7 +35,15 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * Handles assignment lifecycle operations including creation,
+ * submission workflows, automatic grading, instructor grading,
+ * and resubmission enforcement.
+ *
+ * <p>The service supports both FILE assignments and AUTO-graded
+ * quiz assignments while centralising permission checks and
+ * submission validation rules.</p>
+ */
 @Service
 public class AssignmentService {
 
@@ -167,7 +175,8 @@ public class AssignmentService {
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
                 .orElseThrow(() -> new RuntimeException("Assignment not found"));
-
+        // Ownership validation ensures instructors can only manage
+        // assignments belonging to their own courses.
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
             throw new RuntimeException("You are not allowed to update this assignment");
         }
@@ -297,7 +306,10 @@ public class AssignmentService {
                 questionResponses
         );
     }
-
+    /**
+     * Converts persisted JSON answer data back into structured objects
+     * required by grading and response generation workflows.
+     */
     private List<String> parseOptions(String optionsJson) {
         if (optionsJson == null) {
             return null;
@@ -451,7 +463,8 @@ public class AssignmentService {
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
             throw new RuntimeException("You are not allowed to delete this assignment");
         }
-
+        // Submission records are removed first to maintain referential
+        // integrity before deleting the assignment itself.
         submissionRepository.deleteByAssignment(assignment);
         assignmentRepository.delete(assignment);
     }
@@ -477,7 +490,8 @@ public class AssignmentService {
 
         if (fileSizeLimitMb != null) {
             long maxBytes = (long) fileSizeLimitMb * 1024 * 1024;
-
+            // File size validation is enforced server-side so limits cannot
+            // be bypassed through direct API requests or modified frontend code.
             if (file.getSize() > maxBytes) {
                 throw new BusinessException(
                         "File exceeds the "
@@ -508,7 +522,13 @@ public class AssignmentService {
                 resubmissionState.unlimited()
         );
     }
-
+    /**
+     * Processes AUTO assignment submissions and performs immediate grading.
+     *
+     * <p>The grading workflow compares each submitted answer against
+     * the stored assignment answer key, calculates earned points per
+     * question, and stores a detailed grading breakdown for later review.</p>
+     */
     @Transactional
     public AutoSubmissionResponse submitAutoAssignment(
             Long courseId,
@@ -534,13 +554,15 @@ public class AssignmentService {
 
         int totalScore = 0;
         List<AutoSubmissionResponse.BreakdownItem> breakdown = new ArrayList<>();
-
+        // Each question is graded independently so instructors can later
+        // review per-question correctness and override scores if required.
         for (AssignmentQuestion question : assignment.getQuestions()) {
 
             Object submittedAnswer = request.getAnswers().get(question.getQuestionKey());
 
             boolean correct = isAnswerCorrect(question, submittedAnswer);
-
+            // AUTO grading currently applies full marks or zero marks.
+            // Partial grading logic could be introduced in future iterations.
             int earnedPoints = correct ? question.getPoints() : 0;
 
             totalScore += earnedPoints;
@@ -634,8 +656,15 @@ public class AssignmentService {
 
         return false;
     }
-
+    /**
+     * Restricts excessive resubmissions for non-premium workflows.
+     *
+     * <p>The limit prevents abuse of repeated submission attempts and
+     * supports the platform's membership-based feature model.</p>
+     */
     private void enforceResubmissionLimit(Assignment assignment, User student) {
+        // The resubmission state keeps the latest usage count and membership limit
+        // together so deadline and quota checks use the same source of truth.
         ResubmissionState resubmissionState = buildResubmissionState(assignment, student);
 
         if (resubmissionState.used() != null
@@ -863,7 +892,10 @@ public class AssignmentService {
 
         return breakdown;
     }
-
+    /**
+     * Converts persisted JSON answer data back into structured objects
+     * required by grading and response generation workflows.
+     */
     private Map<String, Object> parseAnswers(String answersJson) {
         if (answersJson == null) {
             return Map.of();
@@ -878,7 +910,13 @@ public class AssignmentService {
             throw new RuntimeException("Failed to parse submission answers");
         }
     }
-
+    /**
+     * Applies instructor grading decisions to assignment submissions.
+     *
+     * <p>FILE assignments are graded manually, while AUTO assignments
+     * support instructor override scores when automatic grading requires
+     * moderation or correction.</p>
+     */
     @Transactional
     public InstructorSubmissionDetailResponse gradeSubmission(
             Long courseId,
@@ -911,7 +949,8 @@ public class AssignmentService {
             if (request.getScore() == null) {
                 throw new RuntimeException("Score is required");
             }
-
+            // Backend-side score validation prevents invalid grading values
+            // even if requests are submitted directly through Postman.
             if (request.getScore() > maxScore) {
                 throw new BusinessException(
                         "Score cannot exceed the assignment maximum of " + maxScore
