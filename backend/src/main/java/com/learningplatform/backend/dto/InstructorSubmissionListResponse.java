@@ -3,6 +3,7 @@ package com.learningplatform.backend.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.apache.tomcat.util.http.parser.Authorization;
 
 import java.time.LocalDateTime;
 

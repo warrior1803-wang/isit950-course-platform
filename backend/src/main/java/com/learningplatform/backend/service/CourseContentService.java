@@ -36,7 +36,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
+/**
+ * Handles course discussion, announcement, and collaborative content workflows.
+ *
+ * <p>The service centralises access validation, discussion participation rules,
+ * and instructor-managed course communication features.</p>
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -135,7 +140,12 @@ public class CourseContentService {
 
         return toPostResponse(post);
     }
-
+    /**
+     * Creates a new discussion post within a course forum.
+     *
+     * <p>Student posting activity is checked against membership-based
+     * weekly discussion limits before persistence.</p>
+     */
     public PostResponse createPost(Long courseId, PostRequest request, String userEmail) {
         AccessContext context = requireCourseAccess(courseId, userEmail);
         String title = safe(request.getTitle());
@@ -147,7 +157,8 @@ public class CourseContentService {
         if (body.isBlank()) {
             throw new BusinessException("Post body is required");
         }
-
+        // Posting limits are enforced server-side so restrictions
+        // cannot be bypassed through modified frontend requests.
         MembershipService.DiscussionPostingStatus postingStatus = enforceDiscussionPostLimit(context.user());
 
         Post post = new Post();
@@ -157,11 +168,15 @@ public class CourseContentService {
         post.setBody(body);
 
         PostResponse response = toPostResponse(postRepository.save(post));
+        // Discussion usage is updated after successful persistence
+        // to avoid counting failed submission attempts.
         MembershipService.DiscussionPostingStatus updatedPostingStatus =
                 membershipService.registerDiscussionContribution(context.user());
         return attachDiscussionUsage(response, updatedPostingStatus);
     }
-
+    /**
+     * Adds a reply to an existing discussion thread.
+     */
     public ReplyResponse createReply(Long courseId, Long postId, ReplyRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -231,7 +246,12 @@ public class CourseContentService {
 
         replyRepository.delete(reply);
     }
-
+    /**
+     * Validates whether the current user can access course resources.
+     *
+     * <p>Instructors must own the course, while students must be enrolled
+     * before accessing collaborative content.</p>
+     */
     private AccessContext requireCourseAccess(Long courseId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -242,7 +262,7 @@ public class CourseContentService {
             if (!course.getInstructor().getId().equals(user.getId())) {
                 throw new AccessDeniedException("You do not own this course");
             }
-        } else if (user.getRole() == UserRole.STUDENT) {
+        } else if (user.getRole() == UserRole.STUDENT) {// Student access depends on active course enrolment.
             if (!enrolmentRepository.existsByStudentAndCourse(user, course)) {
                 throw new AccessDeniedException("You are not enrolled in this course");
             }
@@ -349,15 +369,23 @@ public class CourseContentService {
         }
         return "";
     }
-
+    /**
+     * Determines whether a user can delete discussion content.
+     *
+     * <p>Instructors may moderate all discussion content inside their
+     * courses, while students may only manage their own posts and replies.</p>
+     */
     private boolean canManageDiscussionContent(User currentUser, Course course, Long authorId) {
         if (currentUser.getRole() == UserRole.INSTRUCTOR) {
             return course.getInstructor().getId().equals(currentUser.getId());
         }
         return currentUser.getId().equals(authorId);
     }
-
+    /**
+     * Applies membership-based posting restrictions for discussion activity.
+     */
     private MembershipService.DiscussionPostingStatus enforceDiscussionPostLimit(User user) {
+        // Instructor access is restricted to courses they personally manage.
         if (user.getRole() == UserRole.INSTRUCTOR) {
             return membershipService.getDiscussionPostingStatus(user);
         }
@@ -413,10 +441,10 @@ public class CourseContentService {
     public List<EnrolmentResponse> getEnrolments(Long courseId, String instructorEmail) {
 
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new AccessDeniedException("Course not found"));
 
         if (!course.getInstructor().getEmail().equals(instructorEmail)) {
-            throw new RuntimeException("Forbidden");
+            throw new AccessDeniedException("Forbidden");
         }
 
         List<Enrolment> enrolments = enrolmentRepository.findByCourseId(courseId);

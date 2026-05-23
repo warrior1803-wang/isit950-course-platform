@@ -36,7 +36,13 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
+/**
+ * Handles course lifecycle operations including enrolment,
+ * material management, and instructor-owned course workflows.
+ *
+ * <p>The service centralises permission checks and course-related
+ * business rules for both students and instructors.</p>
+ */
 @Service
 @RequiredArgsConstructor
 public class CourseService {
@@ -47,10 +53,15 @@ public class CourseService {
     private final MaterialRepository materialRepository;
     private final AssignmentRepository assignmentRepository;
     private final SubmissionRepository submissionRepository;
+
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
-
+    /**
+     * Creates a new course owned by the authenticated instructor.
+     */
     public CourseResponse createCourse(CourseRequest request, String userEmail) {
+        // Course codes must remain unique so students can reliably
+        // identify and enrol in the correct course.
         if (courseRepository.existsByCode(request.getCode())) {
             throw new ConflictException("Course code already exists");
         }
@@ -70,7 +81,12 @@ public class CourseService {
 
         return toCourseResponse(savedCourse);
     }
-
+    /**
+     * Returns courses relevant to the authenticated user.
+     *
+     * <p>Instructors receive owned courses, while students
+     * receive enrolled courses.</p>
+     */
     public List<CourseResponse> getCoursesForCurrentUser(String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -125,6 +141,9 @@ public class CourseService {
                 pendingCount
         );
     }
+    /**
+     * Updates editable course information for an instructor-owned course.
+     */
     @Transactional
     public CourseResponse updateCourse(Long courseId, CourseRequest request, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
@@ -152,6 +171,10 @@ public class CourseService {
         return toCourseResponse(updatedCourse);
     }
 
+    /**
+     * Deletes a course together with dependent enrolment
+     * and material relationships.
+     */
     @Transactional
     public void deleteCourse(Long courseId, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
@@ -160,6 +183,8 @@ public class CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course not found"));
 
+        // Ownership validation prevents instructors from modifying
+        // courses belonging to other teaching staff.
         if (!course.getInstructor().getId().equals(currentUser.getId())) {
             throw new AccessDeniedException("You do not own this course");
         }
@@ -169,6 +194,9 @@ public class CourseService {
         courseRepository.delete(course);
     }
 
+    /**
+     * Enrols a student into a course.
+     */
     public CourseResponse enrolCourse(Long courseId, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -180,6 +208,8 @@ public class CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course not found"));
 
+        // Duplicate enrolments are blocked to preserve consistent
+        // course participation records.
         if (enrolmentRepository.existsByStudentAndCourse(currentUser, course)) {
             throw new ConflictException("Already enrolled in this course");
         }
@@ -243,6 +273,12 @@ public class CourseService {
         return result;
     }
 
+    /**
+     * Uploads course learning materials for enrolled students.
+     *
+     * <p>Uploaded files are stored on the server filesystem while
+     * metadata is persisted in the relational database.</p>
+     */
     @Transactional
     public MaterialResponse uploadMaterial(Long courseId, MultipartFile file, String section, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
@@ -264,6 +300,8 @@ public class CourseService {
             Files.createDirectories(uploadPath);
 
             String originalFilename = file.getOriginalFilename();
+            // UUID-based filenames reduce collision risk between uploads
+            // with identical original filenames.
             String storedFilename = UUID.randomUUID() + "_" + originalFilename;
 
             Path targetPath = uploadPath.resolve(storedFilename);
@@ -285,6 +323,9 @@ public class CourseService {
         }
     }
 
+    /**
+     * Returns learning materials accessible to the current user.
+     */
     public List<MaterialResponse> getCourseMaterials(Long courseId, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -342,6 +383,9 @@ public class CourseService {
         materialRepository.delete(material);
     }
 
+    /**
+     * Returns discoverable courses for student browsing and enrolment.
+     */
     public List<CourseBrowseResponse> browseCourses(String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
