@@ -188,8 +188,8 @@ export default function InstructorProfilePage() {
     setPasswordError(null);
     setSuccessMessage(null);
 
-    if (!password || password.length < 6) {
-      setPasswordError('Password must be at least 6 characters.');
+    if (!password || password.length < 8) {
+      setPasswordError('Minimum 8 characters');
       return;
     }
     if (password !== confirmPassword) {
@@ -386,7 +386,7 @@ export default function InstructorProfilePage() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     disabled={savingPassword}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     autoComplete="new-password"
                     autoFocus
                   />

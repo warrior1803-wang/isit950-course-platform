@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import EmptyState from '../components/shared/EmptyState';
 import ErrorState from '../components/shared/ErrorState';
 import { courseApi, forumApi } from '../api';
 import { useAuth } from '../lib/auth';
 import { getApiErrorState } from '../lib/apiState';
 import {
-  formatDiscussionResetText,
   hasReachedDiscussionLimit,
   loadDiscussionMembershipState,
 } from '../lib/discussionMembership';
@@ -130,9 +128,6 @@ export default function Forum() {
   const discussionLimitReached = hasReachedDiscussionLimit(discussionMembership);
   const discussionUsageText = discussionMembership && !discussionMembership.isMember
     ? `${discussionMembership.weeklyPostsUsed ?? 0} of ${discussionMembership.weeklyPostsLimit ?? 10} posts used this week — ${discussionMembership.remaining ?? 0} remaining`
-    : '';
-  const discussionResetText = discussionMembership && !discussionMembership.isMember
-    ? formatDiscussionResetText(discussionMembership.resetsAt)
     : '';
 
   async function handleDeletePost(courseId, postId) {

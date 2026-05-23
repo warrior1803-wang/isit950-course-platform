@@ -31,11 +31,21 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function acceptFile(file) {
-  const maxBytes = 50 * 1024 * 1024;
+function getFileSizeLimitMb(assignment) {
+  return assignment?.fileSizeLimitMb ?? 10;
+}
+
+function acceptFile(file, fileSizeLimitMb) {
+  const maxBytes = fileSizeLimitMb * 1024 * 1024;
   const ext = file.name.split(".").pop()?.toLowerCase();
-  if (ext !== "pdf" && ext !== "docx") return false;
-  return file.size <= maxBytes;
+  if (ext !== "pdf" && ext !== "docx") return { accepted: false };
+  if (file.size > maxBytes) {
+    return {
+      accepted: false,
+      error: `File exceeds the ${fileSizeLimitMb}MB limit for this assignment`,
+    };
+  }
+  return { accepted: true };
 }
 
 function UpgradePrompt() {
@@ -106,12 +116,6 @@ export default function AssignmentSubmission() {
       if (submissionResult.status === "fulfilled") {
         const nextSubmission = submissionResult.value.data;
         setSubmission(nextSubmission);
-        if (nextSubmission?.status === "graded") {
-          navigate(`/courses/${courseId}/assignments/${asgId}/review`, {
-            replace: true,
-          });
-          return;
-        }
       } else if (submissionResult.reason?.response?.status === 404) {
         setSubmission(null);
       } else {
@@ -144,14 +148,31 @@ export default function AssignmentSubmission() {
       ? "Awaiting grade"
       : "Not submitted";
   const resubmissionsUsed = submission?.resubmissionsUsed ?? 0;
-  const resubmissionsLimit =
-    submission?.resubmissionsLimit ?? assignment?.resubmissionsLimit ?? 0;
+  const resubmissionsLimit = Object.prototype.hasOwnProperty.call(submission || {}, "resubmissionsLimit")
+    ? submission.resubmissionsLimit
+    : Object.prototype.hasOwnProperty.call(assignment || {}, "resubmissionsLimit")
+      ? assignment.resubmissionsLimit
+      : 0;
+  const unlimitedResubmissions =
+    submission?.unlimitedResubmissions === true ||
+    assignment?.unlimitedResubmissions === true;
+  const resubmissionsRemaining = unlimitedResubmissions
+    ? null
+    : Math.max(resubmissionsLimit - resubmissionsUsed, 0);
+  const resubmissionLimitReached =
+    submitted && !unlimitedResubmissions && resubmissionsRemaining === 0;
+  const canSubmit =
+    !submitted || (!isOverdue && !resubmissionLimitReached);
 
   function pickFile(file) {
-    if (!file || !acceptFile(file)) {
+    const fileSizeLimitMb = getFileSizeLimitMb(assignment);
+    const result = file ? acceptFile(file, fileSizeLimitMb) : { accepted: false };
+    if (!file || !result.accepted) {
       setPickedFile(null);
+      setSubmitError(result.error || "");
       return;
     }
+    setSubmitError("");
     setPickedFile(file);
   }
 
@@ -161,7 +182,7 @@ export default function AssignmentSubmission() {
   }
 
   async function submitAssignment() {
-    if (!pickedFile || submitting || submitted) return;
+    if (!pickedFile || submitting || !canSubmit) return;
     setSubmitting(true);
     setSubmitError("");
     setShowUpgradePrompt(false);
@@ -169,9 +190,16 @@ export default function AssignmentSubmission() {
     try {
       const formData = new FormData();
       formData.append("file", pickedFile);
-      await assignmentApi.submitFile(courseId, asgId, formData);
+      const response = await assignmentApi.submitFile(courseId, asgId, formData);
+      const savedSubmission = response.data;
+      setSubmission({
+        ...savedSubmission,
+        score: submission?.score ?? null,
+        maxScore: submission?.maxScore ?? assignment?.maxScore ?? null,
+        feedback: submission?.feedback ?? null,
+      });
       clearFile();
-      navigate(`/courses/${courseId}/assignments/${asgId}/review`);
+      navigate(`/courses/${courseId}/assignments/${asgId}/review`, { replace: true });
     } catch (err) {
       if (isUpgradeRequired(err)) {
         setShowUpgradePrompt(true);
@@ -333,7 +361,7 @@ export default function AssignmentSubmission() {
                 type="button"
                 className="submit-btn"
                 onClick={submitAssignment}
-                disabled={!pickedFile || submitting}
+                disabled={!pickedFile || submitting || !canSubmit}
               >
                 <span className="material-symbols-rounded icon">send</span>
                 {submitting && (
@@ -377,27 +405,38 @@ export default function AssignmentSubmission() {
                 </div>
               )}
 
-              {!graded && (
-                <div className="resubmit-card">
-                  <div className="resubmit-heading">
-                    Already submitted
-                  </div>
-                  <div className="resubmit-chip">
-                    Your file submission is locked while it awaits grading.
-                  </div>
-                  {renderUploadZone({ compact: true, disabled: true })}
-                  <button
-                    type="button"
-                    className="submit-btn"
-                    disabled
-                  >
-                    <span className="material-symbols-rounded icon">
-                      lock
-                    </span>
-                    Already submitted
-                  </button>
+              <div className="resubmit-card">
+                <div className="resubmit-heading">
+                  {isOverdue
+                    ? "Resubmissions closed"
+                    : resubmissionLimitReached
+                      ? "Resubmission limit reached (Free plan)"
+                      : unlimitedResubmissions
+                        ? "Unlimited resubmissions before the deadline"
+                        : `${resubmissionsRemaining} resubmission${resubmissionsRemaining === 1 ? "" : "s"} remaining`}
                 </div>
-              )}
+                <div className="resubmit-chip">
+                  Upload a new file to replace your latest submission.
+                </div>
+                {resubmissionLimitReached && <UpgradePrompt />}
+                {submitError && <div className="form-error">{submitError}</div>}
+                {showUpgradePrompt && <UpgradePrompt />}
+                {renderUploadZone({
+                  compact: true,
+                  disabled: isOverdue || resubmissionLimitReached,
+                })}
+                <button
+                  type="button"
+                  className="submit-btn"
+                  onClick={submitAssignment}
+                  disabled={!pickedFile || submitting || !canSubmit}
+                >
+                  <span className="material-symbols-rounded icon">
+                    {isOverdue || resubmissionLimitReached ? "lock" : "refresh"}
+                  </span>
+                  {submitting ? "Submitting..." : "Resubmit assignment"}
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -430,9 +469,11 @@ export default function AssignmentSubmission() {
             <div className="info-row">
               <span className="info-row-label">Resubmissions</span>
               <span className="info-row-val">
-                {submitted
-                  ? `${resubmissionsUsed} / ${resubmissionsLimit}`
-                  : `0 / ${resubmissionsLimit}`}
+                {unlimitedResubmissions
+                  ? `${submitted ? resubmissionsUsed : 0} / ∞`
+                  : submitted
+                    ? `${resubmissionsUsed} / ${resubmissionsLimit}`
+                    : `0 / ${resubmissionsLimit}`}
               </span>
             </div>
           </div>

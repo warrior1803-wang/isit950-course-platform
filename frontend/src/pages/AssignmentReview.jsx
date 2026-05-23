@@ -39,6 +39,7 @@ export default function AssignmentReview() {
   const [assignment, setAssignment] = useState(null);
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [assignmentNotFound, setAssignmentNotFound] = useState(false);
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [downloading, setDownloading] = useState(false);
@@ -48,6 +49,7 @@ export default function AssignmentReview() {
 
     async function loadReview() {
       setLoading(true);
+      setAssignmentNotFound(false);
       setError("");
       setDownloadError("");
 
@@ -63,8 +65,17 @@ export default function AssignmentReview() {
           setAssignment(
             assignmentResult.value.data?.data ?? assignmentResult.value.data,
           );
+          setAssignmentNotFound(false);
+        } else if (assignmentResult.reason?.response?.status === 404) {
+          setAssignment(null);
+          setSubmission(null);
+          setAssignmentNotFound(true);
+          return;
         } else {
           setAssignment(null);
+          setError(getApiErrorState(assignmentResult.reason).message);
+          setSubmission(null);
+          return;
         }
 
         if (submissionResult.status === "fulfilled") {
@@ -78,7 +89,9 @@ export default function AssignmentReview() {
       } catch (err) {
         if (!cancelled) {
           if (err.response?.status === 404) {
+            setAssignment(null);
             setSubmission(null);
+            setAssignmentNotFound(true);
           } else {
             setSubmission(null);
             setError(getApiErrorState(err).message);
@@ -136,11 +149,54 @@ export default function AssignmentReview() {
 
   const assignmentTitle = assignment?.title || `Assignment ${assignmentId}`;
   const isGraded = submission?.status === "graded";
+  const isAutoAssignment =
+    String(assignment?.type || "").toUpperCase() === "AUTO" ||
+    submission?.autoGraded === true;
+  const breakdown = Array.isArray(submission?.breakdown) ? submission.breakdown : null;
+  const isOverdue = Boolean(assignment?.dueDate && new Date(assignment.dueDate) < new Date());
+  const resubmissionsUsed = submission?.resubmissionsUsed ?? 0;
+  const resubmissionsLimit = Object.prototype.hasOwnProperty.call(submission || {}, "resubmissionsLimit")
+    ? submission.resubmissionsLimit
+    : Object.prototype.hasOwnProperty.call(assignment || {}, "resubmissionsLimit")
+      ? assignment.resubmissionsLimit
+      : 0;
+  const unlimitedResubmissions =
+    submission?.unlimitedResubmissions === true ||
+    assignment?.unlimitedResubmissions === true;
+  const resubmissionsRemaining = unlimitedResubmissions
+    ? null
+    : Math.max(resubmissionsLimit - resubmissionsUsed, 0);
+  const canResubmit =
+    !isAutoAssignment &&
+    !isOverdue &&
+    (unlimitedResubmissions || resubmissionsRemaining > 0);
 
   if (error) {
     return (
       <div>
         <ErrorState message={error} />
+        <Link
+          to={`/courses/${courseId}`}
+          className="review-download-btn"
+          style={{
+            display: "inline-flex",
+            textDecoration: "none",
+            padding: "10px 14px",
+          }}
+        >
+          <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
+            arrow_back
+          </span>
+          Back
+        </Link>
+      </div>
+    );
+  }
+
+  if (assignmentNotFound) {
+    return (
+      <div>
+        <h1 className="page-title">Assignment not found.</h1>
         <Link
           to={`/courses/${courseId}`}
           className="review-download-btn"
@@ -181,6 +237,105 @@ export default function AssignmentReview() {
           Back
         </Link>
       </div>
+    );
+  }
+
+  function renderAutoBreakdown() {
+    return (
+      <>
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--text-dark)",
+            marginBottom: 10,
+          }}
+        >
+          Question Breakdown
+        </div>
+        {breakdown?.length ? (
+          <div className="quiz-result-table-card">
+            <table className="quiz-result-table">
+              <thead>
+                <tr>
+                  <th>Question</th>
+                  <th>Your Answer</th>
+                  <th>Correct Answer</th>
+                  <th>Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakdown.map((item, index) => (
+                  <tr key={item.questionId ?? index}>
+                    <td>{item.questionText ?? `Question ${index + 1}`}</td>
+                    <td>{item.studentAnswer ?? "—"}</td>
+                    <td>{item.correctAnswer ?? "—"}</td>
+                    <td>{item.pointsAwarded ?? 0} / {item.maxPoints ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="review-feedback-box">
+            <div className="review-feedback-body">
+              Breakdown data not available.
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  function renderFileSubmission() {
+    return (
+      <>
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--text-dark)",
+            marginBottom: 10,
+          }}
+        >
+          Your Submission
+        </div>
+        <div className="review-file-box">
+          <div
+            className="review-file-icon"
+            style={{ background: "rgba(232,90,48,0.1)", color: "#d85a30" }}
+          >
+            <span className="material-symbols-rounded">description</span>
+          </div>
+          <div className="review-file-info">
+            <div className="review-file-name">{submission.filename}</div>
+            <div className="review-file-meta">
+              Submitted {formatDateTime(submission.submittedAt)}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="review-download-btn"
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <span
+                className="material-symbols-rounded"
+                style={{ fontSize: 16 }}
+              >
+                download
+              </span>
+            )}
+            Download
+          </button>
+        </div>
+        {downloadError && (
+          <p className="course-list-empty" style={{ padding: "10px 0" }}>
+            {downloadError}
+          </p>
+        )}
+      </>
     );
   }
 
@@ -254,52 +409,7 @@ export default function AssignmentReview() {
             </div>
           </div>
 
-          <div
-            style={{
-              fontSize: 13,
-              color: "var(--text-dark)",
-              marginBottom: 10,
-            }}
-          >
-            Your Submission
-          </div>
-          <div className="review-file-box">
-            <div
-              className="review-file-icon"
-              style={{ background: "rgba(232,90,48,0.1)", color: "#d85a30" }}
-            >
-              <span className="material-symbols-rounded">description</span>
-            </div>
-            <div className="review-file-info">
-              <div className="review-file-name">{submission.filename}</div>
-              <div className="review-file-meta">
-                Submitted {formatDateTime(submission.submittedAt)}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="review-download-btn"
-              onClick={handleDownload}
-              disabled={downloading}
-            >
-              {downloading ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              ) : (
-                <span
-                  className="material-symbols-rounded"
-                  style={{ fontSize: 16 }}
-                >
-                  download
-                </span>
-              )}
-              Download
-            </button>
-          </div>
-          {downloadError && (
-            <p className="course-list-empty" style={{ padding: "10px 0" }}>
-              {downloadError}
-            </p>
-          )}
+          {isAutoAssignment ? renderAutoBreakdown() : renderFileSubmission()}
 
           {isGraded ? (
             <>
@@ -384,9 +494,38 @@ export default function AssignmentReview() {
                   : "Not yet graded"}
               </span>
             </div>
+            <div className="info-row">
+              <span className="info-row-label">Resubmissions</span>
+              <span className="info-row-val">
+                {unlimitedResubmissions
+                  ? `${resubmissionsUsed} / ∞`
+                  : `${resubmissionsUsed} / ${resubmissionsLimit}`}
+              </span>
+            </div>
           </div>
 
           <div style={{ marginTop: 12 }}>
+            {canResubmit && (
+              <Link
+                to={`/courses/${courseId}/assignments/${assignmentId}/submit`}
+                className="review-download-btn"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  textDecoration: "none",
+                  padding: "10px 12px",
+                  marginBottom: 10,
+                }}
+              >
+                <span
+                  className="material-symbols-rounded"
+                  style={{ fontSize: 16 }}
+                >
+                  refresh
+                </span>
+                Resubmit assignment
+              </Link>
+            )}
             <Link
               to={`/courses/${courseId}`}
               className="review-download-btn"

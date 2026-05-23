@@ -324,6 +324,7 @@ public class CourseContentService {
                 assignment.getCreatedAt(),
                 assignment.getDueDate(),
                 assignment.getMaxScore(),
+                assignment.getFileSizeLimitMb(),
                 assignment.getType(),
                 submissionSummary
         );

@@ -13,6 +13,10 @@ function ButtonSpinner() {
   );
 }
 
+function normalizeCollabMode(mode) {
+  return String(mode || 'online').toLowerCase();
+}
+
 export default function Profile() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -22,7 +26,7 @@ export default function Profile() {
   // Collaboration section
   const [collabEditing, setCollabEditing] = useState(false);
   const [skills, setSkills] = useState(user?.skills ?? []);
-  const [collabMode, setCollabMode] = useState(user?.collabMode ?? 'online');
+  const [collabMode, setCollabMode] = useState(normalizeCollabMode(user?.collabMode));
   const [availability, setAvailability] = useState(user?.availability ?? '');
   const [skillInput, setSkillInput] = useState('');
   const [collabSaving, setCollabSaving] = useState(false);
@@ -61,7 +65,7 @@ export default function Profile() {
         setProfile(data);
         setName(data?.name ?? '');
         setSkills(data?.skills ?? []);
-        setCollabMode(data?.collabMode ?? 'online');
+        setCollabMode(normalizeCollabMode(data?.collabMode));
         setAvailability(data?.availability ?? '');
       })
       .catch(() => {});
@@ -96,9 +100,14 @@ export default function Profile() {
     setCollabError(null);
     setCollabSaving(true);
     try {
-      const res = await authApi.updateMe({ skills, collabMode, availability });
+      const res = await authApi.updateMe({
+        skills,
+        collabMode: collabMode.toUpperCase(),
+        availability,
+      });
       const updated = res.data?.data ?? res.data;
       setProfile(prev => ({ ...prev, ...updated }));
+      setCollabMode(normalizeCollabMode(updated?.collabMode));
       setCollabEditing(false);
     } catch (err) {
       setCollabError(err?.response?.data?.message || err?.message || 'Failed to save.');
@@ -109,7 +118,7 @@ export default function Profile() {
 
   function cancelCollab() {
     setSkills(profile.skills ?? []);
-    setCollabMode(profile.collabMode ?? 'online');
+    setCollabMode(normalizeCollabMode(profile.collabMode));
     setAvailability(profile.availability ?? '');
     setCollabError(null);
     setCollabEditing(false);
@@ -171,7 +180,7 @@ export default function Profile() {
     e.preventDefault();
     setPasswordError(null);
     setSuccessMessage(null);
-    if (!password || password.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
+    if (!password || password.length < 8) { setPasswordError('Minimum 8 characters'); return; }
     if (password !== confirmPassword) { setPasswordError('Passwords do not match.'); return; }
     setSavingPassword(true);
     try {
@@ -487,7 +496,7 @@ export default function Profile() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     disabled={savingPassword}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     autoComplete="new-password"
                     autoFocus
                   />

@@ -13,7 +13,7 @@ const PILLS = ['Discussion forums', 'Assignment management', 'Course materials',
 // ── tiny helpers ─────────────────────────────────────────────────────────────
 
 /** Labelled input field for the auth forms. */
-function Field({ label, error, inputRef, small = false, children }) {
+function Field({ label, error, small = false, children }) {
   return (
     <div style={{ marginBottom: small ? 10 : 15 }}>
       <label
@@ -167,6 +167,8 @@ function RegisterForm({ onSwitch, onError }) {
   const {
     register,
     handleSubmit,
+    setError,
+    clearErrors,
     setValue,
     watch,
     formState: { errors },
@@ -174,14 +176,63 @@ function RegisterForm({ onSwitch, onError }) {
 
   // Watch the role field so RoleCard selection stays in sync with RHF state
   const selectedRole = watch('role');
+  const nameMaxMessage = 'Name must be 100 characters or fewer';
+  const passwordMaxMessage = 'Password must be 128 characters or fewer';
+
+  function validateNameLength(firstName, lastName) {
+    const name = `${firstName} ${lastName}`;
+    if (name.length > 100) {
+      setError('lastName', {
+        type: 'maxLength',
+        message: nameMaxMessage,
+      });
+    } else if (errors.lastName?.message === nameMaxMessage) {
+      clearErrors('lastName');
+    }
+  }
+
+  function validatePasswordMaxLength(password) {
+    if (password.length > 128) {
+      setError('password', {
+        type: 'maxLength',
+        message: passwordMaxMessage,
+      });
+    } else if (errors.password?.message === passwordMaxMessage) {
+      clearErrors('password');
+    }
+  }
+
+  const firstNameField = register('firstName', {
+    required: 'Required',
+    maxLength: { value: 100, message: nameMaxMessage },
+  });
+  const lastNameField = register('lastName', {
+    required: 'Required',
+    maxLength: { value: 100, message: nameMaxMessage },
+  });
+  const passwordField = register('password', {
+    required: 'Password is required',
+    minLength: { value: 8, message: 'Minimum 8 characters' },
+    maxLength: { value: 128, message: passwordMaxMessage },
+  });
 
   const onSubmit = async (data) => {
-    setSubmitting(true);
     onError('');
+    const name = `${data.firstName} ${data.lastName}`;
+
+    if (name.length > 100) {
+      setError('lastName', {
+        type: 'maxLength',
+        message: nameMaxMessage,
+      });
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
       const res = await authApi.register({
-        name: `${data.firstName} ${data.lastName}`,
+        name,
         email: data.email,
         password: data.password,
         role: data.role.toUpperCase(),
@@ -228,7 +279,12 @@ function RegisterForm({ onSwitch, onError }) {
             small
             type="text"
             placeholder="Bingyan"
-            {...register('firstName', { required: 'Required' })}
+            maxLength={100}
+            {...firstNameField}
+            onChange={(event) => {
+              firstNameField.onChange(event);
+              validateNameLength(event.target.value, watch('lastName') || '');
+            }}
           />
         </Field>
         <Field label="Last name" error={errors.lastName?.message} small>
@@ -236,7 +292,12 @@ function RegisterForm({ onSwitch, onError }) {
             small
             type="text"
             placeholder="Wang"
-            {...register('lastName', { required: 'Required' })}
+            maxLength={100}
+            {...lastNameField}
+            onChange={(event) => {
+              lastNameField.onChange(event);
+              validateNameLength(watch('firstName') || '', event.target.value);
+            }}
           />
         </Field>
       </div>
@@ -258,10 +319,11 @@ function RegisterForm({ onSwitch, onError }) {
           small
           type="password"
           placeholder="At least 8 characters"
-          {...register('password', {
-            required: 'Password is required',
-            minLength: { value: 8, message: 'Minimum 8 characters' },
-          })}
+          {...passwordField}
+          onChange={(event) => {
+            passwordField.onChange(event);
+            validatePasswordMaxLength(event.target.value);
+          }}
         />
       </Field>
 
@@ -303,7 +365,7 @@ function RegisterForm({ onSwitch, onError }) {
         type="submit"
         className="auth-btn"
         style={{ height: 44 }}
-        disabled={submitting}
+        disabled={submitting || Object.keys(errors).length > 0}
       >
         {submitting ? (
           <span

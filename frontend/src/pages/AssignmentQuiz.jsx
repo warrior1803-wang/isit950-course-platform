@@ -52,7 +52,8 @@ function buildResult(submission, assignment) {
   breakdown.forEach(item => {
     perQuestion[String(item.questionId)] = {
       correct: Boolean(item.correct),
-      points: item.points ?? 0,
+      pointsAwarded: item.pointsAwarded ?? 0,
+      maxPoints: item.maxPoints ?? 0,
     };
   });
 
@@ -72,6 +73,7 @@ export default function AssignmentQuiz() {
   const [result, setResult] = useState(null);
   const [resubmissionsUsed, setResubmissionsUsed] = useState(0);
   const [resubmissionsLimit, setResubmissionsLimit] = useState(0);
+  const [unlimitedResubmissions, setUnlimitedResubmissions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -99,7 +101,12 @@ export default function AssignmentQuiz() {
       if (assignmentResult.status === 'fulfilled') {
         const nextAssignment = assignmentResult.value.data?.data;
         setAssignment(nextAssignment);
-        setResubmissionsLimit(nextAssignment?.resubmissionsLimit ?? 0);
+        setResubmissionsLimit(
+          Object.prototype.hasOwnProperty.call(nextAssignment || {}, 'resubmissionsLimit')
+            ? nextAssignment.resubmissionsLimit
+            : 0,
+        );
+        setUnlimitedResubmissions(nextAssignment?.unlimitedResubmissions === true);
       } else {
         setAssignment(null);
         setError(getApiErrorState(assignmentResult.reason).message);
@@ -111,9 +118,15 @@ export default function AssignmentQuiz() {
         const submission = submissionResult.value.data;
         setResubmissionsUsed(submission?.resubmissionsUsed ?? 0);
         setResubmissionsLimit(
-          submission?.resubmissionsLimit ??
-            assignmentResult.value.data?.data?.resubmissionsLimit ??
-            0,
+          Object.prototype.hasOwnProperty.call(submission || {}, 'resubmissionsLimit')
+            ? submission.resubmissionsLimit
+            : Object.prototype.hasOwnProperty.call(assignmentResult.value.data?.data || {}, 'resubmissionsLimit')
+              ? assignmentResult.value.data.data.resubmissionsLimit
+              : 0,
+        );
+        setUnlimitedResubmissions(
+          submission?.unlimitedResubmissions === true ||
+            assignmentResult.value.data?.data?.unlimitedResubmissions === true,
         );
 
         if (submission?.status === 'graded') {
@@ -144,10 +157,12 @@ export default function AssignmentQuiz() {
 
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
   const progressPercent = questions.length ? (answeredCount / questions.length) * 100 : 0;
+  const isOverdue = Boolean(assignment?.dueDate && new Date(assignment.dueDate) < new Date());
   const safeResubmissionsUsed = resubmissionsUsed ?? 0;
-  const safeResubmissionsLimit = resubmissionsLimit ?? 0;
-  const resubmissionsRemaining = Math.max(safeResubmissionsLimit - safeResubmissionsUsed, 0);
-  const limitReached = submitted && resubmissionsRemaining === 0;
+  const resubmissionsRemaining = unlimitedResubmissions
+    ? null
+    : Math.max(resubmissionsLimit - safeResubmissionsUsed, 0);
+  const limitReached = submitted && !unlimitedResubmissions && resubmissionsRemaining === 0;
 
   function updateAnswer(questionId, value) {
     if (submitted || loading) return;
@@ -168,7 +183,16 @@ export default function AssignmentQuiz() {
       setResubmissionsUsed(current =>
         response.data?.resubmissionsUsed ?? (preparingResubmission ? current + 1 : current),
       );
-      setResubmissionsLimit(current => response.data?.resubmissionsLimit ?? current);
+      setResubmissionsLimit(current =>
+        Object.prototype.hasOwnProperty.call(response.data || {}, 'resubmissionsLimit')
+          ? response.data.resubmissionsLimit
+          : current,
+      );
+      setUnlimitedResubmissions(current =>
+        Object.prototype.hasOwnProperty.call(response.data || {}, 'unlimitedResubmissions')
+          ? response.data.unlimitedResubmissions === true
+          : current,
+      );
     } catch (err) {
       if (isUpgradeRequired(err)) {
         setShowUpgradePrompt(true);
@@ -181,7 +205,7 @@ export default function AssignmentQuiz() {
   }
 
   function resubmitQuiz() {
-    if (resubmissionsRemaining <= 0) {
+    if (isOverdue || (!unlimitedResubmissions && resubmissionsRemaining <= 0)) {
       return;
     }
     setAnswers({});
@@ -216,7 +240,7 @@ export default function AssignmentQuiz() {
                   <td>{item.questionText ?? question?.text ?? `Question ${index + 1}`}</td>
                   <td>{item.studentAnswer ?? '—'}</td>
                   <td>{item.correctAnswer ?? '—'}</td>
-                  <td>{item.points ?? 0}</td>
+                  <td>{item.pointsAwarded ?? 0} / {item.maxPoints ?? question?.points ?? 0}</td>
                 </tr>
               );
             })}
@@ -229,14 +253,17 @@ export default function AssignmentQuiz() {
   function renderQuestion(question, index) {
     const questionResult = result?.perQuestion?.[String(question.id)];
     const selectedAnswer = answers[question.id];
-    const earnedPoints = questionResult?.points ?? questionResult?.earned ?? 0;
+    const earnedPoints = questionResult?.pointsAwarded ?? questionResult?.earned ?? 0;
+    const questionMaxPoints = questionResult?.maxPoints ?? question.points ?? 0;
 
     return (
       <div key={question.id} className="quiz-question-card">
         <div className="quiz-question-header">
           <div className="quiz-question-num">Question {index + 1}</div>
           <div className="quiz-question-points">
-            {submitted && questionResult ? `+${earnedPoints} pts` : `${question.points} pts`}
+            {submitted && questionResult
+              ? `+${earnedPoints} / ${questionMaxPoints} pts`
+              : `${question.points} pts`}
           </div>
         </div>
         <div className="quiz-question-text">{question.text}</div>
@@ -395,16 +422,22 @@ export default function AssignmentQuiz() {
             </button>
           ) : (
             <div className="resubmit-card">
-              {limitReached ? (
+              {isOverdue ? (
+                <div className="resubmit-heading">Resubmissions closed after the deadline</div>
+              ) : limitReached ? (
                 <UpgradePrompt />
               ) : (
                 <>
                   <div className="resubmit-heading">
-                    {resubmissionsRemaining} resubmission remaining (Free plan)
+                    {unlimitedResubmissions
+                      ? 'Unlimited resubmissions before the deadline'
+                      : `${resubmissionsRemaining} resubmission${resubmissionsRemaining === 1 ? '' : 's'} remaining (Free plan)`}
                   </div>
-                  <Link to="/membership" className="membership-link">
-                    Upgrade to Member for unlimited resubmissions
-                  </Link>
+                  {!unlimitedResubmissions && (
+                    <Link to="/membership" className="membership-link">
+                      Upgrade to Member for unlimited resubmissions
+                    </Link>
+                  )}
                   <button type="button" className="submit-btn resubmit-quiz-btn" onClick={resubmitQuiz}>
                     <span className="material-symbols-rounded icon">refresh</span>
                     Resubmit quiz
@@ -444,7 +477,9 @@ export default function AssignmentQuiz() {
             </div>
             <div className="info-row">
               <span className="info-row-label">Resubmissions</span>
-              <span className="info-row-val">{resubmissionsRemaining} remaining</span>
+              <span className="info-row-val">
+                {unlimitedResubmissions ? '∞ remaining' : `${resubmissionsRemaining} remaining`}
+              </span>
             </div>
             <div className="info-row">
               <span className="info-row-label">Result</span>

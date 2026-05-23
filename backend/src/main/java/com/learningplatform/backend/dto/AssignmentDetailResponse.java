@@ -23,6 +23,8 @@ public class AssignmentDetailResponse {
     private LocalDateTime createdAt;
     private AssignmentType type;
     private Integer questionCount;
+    private Integer resubmissionsLimit;
+    private Boolean unlimitedResubmissions;
 
     // FILE = null → 不显示
     private List<QuestionResponse> questions;

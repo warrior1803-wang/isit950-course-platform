@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import { useAuth } from '../lib/auth';
 import { Navbar, StudentSidebar, InstructorSidebar, LoadingSpinner } from '../components/shared';
 
@@ -11,7 +10,6 @@ import AssignmentSubmission from '../pages/AssignmentSubmission';
 import AssignmentQuiz from '../pages/AssignmentQuiz';
 import AssignmentReview from '../pages/AssignmentReview';
 import Forum from '../pages/Forum';
-// import Assignments from '../pages/Assignments';
 import AssignmentList from '../pages/AssignmentList';
 import Announcements from '../pages/Announcements';
 import InstructorGrading from '../pages/InstructorGrading';
@@ -25,22 +23,6 @@ import InstructorAnalyticsPage from '../pages/instructor/InstructorAnalyticsPage
 import BrowseCourses from '../pages/BrowseCourses';
 import Profile from '../pages/Profile';
 import Membership from '../pages/Membership';
-
-// Temporary placeholder for pages not yet implemented
-function Soon({ page }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
-      <div style={{ textAlign: 'center' }}>
-        <span className="material-symbols-rounded" style={{ fontSize: 48, color: '#ddd0d4' }}>
-          construction
-        </span>
-        <p style={{ marginTop: 12, color: '#9c8a8e', fontSize: 14, fontFamily: "'Gowun Batang', serif" }}>
-          {page} — coming soon
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ── Route guards ────────────────────────────────────────────────────────────
 

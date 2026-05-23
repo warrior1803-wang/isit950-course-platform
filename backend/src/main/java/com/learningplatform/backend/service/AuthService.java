@@ -121,9 +121,9 @@ public class AuthService {
         // Student accounts currently default to FREE membership status.
         AuthUserResponse.MembershipResponse membership =
                 new AuthUserResponse.MembershipResponse(
-                        "FREE",
-                        null,
-                        null
+                        user.getMembershipType() == null ? "FREE" : user.getMembershipType(),
+                        user.getMembershipSince(),
+                        user.getMembershipExpiresAt()
                 );
 
         return new AuthUserResponse(

@@ -62,6 +62,10 @@ public class SecurityConfig {
                         // authenticated cross-origin requests.
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Health check endpoints remain public so deployment
+                        // platforms can monitor application availability.
+                        .requestMatchers("/actuator/health").permitAll()
+
                         // Login and registration must remain publicly accessible
                         // so new users can authenticate and create accounts.
                         .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
