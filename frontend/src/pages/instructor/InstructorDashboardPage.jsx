@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { assignmentApi, authApi, courseApi } from '../../api';
 import { useAuth } from '../../lib/auth';
 
-const COURSE_THUMBS = [
-  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&q=70',
-  'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=200&q=70',
-  'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=200&q=70',
-  'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=200&q=70',
+const COURSE_THUMB_BACKGROUNDS = [
+  'linear-gradient(135deg, rgba(83, 74, 183, 0.88), rgba(122, 90, 106, 0.84))',
+  'linear-gradient(135deg, rgba(24, 95, 165, 0.88), rgba(83, 74, 183, 0.82))',
+  'linear-gradient(135deg, rgba(29, 158, 117, 0.85), rgba(24, 95, 165, 0.82))',
+  'linear-gradient(135deg, rgba(186, 117, 23, 0.88), rgba(216, 90, 48, 0.84))',
 ];
 
 function getApiData(response) {
@@ -259,7 +259,7 @@ export default function InstructorDashboardPage() {
               >
                 <div
                   className="inst-course-thumb"
-                  style={{ backgroundImage: `url("${COURSE_THUMBS[index % COURSE_THUMBS.length]}")` }}
+                  style={{ background: COURSE_THUMB_BACKGROUNDS[index % COURSE_THUMB_BACKGROUNDS.length] }}
                 />
                 <div className="inst-course-info">
                   <div className="inst-course-name">{course.name}</div>

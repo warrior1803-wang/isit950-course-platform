@@ -1123,22 +1123,7 @@ export default function CourseDetail() {
               </button>
 
               <div className="disc-post-card">
-                <div className="disc-post-card-header">
-                  <div className="disc-post-title">{selectedPost.title}</div>
-                  {canDeleteDiscussionItem(selectedPost.author?.id) && (
-                    <button
-                      type="button"
-                      className="discussion-delete-btn"
-                      onClick={() => handleDeletePost(selectedPost.id)}
-                      disabled={deletingPostId === selectedPost.id}
-                      aria-label="Delete post"
-                    >
-                      {deletingPostId === selectedPost.id ? <ButtonSpinner /> : (
-                        <span className="material-symbols-rounded">delete</span>
-                      )}
-                    </button>
-                  )}
-                </div>
+                <div className="disc-post-title">{selectedPost.title}</div>
                 <div className="disc-post-header">
                   <div className="disc-avatar" style={avatarStyleFor(selectedPost.author?.name, selectedPost.authorRole)}>
                     {initialsFor(selectedPost.author?.name)}
@@ -1149,7 +1134,22 @@ export default function CourseDetail() {
                       {selectedPost.authorRole === 'instructor' ? 'Instructor' : 'Student'}
                     </span>
                   </div>
-                  <div className="disc-post-date">{formatDateShort(selectedPost.createdAt)}</div>
+                  <div className="disc-post-side">
+                    <div className="disc-post-date">{formatDateShort(selectedPost.createdAt)}</div>
+                    {canDeleteDiscussionItem(selectedPost.author?.id) && (
+                      <button
+                        type="button"
+                        className="discussion-delete-btn"
+                        onClick={() => handleDeletePost(selectedPost.id)}
+                        disabled={deletingPostId === selectedPost.id}
+                        aria-label="Delete post"
+                      >
+                        {deletingPostId === selectedPost.id ? <ButtonSpinner /> : (
+                          <span className="material-symbols-rounded">delete</span>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="disc-post-body">{selectedPost.body}</div>
               </div>
