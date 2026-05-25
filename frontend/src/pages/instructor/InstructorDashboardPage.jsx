@@ -259,7 +259,9 @@ export default function InstructorDashboardPage() {
               >
                 <div
                   className="inst-course-thumb"
-                  style={{ backgroundImage: `url("${COURSE_THUMBS[index % COURSE_THUMBS.length]}")` }}
+                  style={{
+                    backgroundImage: `url(${COURSE_THUMBS[index % COURSE_THUMBS.length]})`
+                  }}
                 />
                 <div className="inst-course-info">
                   <div className="inst-course-name">{course.name}</div>

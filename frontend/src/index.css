@@ -1529,6 +1529,15 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
   margin-bottom: 12px;
 }
 
+.disc-post-side {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .disc-post-author {
   font-size: 13px;
   color: var(--text-dark);
@@ -1544,7 +1553,6 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
 .disc-post-date {
   font-size: 11px;
   color: var(--text-muted);
-  margin-left: auto;
 }
 
 .disc-post-body {
@@ -3288,7 +3296,11 @@ background:none; border:none; padding:3px 8px; font-family:'Gowun Batang',serif;
 .mem-usage-bar {
   height: 100%;
   border-radius: 4px;
+  background: linear-gradient(90deg, #b693a9, #9c8a8e);
   transition: width 0.3s;
+}
+.mem-usage-bar.ok {
+  background: linear-gradient(90deg, #1d9e75, #16a34a);
 }
 .mem-usage-bar.warn {
   background: linear-gradient(90deg, #f59e0b, #ef4444);

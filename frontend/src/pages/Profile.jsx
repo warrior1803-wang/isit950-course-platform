@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { membershipApi, authApi } from '../api';
+import { membershipApi, authApi, courseApi, forumApi, assignmentApi } from '../api';
 
 function getInitials(name = '') {
   return name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
@@ -48,6 +48,7 @@ export default function Profile() {
   const [successMessage, setSuccessMessage] = useState(null);
 
   const [memData, setMemData] = useState(null);
+  const [stats, setStats] = useState({ courses: null, posts: null, submitted: null });
 
   useEffect(() => {
     if (user?.role === 'STUDENT') {
@@ -71,6 +72,60 @@ export default function Profile() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStudentStats() {
+      if (String(user?.role).toUpperCase() !== 'STUDENT') return;
+
+      try {
+        const courseRes = await courseApi.list();
+        const courses = courseRes.data?.data ?? [];
+
+        const [postResults, assignmentResults] = await Promise.all([
+          Promise.allSettled(courses.map(course => forumApi.listPosts(course.id))),
+          Promise.allSettled(courses.map(course => assignmentApi.list(course.id))),
+        ]);
+
+        if (cancelled) return;
+
+        const currentUserId = user?.id ?? profile?.id ?? null;
+        const posts = postResults.reduce((sum, result) => {
+          if (result.status !== 'fulfilled') return sum;
+          const items = result.value.data?.data ?? [];
+          return sum + items.filter(post => {
+            const authorId = post.author?.id ?? post.authorId ?? null;
+            return currentUserId != null && authorId === currentUserId;
+          }).length;
+        }, 0);
+
+        const submitted = assignmentResults.reduce((sum, result) => {
+          if (result.status !== 'fulfilled') return sum;
+          const items = result.value.data?.data ?? [];
+          return sum + items.filter(item => {
+            const submission = item.submissionStatus || item.submission || null;
+            return Boolean(submission);
+          }).length;
+        }, 0);
+
+        setStats({
+          courses: courses.length,
+          posts,
+          submitted,
+        });
+      } catch {
+        if (!cancelled) {
+          setStats({ courses: 0, posts: 0, submitted: 0 });
+        }
+      }
+    }
+
+    loadStudentStats();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, profile?.id]);
 
   if (!profile) return null;
 
@@ -226,15 +281,15 @@ export default function Profile() {
           <div className="profile-email">{profile.email}</div>
           <div className="profile-stat-row">
             <div className="profile-stat">
-              <div className="profile-stat-num">—</div>
+              <div className="profile-stat-num">{stats.courses ?? '—'}</div>
               <div className="profile-stat-label">Courses</div>
             </div>
             <div className="profile-stat">
-              <div className="profile-stat-num">—</div>
+              <div className="profile-stat-num">{stats.posts ?? '—'}</div>
               <div className="profile-stat-label">Posts</div>
             </div>
             <div className="profile-stat">
-              <div className="profile-stat-num">—</div>
+              <div className="profile-stat-num">{stats.submitted ?? '—'}</div>
               <div className="profile-stat-label">Submitted</div>
             </div>
           </div>

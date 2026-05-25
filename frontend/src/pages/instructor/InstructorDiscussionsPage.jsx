@@ -151,7 +151,6 @@ export default function InstructorDiscussionsPage() {
         const targetCourses = selectedCourseId === ALL_COURSES
           ? courses
           : courses.filter(course => course.id === Number(selectedCourseId));
-        // TODO(Sprint 8): add thread-list pagination here once the backend supports ?page=0&size=20.
         const responses = await Promise.all(targetCourses.map(course => forumApi.listPosts(course.id)));
         if (cancelled) return;
 
