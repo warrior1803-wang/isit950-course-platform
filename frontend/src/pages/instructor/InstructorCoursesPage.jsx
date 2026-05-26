@@ -138,6 +138,7 @@ export default function InstructorCoursesPage() {
       ...prev,
       [courseId]: [newMaterial, ...(prev[courseId] || [])],
     }));
+    void fetchCourses();
   }
 
   async function handleAssignmentSubmit(fields) {
@@ -165,6 +166,7 @@ export default function InstructorCoursesPage() {
           : [saved, ...current],
       };
     });
+    await fetchCourses();
     setAssignmentModal(null);
   }
 
@@ -208,6 +210,7 @@ export default function InstructorCoursesPage() {
       ...prev,
       [courseId]: (prev[courseId] || []).filter(m => m.id !== materialId),
     }));
+    await fetchCourses();
   }
 
   async function handleDeleteAssignment(courseId, assignment) {
@@ -219,6 +222,7 @@ export default function InstructorCoursesPage() {
         ...prev,
         [courseId]: (prev[courseId] || []).filter(item => item.id !== assignment.id),
       }));
+      await fetchCourses();
     } catch (err) {
       setError(getApiErrorState(err));
     } finally {
