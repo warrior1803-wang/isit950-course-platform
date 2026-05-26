@@ -43,6 +43,7 @@ export default function InstructorCoursesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deletingMaterialId, setDeletingMaterialId] = useState(null);
+  const [deletingAssignmentId, setDeletingAssignmentId] = useState(null);
 
   const [modal, setModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', course: {...} }
   const [uploadModal, setUploadModal] = useState(null); // null | { courseId, section }
@@ -125,6 +126,7 @@ export default function InstructorCoursesPage() {
         code: fields.code,
         description: fields.description,
         schedule: fields.session,
+        location: fields.location,
       },
     });
     await fetchCourses();
@@ -208,6 +210,22 @@ export default function InstructorCoursesPage() {
     }));
   }
 
+  async function handleDeleteAssignment(courseId, assignment) {
+    if (!window.confirm(`Delete assignment "${assignment.title}"? This cannot be undone.`)) return;
+    setDeletingAssignmentId(assignment.id);
+    try {
+      await api.delete(`/courses/${courseId}/assignments/${assignment.id}`);
+      setAssignments(prev => ({
+        ...prev,
+        [courseId]: (prev[courseId] || []).filter(item => item.id !== assignment.id),
+      }));
+    } catch (err) {
+      setError(getApiErrorState(err));
+    } finally {
+      setDeletingAssignmentId(null);
+    }
+  }
+
   return (
     <>
       {/* Page header */}
@@ -264,6 +282,7 @@ export default function InstructorCoursesPage() {
             code: course.code,
             meta: [course.schedule, course.location].filter(Boolean).join(' · '),
             session: course.schedule,
+            location: course.location,
             description: course.description,
             studentCount: course.enrolmentCount ?? 0,
             materialCount: course.materialsCount ?? 0,
@@ -276,9 +295,11 @@ export default function InstructorCoursesPage() {
           onUpload={section => setUploadModal({ courseId: course.id, section })}
           onDeleteMaterial={materialId => handleDeleteMaterial(course.id, materialId)}
           deletingMaterialId={deletingMaterialId}
+          deletingAssignmentId={deletingAssignmentId}
           onViewStudents={() => navigate(`/instructor/courses/${course.id}/students`)}
           onNewAssignment={() => setAssignmentModal({ mode: 'create', courseId: course.id })}
           onEditAssignment={assignment => openEditAssignment(course.id, assignment)}
+          onDeleteAssignment={assignment => handleDeleteAssignment(course.id, assignment)}
           onEdit={() => setModal({
             mode: 'edit',
             course: {
@@ -286,6 +307,7 @@ export default function InstructorCoursesPage() {
               title: course.name,
               code: course.code,
               session: course.schedule,
+              location: course.location,
               description: course.description,
             },
           })}

@@ -141,7 +141,7 @@ EmptyUploadStrip.propTypes = {
   onUpload: PropTypes.func.isRequired,
 };
 
-function AssignmentItem({ assignment, onEdit }) {
+function AssignmentItem({ assignment, onEdit, onDelete, deleting }) {
   const isAuto = assignment.type === 'AUTO';
   const meta = [
     isAuto
@@ -167,15 +167,32 @@ function AssignmentItem({ assignment, onEdit }) {
         </div>
         <div className="text-[11px] text-text-muted truncate">{meta}</div>
       </div>
-      <button
-        type="button"
-        className="w-7 h-7 rounded-md bg-transparent border border-border cursor-pointer text-text-muted hover:text-accent hover:bg-accent/10 transition-colors duration-150 flex items-center justify-center"
-        title="Edit assignment"
-        onClick={() => onEdit(assignment)}
-        aria-label={`Edit ${assignment.title}`}
-      >
-        <span className="material-symbols-rounded text-base">edit</span>
-      </button>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          className="w-7 h-7 rounded-md bg-transparent border border-border cursor-pointer text-text-muted hover:text-accent hover:bg-accent/10 transition-colors duration-150 flex items-center justify-center"
+          title="Edit assignment"
+          onClick={() => onEdit(assignment)}
+          disabled={deleting}
+          aria-label={`Edit ${assignment.title}`}
+        >
+          <span className="material-symbols-rounded text-base">edit</span>
+        </button>
+        <button
+          type="button"
+          className="w-7 h-7 rounded-md bg-transparent border border-border cursor-pointer text-text-muted hover:text-accent hover:bg-accent/10 transition-colors duration-150 flex items-center justify-center"
+          title="Delete assignment"
+          onClick={() => onDelete(assignment)}
+          disabled={deleting}
+          aria-label={`Delete ${assignment.title}`}
+        >
+          {deleting ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <span className="material-symbols-rounded text-base">delete</span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -191,6 +208,12 @@ AssignmentItem.propTypes = {
     questions: PropTypes.arrayOf(PropTypes.shape({})),
   }).isRequired,
   onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  deleting: PropTypes.bool,
+};
+
+AssignmentItem.defaultProps = {
+  deleting: false,
 };
 
 export default function CourseManageCard({
@@ -204,6 +227,8 @@ export default function CourseManageCard({
   deletingMaterialId,
   onNewAssignment,
   onEditAssignment,
+  onDeleteAssignment,
+  deletingAssignmentId,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const groupedMaterials = groupMaterialsBySection(materials);
@@ -321,6 +346,8 @@ export default function CourseManageCard({
                     key={assignment.id}
                     assignment={assignment}
                     onEdit={onEditAssignment}
+                    onDelete={onDeleteAssignment}
+                    deleting={deletingAssignmentId === assignment.id}
                   />
                 ))}
               </div>
@@ -372,10 +399,13 @@ CourseManageCard.propTypes = {
   deletingMaterialId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onNewAssignment: PropTypes.func,
   onEditAssignment: PropTypes.func,
+  onDeleteAssignment: PropTypes.func,
+  deletingAssignmentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 CourseManageCard.defaultProps = {
   materials: [],
   assignments: [],
   deletingMaterialId: null,
+  deletingAssignmentId: null,
 };
