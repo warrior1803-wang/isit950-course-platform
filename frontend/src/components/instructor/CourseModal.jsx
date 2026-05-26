@@ -37,6 +37,7 @@ const FIELD_LIMITS = {
   title: 100,
   code: 15,
   session: 20,
+  location: 100,
   description: 500,
 };
 
@@ -44,6 +45,7 @@ const LENGTH_MESSAGES = {
   title: 'Course name must be 100 characters or fewer',
   code: 'Course code must be 15 characters or fewer',
   session: 'Session must be 20 characters or fewer',
+  location: 'Location must be 100 characters or fewer',
   description: 'Description must be 500 characters or fewer',
 };
 
@@ -52,6 +54,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
     title: initialData?.title || '',
     code: initialData?.code || '',
     session: initialData?.session || '',
+    location: initialData?.location || '',
     description: initialData?.description || '',
   };
   const [fields, setFields] = useState(initialFields);
@@ -105,6 +108,9 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
       errs.description = 'This field is required';
     } else if (nextFields.description.length > FIELD_LIMITS.description) {
       errs.description = LENGTH_MESSAGES.description;
+    }
+    if (nextFields.location.length > FIELD_LIMITS.location) {
+      errs.location = LENGTH_MESSAGES.location;
     }
     return errs;
   }
@@ -189,6 +195,16 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
             </FieldWrapper>
           </div>
 
+          <FieldWrapper label="Location" error={errors.location}>
+            <input
+              className={inputClass}
+              placeholder="e.g. Building 11, Room 205"
+              value={fields.location}
+              onChange={e => set('location', e.target.value)}
+              maxLength={FIELD_LIMITS.location}
+            />
+          </FieldWrapper>
+
           {/* Description */}
           <FieldWrapper label="Description" error={errors.description}>
             <textarea
@@ -239,6 +255,7 @@ CourseModal.propTypes = {
     title: PropTypes.string,
     code: PropTypes.string,
     session: PropTypes.string,
+    location: PropTypes.string,
     description: PropTypes.string,
   }),
   onClose: PropTypes.func.isRequired,
