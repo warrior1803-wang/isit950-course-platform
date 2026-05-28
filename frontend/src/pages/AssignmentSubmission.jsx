@@ -213,6 +213,7 @@ export default function AssignmentSubmission() {
 
   function renderUploadZone({ compact = false, disabled = false } = {}) {
     const uploadDisabled = disabled || submitting;
+    const fileSizeLimitMb = getFileSizeLimitMb(assignment);
 
     return (
       <>
@@ -250,7 +251,7 @@ export default function AssignmentSubmission() {
           <span className="material-symbols-rounded icon">upload_file</span>
           <div className="upload-zone-title">Drag and drop your file here</div>
           <div className="upload-zone-sub">
-            or browse to upload · PDF, DOCX up to 50 MB
+            or browse to upload · PDF, DOCX up to {fileSizeLimitMb} MB
           </div>
         </div>
         <input

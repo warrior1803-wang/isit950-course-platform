@@ -348,6 +348,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                   className={inputClass}
                   placeholder="e.g. Week 9 Quiz - Scrum and Agile"
                   value={fields.title}
+                  maxLength={200}
                   onChange={e => setField('title', e.target.value)}
                   disabled={disabled}
                 />
@@ -359,6 +360,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                   rows={3}
                   placeholder="Instructions for students..."
                   value={fields.description}
+                  maxLength={1000}
                   onChange={e => setField('description', e.target.value)}
                   disabled={disabled}
                 />
@@ -499,6 +501,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                               rows={2}
                               placeholder="Enter question..."
                               value={question.text}
+                              maxLength={500}
                               onChange={e => updateQuestion(index, { text: e.target.value })}
                               disabled={disabled}
                             />
@@ -526,6 +529,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                                     className="qe-option-input"
                                     placeholder={`Option ${optionIndex + 1}`}
                                     value={option}
+                                    maxLength={200}
                                     onChange={e => updateOption(index, optionIndex, e.target.value)}
                                     disabled={disabled}
                                   />
@@ -566,6 +570,7 @@ export default function AssignmentModal({ mode, initialData, isLoadingDetail, on
                                   ? 'Exact text students must enter'
                                   : 'Unique correct answer'}
                                 value={question.correctAnswer}
+                                maxLength={200}
                                 onChange={e => updateQuestion(index, { correctAnswer: e.target.value })}
                                 disabled={disabled}
                               />

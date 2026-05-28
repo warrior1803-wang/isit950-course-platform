@@ -1341,7 +1341,7 @@ function AutoGradePanel({
                 type="number"
                 placeholder="0–10"
                 min="0"
-                max="10"
+                max={detail.maxScore}
                 value={score}
                 onChange={(event) => setScore(event.target.value)}
                 style={styles.fieldInput}
