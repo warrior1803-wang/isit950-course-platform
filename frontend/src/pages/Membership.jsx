@@ -49,10 +49,8 @@ export default function Membership() {
   const isPremium = upgraded || (mem && mem.type !== 'FREE');
   const postsUsed = mem?.usage?.weeklyPostsUsed ?? 0;
   const postsLimit = mem?.usage?.weeklyPostsLimit ?? 10;
-  const resubUsed = mem?.usage?.resubmissionsUsed ?? 0;
   const resubLimit = mem?.usage?.resubmissionsLimit ?? 2;
   const postsPercent = isPremium ? 100 : Math.min(100, (postsUsed / postsLimit) * 100);
-  const resubPercent = isPremium ? 100 : Math.min(100, (resubUsed / resubLimit) * 100);
 
   function formatCardNumber(val) {
     return val.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
@@ -135,7 +133,7 @@ export default function Membership() {
       {/* Usage tracker */}
       <div className="mem-page-card">
         <div style={{ fontSize: 13, color: 'var(--text-dark)', marginBottom: 14, fontWeight: 500 }}>
-          This week's usage
+          Discussion usage this week
         </div>
         <div className="mem-usage-row">
           <div className="mem-usage-label">Discussion posts</div>
@@ -151,18 +149,15 @@ export default function Membership() {
         </div>
         <div className="mem-usage-row">
           <div className="mem-usage-label">Assignment resubmissions</div>
-          <div className="mem-usage-bar-wrap">
-            <div
-              className={`mem-usage-bar${isPremium ? ' ok' : resubPercent >= 50 ? ' warn' : ''}`}
-              style={{ width: isPremium ? '0%' : `${resubPercent}%` }}
-            />
+          <div style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
+            Per-assignment limit
           </div>
           <div className="mem-usage-count">
-            {isPremium ? '∞ / ∞' : `${resubUsed} / ${resubLimit}`}
+            {isPremium ? '∞ each' : `${resubLimit} each`}
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12 }}>
-          ⏱ Limits reset {nextMondayLabel()} at 12:00am AEST
+          ⏱ Discussion limit resets {nextMondayLabel()} at 12:00am AEST
         </div>
       </div>
 
