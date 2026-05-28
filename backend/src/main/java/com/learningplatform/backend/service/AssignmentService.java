@@ -3,6 +3,7 @@ package com.learningplatform.backend.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learningplatform.backend.common.exception.BusinessException;
+import com.learningplatform.backend.common.exception.NotFoundException;
 import com.learningplatform.backend.common.exception.ResubmissionLimitException;
 import com.learningplatform.backend.dto.AssignmentCreateResponse;
 import com.learningplatform.backend.dto.AssignmentDetailResponse;
@@ -74,7 +75,7 @@ public class AssignmentService {
             String instructorEmail
     ) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new NotFoundException("Course not found"));
 
         if (!course.getInstructor().getEmail().equals(instructorEmail)) {
             throw new RuntimeException("You are not allowed to create assignments for this course");
@@ -138,10 +139,10 @@ public class AssignmentService {
             String userEmail
     ) {
         User currentUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         boolean isInstructor = currentUser.getRole() == UserRole.INSTRUCTOR;
         boolean isStudent = currentUser.getRole() == UserRole.STUDENT;
@@ -171,10 +172,10 @@ public class AssignmentService {
             String instructorEmail
     ) {
         User instructor = userRepository.findByEmail(instructorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
         // Ownership validation ensures instructors can only manage
         // assignments belonging to their own courses.
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
@@ -455,10 +456,10 @@ public class AssignmentService {
             String instructorEmail
     ) {
         User instructor = userRepository.findByEmail(instructorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
             throw new RuntimeException("You are not allowed to delete this assignment");
@@ -477,10 +478,10 @@ public class AssignmentService {
             String studentEmail
     ) {
         User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         if (assignment.getType() != AssignmentType.FILE) {
             throw new RuntimeException("This assignment does not accept file submissions");
@@ -537,10 +538,10 @@ public class AssignmentService {
             String studentEmail
     ) {
         User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         if (assignment.getType() != AssignmentType.AUTO) {
             throw new RuntimeException("This assignment does not accept auto submissions");
@@ -710,10 +711,10 @@ public class AssignmentService {
             String studentEmail
     ) {
         User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         Submission submission = submissionRepository
                 .findTopByAssignmentAndStudentOrderBySubmittedAtDesc(assignment, student)
@@ -765,10 +766,10 @@ public class AssignmentService {
             String instructorEmail
     ) {
         User instructor = userRepository.findByEmail(instructorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
             throw new RuntimeException("You are not allowed to view submissions for this assignment");
@@ -811,17 +812,17 @@ public class AssignmentService {
             String instructorEmail
     ) {
         User instructor = userRepository.findByEmail(instructorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(assignmentId, courseId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
             throw new RuntimeException("You are not allowed to view this submission");
         }
 
         Submission submission = submissionRepository.findByIdAndAssignment(submissionId, assignment)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+                .orElseThrow(() -> new NotFoundException("Submission not found"));
 
         boolean autoGraded = assignment.getType() == AssignmentType.AUTO
                 && submission.getStatus() == SubmissionStatus.GRADED;
@@ -926,13 +927,13 @@ public class AssignmentService {
             String instructorEmail
     ) {
         User instructor = userRepository.findByEmail(instructorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         Assignment assignment = assignmentRepository.findByIdAndCourseId(
                         assignmentId,
                         courseId
                 )
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         if (!assignment.getCourse().getInstructor().getId().equals(instructor.getId())) {
             throw new RuntimeException("You are not allowed to grade this submission");
@@ -940,7 +941,7 @@ public class AssignmentService {
 
         Submission submission = submissionRepository
                 .findByIdAndAssignment(submissionId, assignment)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+                .orElseThrow(() -> new NotFoundException("Submission not found"));
 
         Integer maxScore = assignment.getMaxScore();
 
