@@ -319,6 +319,7 @@ function RegisterForm({ onSwitch, onError }) {
           small
           type="password"
           placeholder="At least 8 characters"
+          maxLength={128}
           {...passwordField}
           onChange={(event) => {
             passwordField.onChange(event);

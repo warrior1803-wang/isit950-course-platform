@@ -168,6 +168,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
               className={inputClass}
               placeholder="e.g. Advanced Software Engineering"
               value={fields.title}
+              maxLength={FIELD_LIMITS.title}
               onChange={e => set('title', e.target.value)}
             />
           </FieldWrapper>
@@ -179,6 +180,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
                 className={inputClass}
                 placeholder="e.g. ISIT999"
                 value={fields.code}
+                maxLength={FIELD_LIMITS.code}
                 onChange={e => set('code', e.target.value)}
               />
             </FieldWrapper>
@@ -187,6 +189,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
                 className={inputClass}
                 placeholder="e.g. Autumn 2026"
                 value={fields.session}
+                maxLength={FIELD_LIMITS.session}
                 onChange={e => set('session', e.target.value)}
               />
             </FieldWrapper>
@@ -197,6 +200,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
               className={inputClass}
               placeholder="e.g. Building 11, Room 205"
               value={fields.location}
+              maxLength={FIELD_LIMITS.location}
               onChange={e => set('location', e.target.value)}
             />
           </FieldWrapper>
@@ -208,6 +212,7 @@ export default function CourseModal({ mode, initialData, onClose, onSubmit }) {
               rows={3}
               placeholder="Brief course overview…"
               value={fields.description}
+              maxLength={FIELD_LIMITS.description}
               onChange={e => set('description', e.target.value)}
             />
           </FieldWrapper>
