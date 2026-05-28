@@ -2,6 +2,7 @@ package com.learningplatform.backend.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learningplatform.backend.common.exception.BusinessException;
+import com.learningplatform.backend.common.exception.NotFoundException;
 import com.learningplatform.backend.common.exception.ResubmissionLimitException;
 import com.learningplatform.backend.dto.AssignmentDetailResponse;
 import com.learningplatform.backend.dto.FileSubmissionResponse;
@@ -135,6 +136,25 @@ class AssignmentServiceTest {
         assertNotNull(response);
         assertEquals("submitted", response.getStatus());
         assertEquals("essay.pdf", response.getFilename());
+    }
+
+    @Test
+    void missingAssignmentDetailThrowsNotFoundException() {
+        User student = student();
+
+        AssignmentService service = new AssignmentService(
+                assignmentRepositoryFor(null),
+                stub(CourseRepository.class),
+                userRepositoryFor(student),
+                objectMapper,
+                stub(SubmissionRepository.class)
+        );
+
+        NotFoundException ex = assertThrows(NotFoundException.class, () ->
+                service.getAssignmentDetail(1L, 99999L, "student@example.com")
+        );
+
+        assertEquals("Assignment not found", ex.getMessage());
     }
 
     // The service throws ResubmissionLimitException; the controller maps it to 403 + { upgradeRequired: true }.
@@ -328,7 +348,7 @@ class AssignmentServiceTest {
                 AssignmentRepository.class.getClassLoader(),
                 new Class[]{AssignmentRepository.class},
                 (proxy, method, args) -> switch (method.getName()) {
-                    case "findByIdAndCourseId" -> Optional.of(assignment);
+                    case "findByIdAndCourseId" -> Optional.ofNullable(assignment);
                     case "toString" -> "AssignmentRepositoryProxy";
                     case "hashCode" -> System.identityHashCode(proxy);
                     case "equals" -> proxy == args[0];
