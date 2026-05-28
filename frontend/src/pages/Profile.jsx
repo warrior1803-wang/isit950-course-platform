@@ -502,7 +502,7 @@ export default function Profile() {
                   {isPremium
                     ? 'Unlimited posts and resubmissions'
                     : memData
-                      ? `${memData.usage?.weeklyPostsUsed ?? 0} / ${memData.usage?.weeklyPostsLimit ?? 0} posts used this week · ${memData.usage?.resubmissionsUsed ?? 0} / ${memData.usage?.resubmissionsLimit ?? 0} resubmissions used`
+                      ? `${memData.usage?.weeklyPostsUsed ?? 0} / ${memData.usage?.weeklyPostsLimit ?? 0} posts used this week · ${memData.usage?.resubmissionsLimit ?? 0} resubmissions per assignment`
                       : 'Limited posts and resubmissions'}
                 </div>
               </div>
