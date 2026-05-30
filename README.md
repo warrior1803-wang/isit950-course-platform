@@ -1,88 +1,144 @@
 # ISIT950 Course Collaboration Platform
 
-A full-stack course management platform supporting enrolments, forum discussions, assignments, and instructor analytics. Built with React + Vite (frontend), Java Spring Boot (backend), and PostgreSQL (database).
+A full-stack course management platform for students and instructors. The platform supports course enrolment, announcements, materials, discussion forums, assignments, grading, progress analytics, and student membership limits.
 
-> To test the platform, register users via the `/register` page. Create at least one **Instructor** and one **Student** account to explore all features.
+Built with:
 
----
+- React + Vite frontend
+- Java Spring Boot backend
+- PostgreSQL database
+- Flyway database migrations
 
 ## Prerequisites
 
 - Node.js 18+
 - Java 17
-- PostgreSQL 14+
 - Maven 3.8+
+- PostgreSQL 14+
 
----
+## Project Structure
 
-## Local Setup — Database
+```text
+frontend/   React application
+backend/    Spring Boot REST API
+```
+
+## Database Setup
+
+Create a PostgreSQL database and user for local development:
 
 ```bash
 psql -U postgres
 ```
 
 ```sql
-CREATE DATABASE isit950;
-CREATE USER <your_db_user> WITH PASSWORD '<your_db_password>';
-GRANT ALL PRIVILEGES ON DATABASE isit950 TO <your_db_user>;
+CREATE DATABASE backend_db;
+CREATE USER backend_user WITH PASSWORD 'Backend123!';
+GRANT ALL PRIVILEGES ON DATABASE backend_db TO backend_user;
 \q
 ```
 
-> Tables are auto-created by Hibernate on first backend run — no migration scripts needed.
+The backend uses Flyway migrations from `backend/src/main/resources/db/migration`.
+Hibernate is configured with `ddl-auto: validate`, so the database schema must match the migration files.
 
----
+## Backend Setup
 
-## Local Setup — Frontend
+From the backend directory:
+
+```bash
+cd backend
+```
+
+Set the required JWT secret. Optional variables are shown with their local defaults:
+
+```bash
+export JWT_SECRET=change-this-to-a-long-random-secret
+export DATABASE_URL=jdbc:postgresql://localhost:5432/backend_db
+export DB_USERNAME=backend_user
+export DB_PASSWORD=Backend123!
+export CORS_ALLOWED_ORIGIN=http://localhost:5173
+```
+
+Run the backend:
+
+```bash
+./mvnw spring-boot:run
+```
+
+The API runs at:
+
+```text
+http://localhost:8080
+```
+
+## Frontend Setup
+
+From the frontend directory:
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env        # set VITE_API_BASE_URL=http://localhost:8080
+```
+
+For local development, the frontend defaults to `/api`. If the backend is running separately on port 8080, create `frontend/.env.local`:
+
+```text
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+Run the frontend:
+
+```bash
 npm run dev
 ```
 
-Runs at **http://localhost:5173**.
+The app runs at:
 
----
+```text
+http://localhost:5173
+```
 
-## Local Setup — Backend
+## Test Accounts
+
+Use the registration page to create accounts for both roles:
+
+- Student
+- Instructor
+
+Instructor accounts can create and manage courses, materials, announcements, assignments, grading, and student analytics. Student accounts can enrol in courses, participate in discussions, submit assignments, view progress, and manage membership.
+
+## Useful Commands
+
+Frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
+Backend:
 
 ```bash
 cd backend
-mvn spring-boot:run
+./mvnw test
 ```
 
-Before running, edit `src/main/resources/application.properties`:
+## Key Environment Variables
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/isit950
-spring.datasource.username=<your_db_user>
-spring.datasource.password=<your_db_password>
-jwt.secret=<any_long_random_string>
-```
-
-Runs at **http://localhost:8080**. Tables are auto-created on first run.
-
----
-
-## Environment Variables Reference
-
-| Variable | Where | Description |
+| Variable | Used by | Description |
 |---|---|---|
-| `VITE_API_BASE_URL` | `frontend/.env` | Backend base URL (local: `http://localhost:8080`, prod: EC2 URL) |
-| `spring.datasource.url` | `application.properties` | PostgreSQL JDBC URL |
-| `spring.datasource.username` | `application.properties` | DB username |
-| `spring.datasource.password` | `application.properties` | DB password |
-| `jwt.secret` | `application.properties` | JWT signing secret (any long string) |
-
----
+| `VITE_API_BASE_URL` | Frontend | Backend API URL, for example `http://localhost:8080/api` |
+| `JWT_SECRET` | Backend | Required JWT signing secret |
+| `DATABASE_URL` | Backend | PostgreSQL JDBC URL |
+| `DB_USERNAME` | Backend | PostgreSQL username |
+| `DB_PASSWORD` | Backend | PostgreSQL password |
+| `CORS_ALLOWED_ORIGIN` | Backend | Allowed frontend origin |
+| `UPLOAD_DIR` | Backend | Directory for uploaded materials and submissions |
 
 ## Production
 
 - Frontend: https://isit950-course-platform.vercel.app
-- Backend: coming soon
 
----
+## Course
 
-*University of Wollongong — ISIT950 Systems Development Methodologies — Autumn 2026*
-
+University of Wollongong - ISIT950 Systems Development Methodologies - Autumn 2026

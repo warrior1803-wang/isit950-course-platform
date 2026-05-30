@@ -41,7 +41,7 @@ jobs:
               titleWarning = '> \u26a0\ufe0f **PR title does not follow the required format.**\n'
                 + '> Expected: `[SprintN][Type] Short description \u2014 #issue_number`\n'
                 + '> Got: `' + prTitle + '`\n'
-                + '> Please rename this PR before requesting human review. See [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).\n\n---\n';
+                + '> Please rename this PR before requesting human review. See [README.md](../blob/main/README.md).\n\n---\n';
             }
 
             // ── 2. Find ALL linked issues ─────────────────────────────────
